@@ -1,5 +1,9 @@
 {
   "name": "musila-backend",
+  "engines": {
+    "node": "20.11.1", 
+    "npm": "10.9.2"
+  },
   "version": "0.0.1",
   "description": "",
   "author": "",
