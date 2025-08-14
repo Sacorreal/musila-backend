@@ -2,173 +2,28 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type Track {
-  id: ID!
-  title: String!
-  subGenre: String!
-  cover: String!
-  url: String!
-  language: String!
-  lyric: String!
-  externalsIds: [String!]!
-  splitSheet: String!
-  certificatesDNDA: [String!]!
-  isAvailable: Boolean!
-  authors: User!
-  isGospel: Boolean!
-  createdAt: String!
-  updatedAt: String!
-  deletedAt: String!
-}
-
 type User {
-  id: ID!
-  name: String!
-  lastName: String!
-  email: String!
-  password: String!
-  countryCode: String!
-  phone: Int!
-  typeCitizenID: String!
-  citizenID: Int!
-  role: UserRole!
-  avatar: String!
-  isVerified: Boolean!
-  biography: String!
-  socialNetworks: [String!]!
-  tracks: Track!
-  createdAt: String!
-  updatedAt: String!
-  deletedAt: String!
-}
-
-"""Roles de los usuarios"""
-enum UserRole {
-  ADMIN
-  AUTOR
-  INTERPRETE
-  CANTAUTOR
-  INVITADO
-  EDITOR
-}
-
-type Playlist {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-type Guest {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-type RequestedTrack {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-type MusicalGenre {
   """Example field (placeholder)"""
   exampleField: Int!
 }
 
 type Query {
   users: [User!]!
-  user(id: ID!): User!
-  tracks: [Track!]!
-  track(id: Int!): Track!
-  playlists: [Playlist!]!
-  playlist(id: Int!): Playlist!
-  guests: [Guest!]!
-  guest(id: Int!): Guest!
-  requestedTracks: [RequestedTrack!]!
-  requestedTrack(id: Int!): RequestedTrack!
-  musicalGenre(id: Int!): MusicalGenre!
+  user(id: Int!): User!
 }
 
 type Mutation {
+  createUser(createUserInput: CreateUserInput!): User!
   updateUser(updateUserInput: UpdateUserInput!): User!
-  removeUser(id: ID!): User!
-  createTrack(createTrackInput: CreateTrackInput!): Track!
-  updateTrack(updateTrackInput: UpdateTrackInput!): Track!
-  removeTrack(id: Int!): Track!
-  createPlaylist(createPlaylistInput: CreatePlaylistInput!): Playlist!
-  updatePlaylist(updatePlaylistInput: UpdatePlaylistInput!): Playlist!
-  removePlaylist(id: Int!): Playlist!
-  createGuest(createGuestInput: CreateGuestInput!): Guest!
-  updateGuest(updateGuestInput: UpdateGuestInput!): Guest!
-  removeGuest(id: Int!): Guest!
-  createRequestedTrack(createRequestedTrackInput: CreateRequestedTrackInput!): RequestedTrack!
-  updateRequestedTrack(updateRequestedTrackInput: UpdateRequestedTrackInput!): RequestedTrack!
-  removeRequestedTrack(id: Int!): RequestedTrack!
-  createMusicalGenre(createMusicalGenreInput: CreateMusicalGenreInput!): MusicalGenre!
-  updateMusicalGenre(updateMusicalGenreInput: UpdateMusicalGenreInput!): MusicalGenre!
-  removeMusicalGenre(id: Int!): MusicalGenre!
+  removeUser(id: Int!): User!
+}
+
+input CreateUserInput {
+  """Example field (placeholder)"""
+  exampleField: Int!
 }
 
 input UpdateUserInput {
-  name: String
-  lastName: String
-  email: String
-  password: String
-  countryCode: String
-  phone: Float
-  typeCitizenID: String
-  citizenID: Float
-  avatar: String
-  id: ID!
-}
-
-input CreateTrackInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdateTrackInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
-}
-
-input CreatePlaylistInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdatePlaylistInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
-}
-
-input CreateGuestInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdateGuestInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
-}
-
-input CreateRequestedTrackInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdateRequestedTrackInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
-}
-
-input CreateMusicalGenreInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
-}
-
-input UpdateMusicalGenreInput {
   """Example field (placeholder)"""
   exampleField: Int
   id: Int!
