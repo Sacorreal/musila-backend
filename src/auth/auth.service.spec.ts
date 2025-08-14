@@ -60,7 +60,7 @@ describe('AuthService', () => {
       ).rejects.toThrow(UnauthorizedException)
     })
 
-    it("Debe devolver un token si las credenciales son correctas" async () => {
+    it("Debe devolver un token si las credenciales son correctas", async () => {
       usersService.findUserByEmailService.mockResolvedValue({
         id: "1",
         email: "test@test.com",
