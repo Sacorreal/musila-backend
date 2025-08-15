@@ -1,4 +1,6 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Guest } from 'src/guests/entities/guest.entity';
+import { Playlist } from 'src/playlists/entities/playlist.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import {
   Column,
@@ -11,8 +13,6 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { UserRole } from './user-role.enum';
-import { Guest } from 'src/guests/entities/guest.entity';
-import { Playlist } from 'src/playlists/entities/playlist.entity';
 
 @Entity({ name: 'users' })
 @ObjectType()
@@ -82,11 +82,10 @@ export class User {
 
   @OneToMany(() => Guest, (guest) => guest.invited_by)
   @Field(() => [Guest], { nullable: true })
-  guests?: Guest[]
+  guests?: Guest[];
 
-
-  @OneToMany(() => Playlist, playlist => playlist.owner)
-  playlists: Playlist[]
+  @OneToMany(() => Playlist, (playlist) => playlist.owner)
+  playlists: Playlist[];
 
   @CreateDateColumn({
     name: 'created_at',
