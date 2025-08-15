@@ -15,7 +15,7 @@ export class AuthController {
 
   @Post('register')
   async registerController(@Body() user: RegisterAuthDto){
-    if(user.password !== user.repeatPassword) throw new BadRequestException('Las contraseñas no coinciden')
+    if(user.password !== user.repeatPassword) throw new BadRequestException('Las contraseñas no coinciden')
     
     return this.authService.registerService(user)
   }
