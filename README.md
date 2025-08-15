@@ -57,9 +57,7 @@ chore: [MUS-012] actualizar dependencias de NextJS
 
 - Clona el repositorio en tu local con el comando `git clone https://github.com/Sacorreal/musila-backend.git ` (**solo se hace una única vez**).
 
-- Actualiza los cambios del repositorio en GitHub a tu repositorio local con `git pull origin main` (**se debe hacer siempre, antes de crear una nueva rama**).
-
-- En tu repositorio local ubicate en la rama `develop`, ingresando el comando `git checkout -b develop`.
+- Actualiza los cambios del repositorio en GitHub a tu repositorio local estando en la rama `develop` con `git pull origin develop` (**se debe hacer siempre, antes de crear una nueva rama**).
 
 - Toma una de las tareas asignadas en el tablero en Jira, sigue el mismo orden de asignación de tareas.
 
@@ -67,7 +65,7 @@ chore: [MUS-012] actualizar dependencias de NextJS
 
 - Al terminar de trabajar en tu rama local, agrega los cambios `git add .` y envía commit siguiendo la convención, ejemplo: `git commit -m "feature/MUS-101-login-form" `.
 
-- Envia los cambios desde tu repositorio local al repositorio remoto en Github con el comando `git push origin "nombre de tu rama"`.
+- Envia los cambios desde tu repositorio local al repositorio remoto en Github con el comando `git push`.
 
 - Desde Github crea el **Pull Requests** asociando el ticket de Jira ejemplo: _(MUS-101)_, hacia la rama `develop`del repositorio de Musila.
 
