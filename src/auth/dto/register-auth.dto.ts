@@ -26,14 +26,14 @@ export class RegisterAuthDto {
     countryCode?: string
 
     @IsOptional()
-    phone?: number
+    phone?: string
 
     @IsString()
     @IsOptional()
     typeCitizenID?: string
 
     @IsOptional()
-    citizenID?: number
+    citizenID?: string
 
     @IsString()
     @IsOptional()

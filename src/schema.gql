@@ -2,44 +2,10 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type Track {
+type Guest {
   id: ID!
-  title: String!
-  subGenre: String!
-  cover: String!
-  url: String!
-  language: String!
-  lyric: String!
-  externalsIds: [String!]!
-  splitSheet: String!
-  certificatesDNDA: [String!]!
-  isAvailable: Boolean!
-  authors: User!
-  isGospel: Boolean!
-  createdAt: String!
-  updatedAt: String!
-  deletedAt: String!
-}
-
-type User {
-  id: ID!
-  name: String!
-  lastName: String!
-  email: String!
-  password: String!
-  countryCode: String!
-  phone: Int!
-  typeCitizenID: String!
-  citizenID: Int!
   role: UserRole!
-  avatar: String!
-  isVerified: Boolean!
-  biography: String!
-  socialNetworks: [String!]!
-  tracks: Track!
-  createdAt: String!
-  updatedAt: String!
-  deletedAt: String!
+  invited_by: User!
 }
 
 """Roles de los usuarios"""
@@ -53,23 +19,92 @@ enum UserRole {
 }
 
 type Playlist {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  id: ID!
+  title: String!
+  owner: User!
+  cover: String!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deletedAt: DateTime!
 }
 
-type Guest {
-  """Example field (placeholder)"""
-  exampleField: Int!
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
+
+type MusicalGenre {
+  id: ID!
+  genre: String!
+  subgnre: [String!]
+  tracks: [Track!]!
+  createdAt: DateTime!
+}
+
+type Track {
+  id: ID!
+  title: String!
+  subGenre: String
+  cover: String
+  url: String!
+  language: String!
+  lyric: String!
+  externalsIds: [String!]!
+  splitSheet: String!
+  certificatesDNDA: [String!]!
+  isAvailable: Boolean!
+  authors: User!
+  isGospel: Boolean!
+  createdAt: String!
+  updatedAt: DateTime!
+  deletedAt: DateTime!
+}
+
+type User {
+  id: ID!
+  name: String!
+  lastName: String!
+  email: String!
+  password: String!
+  countryCode: String
+  phone: String
+  typeCitizenID: String
+  citizenID: String
+  role: UserRole!
+  avatar: String
+  isVerified: Boolean!
+  biography: String
+  socialNetworks: [String!]
+  tracks: Track!
+  guests: [Guest!]
+  createdAt: String!
+  updatedAt: String!
+  deletedAt: String!
 }
 
 type RequestedTrack {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  id: ID!
+  status: RequestsStatus!
+  licenseType: LicenseType!
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deletedAt: DateTime!
+  approvedByRequester: Boolean!
 }
 
-type MusicalGenre {
-  """Example field (placeholder)"""
-  exampleField: Int!
+"""Estado de las peticiones"""
+enum RequestsStatus {
+  APROBADA
+  RECHAZADA
+  PENDIENTE
+}
+
+"""Tipo de Licencia"""
+enum LicenseType {
+  LICENCIA_DE_PRIMER_USO
+  LICENCIA_TRADUCCION
+  LICENCIA_REPRODUCCION
+  LICENCIA_SINCRONIZACION
 }
 
 type Query {
@@ -112,9 +147,9 @@ input UpdateUserInput {
   email: String
   password: String
   countryCode: String
-  phone: Float
+  phone: String
   typeCitizenID: String
-  citizenID: Float
+  citizenID: String
   avatar: String
   id: ID!
 }
