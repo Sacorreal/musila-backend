@@ -1,4 +1,6 @@
-import { Field, ID, Int, ObjectType } from '@nestjs/graphql';
+import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Guest } from 'src/guests/entities/guest.entity';
+import { Playlist } from 'src/playlists/entities/playlist.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import {
   Column,
@@ -6,6 +8,7 @@ import {
   DeleteDateColumn,
   Entity,
   ManyToMany,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -19,70 +22,70 @@ export class User {
   id: string;
 
   @Column('varchar', { length: 255 })
-  @Field(() => String)
+  @Field()
   name: string;
 
   @Column('varchar', { name: 'last_name' })
-  @Field(() => String)
+  @Field()
   lastName: string;
 
   @Column('varchar', { nullable: false, unique: true })
-  @Field(() => String)
+  @Field()
   email: string;
 
   @Column('varchar', { nullable: false, select: false })
-  @Field(() => String)
+  @Field()
   password: string;
 
   @Column('varchar', { name: 'country_code', nullable: true })
-  @Field(() => String)
+  @Field({ nullable: true })
   countryCode?: string;
 
-  @Column('int', { nullable: true })
-  @Field(() => Int)
-  phone?: number;
+  @Column({ nullable: true })
+  @Field({ nullable: true })
+  phone?: string;
 
   @Column('varchar', { name: 'type_citizen_id', nullable: true })
-  @Field(() => String)
+  @Field({ nullable: true })
   typeCitizenID?: string;
 
-  @Column('int', { name: 'citizen_id', nullable: true })
-  @Field(() => Int)
-  citizenID?: number;
+  @Column({ name: 'citizen_id', nullable: true })
+  @Field({ nullable: true })
+  citizenID?: string;
 
   @Column({
     type: 'enum',
     enum: UserRole,
   })
-  @Field(() => String)
+  @Field(() => UserRole)
   role: UserRole;
 
   @Column('varchar', { name: 'avatar', nullable: true })
-  @Field(() => String)
+  @Field({ nullable: true })
   avatar: string;
 
   @Column('boolean', { default: false, name: 'is_verified' })
-  @Field(() => Boolean)
+  @Field()
   isVerified: boolean;
 
   @Column('text', { nullable: true })
-  @Field(() => String)
+  @Field({ nullable: true })
   biography?: string;
 
   @Column('jsonb', { name: 'social_networks', nullable: true })
-  @Field(() => [String])
+  @Field(() => [String], { nullable: true })
   socialNetworks?: Record<string, string>;
 
   @ManyToMany(() => Track, (track) => track.authors)
   @Field(() => Track)
   tracks: Track[];
 
-  //TODO: crear la relacion con entidad Playlist
-  /*@OneToMany(() => Playlist, (playlist) => playlist.owner)
-  playlists: Playlist[];*/
+  @OneToMany(() => Guest, (guest) => guest.invited_by)
+  @Field(() => [Guest], { nullable: true })
+  guests?: Guest[];
 
-  //TODO: crear relación con la entidad Guests.
-  //Guests
+  @OneToMany(() => Playlist, (playlist) => playlist.owner)
+  playlists: Playlist[];
 
   @CreateDateColumn({
     name: 'created_at',
@@ -95,7 +98,7 @@ export class User {
   @UpdateDateColumn({
     name: 'updated_at',
     type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP',
+    default: () => 'CURRENT_TIMESTAMP', //TODO: Preguntar sobre si esta propiedad va en este decorador tambien o no, ya que en el DBM no esta
   })
   @Field(() => String)
   updatedAt: Date;
