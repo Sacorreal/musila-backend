@@ -1,7 +1,10 @@
-import { InputType, Int, Field } from '@nestjs/graphql';
+import { InputType, Field, ID } from '@nestjs/graphql';
+import { IsUUID } from 'class-validator';
+
 
 @InputType()
 export class CreateGuestInput {
-  @Field(() => Int, { description: 'Example field (placeholder)' })
-  exampleField: number;
+  @IsUUID()
+  @Field(() => ID, { description: 'ID del usuario que invita' })
+  invitedById: string
 }
