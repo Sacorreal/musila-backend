@@ -19,13 +19,13 @@ export class CreateUserInput {
   countryCode?: string;
 
   @Field({ nullable: true })
-  phone?: number;
+  phone?: string;
 
   @Field({ nullable: true })
   typeCitizenID?: string;
 
   @Field({ nullable: true })
-  citizenID?: number;
+  citizenID?: string;
 
   @Field({ nullable: true })
   avatar?: string;
