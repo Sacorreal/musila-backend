@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
 import { GuestsService } from './guests.service';
 import { Guest } from './entities/guest.entity';
 import { CreateGuestInput } from './dto/create-guest.input';
@@ -9,27 +9,27 @@ export class GuestsResolver {
   constructor(private readonly guestsService: GuestsService) {}
 
   @Mutation(() => Guest)
-  createGuest(@Args('createGuestInput') createGuestInput: CreateGuestInput) {
-    return this.guestsService.create(createGuestInput);
+  createGuestResolver(@Args('createGuestInput') createGuestInput: CreateGuestInput) {
+    return this.guestsService.createGuestsService(createGuestInput);
   }
 
   @Query(() => [Guest], { name: 'guests' })
-  findAll() {
-    return this.guestsService.findAll();
+  findAllGuestsResolver() {
+    return this.guestsService.findAllGuestsService();
   }
 
   @Query(() => Guest, { name: 'guest' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.guestsService.findOne(id);
+  findOneGuestResolver(@Args('id', { type: () => ID }) id: string) {
+    return this.guestsService.findOneGuestsService(id);
   }
 
   @Mutation(() => Guest)
-  updateGuest(@Args('updateGuestInput') updateGuestInput: UpdateGuestInput) {
-    return this.guestsService.update(updateGuestInput.id, updateGuestInput);
+  updateGuestResolver(@Args('updateGuestInput') updateGuestInput: UpdateGuestInput) {
+    return this.guestsService.updateGuestsService(updateGuestInput.id, updateGuestInput);
   }
 
-  @Mutation(() => Guest)
-  removeGuest(@Args('id', { type: () => Int }) id: number) {
-    return this.guestsService.remove(id);
+  @Mutation(() => Boolean)
+  removeGuestResolver(@Args('id', { type: () => ID }) id: string) {
+    return this.guestsService.removeGuestsService(id);
   }
 }

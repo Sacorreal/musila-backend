@@ -115,7 +115,7 @@ type Query {
   playlists: [Playlist!]!
   playlist(id: Int!): Playlist!
   guests: [Guest!]!
-  guest(id: Int!): Guest!
+  guest(id: ID!): Guest!
   requestedTracks: [RequestedTrack!]!
   requestedTrack(id: Int!): RequestedTrack!
   musicalGenres: [MusicalGenre!]!
@@ -131,9 +131,9 @@ type Mutation {
   createPlaylist(createPlaylistInput: CreatePlaylistInput!): Playlist!
   updatePlaylist(updatePlaylistInput: UpdatePlaylistInput!): Playlist!
   removePlaylist(id: Int!): Playlist!
-  createGuest(createGuestInput: CreateGuestInput!): Guest!
-  updateGuest(updateGuestInput: UpdateGuestInput!): Guest!
-  removeGuest(id: Int!): Guest!
+  createGuestResolver(createGuestInput: CreateGuestInput!): Guest!
+  updateGuestResolver(updateGuestInput: UpdateGuestInput!): Guest!
+  removeGuestResolver(id: ID!): Boolean!
   createRequestedTrack(createRequestedTrackInput: CreateRequestedTrackInput!): RequestedTrack!
   updateRequestedTrack(updateRequestedTrackInput: UpdateRequestedTrackInput!): RequestedTrack!
   removeRequestedTrack(id: Int!): RequestedTrack!
@@ -178,14 +178,14 @@ input UpdatePlaylistInput {
 }
 
 input CreateGuestInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  """ID del usuario que invita"""
+  invitedById: ID!
 }
 
 input UpdateGuestInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  """ID del usuario que invita"""
+  invitedById: ID
+  id: ID!
 }
 
 input CreateRequestedTrackInput {
