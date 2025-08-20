@@ -16,7 +16,7 @@ export class MusicalGenre {
 
   @Column({ type: 'text', nullable: true, array: true })
   @Field(() => [String], { nullable: true })
-  subgnre?: string[]
+  subGenre?: string[]
 
   @OneToMany(() => Track, track => track.genre, { cascade: true })
   @Field(() => [Track])
