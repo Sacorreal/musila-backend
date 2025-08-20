@@ -1,4 +1,4 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
 import { MusicalGenreService } from './musical-genre.service';
 import { MusicalGenre } from './entities/musical-genre.entity';
 import { CreateMusicalGenreInput } from './dto/create-musical-genre.input';
@@ -6,30 +6,30 @@ import { UpdateMusicalGenreInput } from './dto/update-musical-genre.input';
 
 @Resolver(() => MusicalGenre)
 export class MusicalGenreResolver {
-  constructor(private readonly musicalGenreService: MusicalGenreService) {}
+  constructor(private readonly musicalGenreService: MusicalGenreService) { }
 
   @Mutation(() => MusicalGenre)
-  createMusicalGenre(@Args('createMusicalGenreInput') createMusicalGenreInput: CreateMusicalGenreInput) {
-    return this.musicalGenreService.create(createMusicalGenreInput);
+  createMusicalGenreResolver(@Args('createMusicalGenreInput') createMusicalGenreInput: CreateMusicalGenreInput) {
+    return this.musicalGenreService.createMusicalGenreService(createMusicalGenreInput);
   }
 
-  @Query(() => [MusicalGenre], { name: 'musicalGenre' })
-  findAll() {
-    return this.musicalGenreService.findAll();
+  @Query(() => [MusicalGenre], { name: 'musicalGenres' })
+  findAllMusicalGenreResolver() {
+    return this.musicalGenreService.findAllMusicalGenreService();
   }
 
   @Query(() => MusicalGenre, { name: 'musicalGenre' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
-    return this.musicalGenreService.findOne(id);
+  findOneMusicalGenreResolver(@Args('id', { type: () => ID }) id: string) {
+    return this.musicalGenreService.findOneMusicalGenreService(id);
   }
 
   @Mutation(() => MusicalGenre)
-  updateMusicalGenre(@Args('updateMusicalGenreInput') updateMusicalGenreInput: UpdateMusicalGenreInput) {
-    return this.musicalGenreService.update(updateMusicalGenreInput.id, updateMusicalGenreInput);
+  updateMusicalGenreResolver(@Args('updateMusicalGenreInput') updateMusicalGenreInput: UpdateMusicalGenreInput) {
+    return this.musicalGenreService.updateMusicalGenreService(updateMusicalGenreInput.id, updateMusicalGenreInput);
   }
 
-  @Mutation(() => MusicalGenre)
-  removeMusicalGenre(@Args('id', { type: () => Int }) id: number) {
-    return this.musicalGenreService.remove(id);
+  @Mutation(() => Boolean)
+  removeMusicalGenreResolver(@Args('id', { type: () => ID }) id: string) {
+    return this.musicalGenreService.removeMusicalGenreService(id);
   }
 }

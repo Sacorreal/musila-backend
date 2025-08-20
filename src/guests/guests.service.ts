@@ -1,26 +1,57 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateGuestInput } from './dto/create-guest.input';
 import { UpdateGuestInput } from './dto/update-guest.input';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Guest } from './entities/guest.entity';
+import { Repository } from 'typeorm';
+import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class GuestsService {
-  create(createGuestInput: CreateGuestInput) {
-    return 'This action adds a new guest';
+  constructor(
+    @InjectRepository(Guest) private readonly guestsRepository: Repository<Guest>,
+    @InjectRepository(User) private readonly usersRepository: Repository<User>,
+  ) { }
+
+
+  async createGuestsService(createGuestInput: CreateGuestInput) {
+    const inviter = await this.usersRepository.findOne({ where: { id: createGuestInput.invitedById } })
+
+    if (!inviter) throw new NotFoundException('El invitado no existe')
+
+    const newGuest = this.guestsRepository.create({
+      invited_by: inviter
+    })
+
+    return await this.guestsRepository.save(newGuest) 
+
   }
 
-  findAll() {
-    return `This action returns all guests`;
+  async findAllGuestsService() {
+    return await this.guestsRepository.find({relations: ['invited_by']})
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} guest`;
+  async findOneGuestsService(id: string) {
+    return await this.guestsRepository.findOne({ where: { id } })
   }
 
-  update(id: number, updateGuestInput: UpdateGuestInput) {
-    return `This action updates a #${id} guest`;
+  async updateGuestsService(id: string, updateGuestInput: UpdateGuestInput) {
+    const existingGuest = await this.guestsRepository.findOne({ where: { id } })
+
+    if (!existingGuest) throw new NotFoundException('El invitado no existe')
+
+    Object.assign(existingGuest, updateGuestInput)
+
+    return await this.guestsRepository.save(existingGuest)
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} guest`;
+  async removeGuestsService(id: string) {
+    const guestToRemove = await this.guestsRepository.findOne({ where: { id } })
+
+    if (!guestToRemove) throw new NotFoundException('El invitado no existe')
+
+    await this.guestsRepository.remove(guestToRemove)
+
+    return true
   }
 }
