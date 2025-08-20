@@ -1,8 +1,11 @@
+import { IsUUID } from 'class-validator';
 import { CreateMusicalGenreInput } from './create-musical-genre.input';
-import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
+import { InputType, Field, PartialType, ID } from '@nestjs/graphql';
 
 @InputType()
 export class UpdateMusicalGenreInput extends PartialType(CreateMusicalGenreInput) {
-  @Field(() => Int)
-  id: number;
+  
+  @IsUUID()
+  @Field(() => ID)
+  id: string;
 }
