@@ -36,7 +36,7 @@ scalar DateTime
 type MusicalGenre {
   id: ID!
   genre: String!
-  subgnre: [String!]
+  subGenre: [String!]
   tracks: [Track!]!
   createdAt: DateTime!
 }
@@ -115,10 +115,11 @@ type Query {
   playlists: [Playlist!]!
   playlist(id: Int!): Playlist!
   guests: [Guest!]!
-  guest(id: Int!): Guest!
+  guest(id: ID!): Guest!
   requestedTracks: [RequestedTrack!]!
   requestedTrack(id: Int!): RequestedTrack!
-  musicalGenre(id: Int!): MusicalGenre!
+  musicalGenres: [MusicalGenre!]!
+  musicalGenre(id: ID!): MusicalGenre!
 }
 
 type Mutation {
@@ -130,15 +131,15 @@ type Mutation {
   createPlaylist(createPlaylistInput: CreatePlaylistInput!): Playlist!
   updatePlaylist(updatePlaylistInput: UpdatePlaylistInput!): Playlist!
   removePlaylist(id: Int!): Playlist!
-  createGuest(createGuestInput: CreateGuestInput!): Guest!
-  updateGuest(updateGuestInput: UpdateGuestInput!): Guest!
-  removeGuest(id: Int!): Guest!
+  createGuestResolver(createGuestInput: CreateGuestInput!): Guest!
+  updateGuestResolver(updateGuestInput: UpdateGuestInput!): Guest!
+  removeGuestResolver(id: ID!): Boolean!
   createRequestedTrack(createRequestedTrackInput: CreateRequestedTrackInput!): RequestedTrack!
   updateRequestedTrack(updateRequestedTrackInput: UpdateRequestedTrackInput!): RequestedTrack!
   removeRequestedTrack(id: Int!): RequestedTrack!
-  createMusicalGenre(createMusicalGenreInput: CreateMusicalGenreInput!): MusicalGenre!
-  updateMusicalGenre(updateMusicalGenreInput: UpdateMusicalGenreInput!): MusicalGenre!
-  removeMusicalGenre(id: Int!): MusicalGenre!
+  createMusicalGenreResolver(createMusicalGenreInput: CreateMusicalGenreInput!): MusicalGenre!
+  updateMusicalGenreResolver(updateMusicalGenreInput: UpdateMusicalGenreInput!): MusicalGenre!
+  removeMusicalGenreResolver(id: ID!): Boolean!
 }
 
 input UpdateUserInput {
@@ -177,14 +178,14 @@ input UpdatePlaylistInput {
 }
 
 input CreateGuestInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  """ID del usuario que invita"""
+  invitedById: ID!
 }
 
 input UpdateGuestInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  """ID del usuario que invita"""
+  invitedById: ID
+  id: ID!
 }
 
 input CreateRequestedTrackInput {
@@ -199,12 +200,12 @@ input UpdateRequestedTrackInput {
 }
 
 input CreateMusicalGenreInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  genre: String!
+  subGenre: [String!]
 }
 
 input UpdateMusicalGenreInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  genre: String
+  subGenre: [String!]
+  id: ID!
 }

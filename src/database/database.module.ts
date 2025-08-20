@@ -12,11 +12,18 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         type: 'postgres',
-        host: process.env.DB_HOST,
+        url: process.env.DB_URL,
+        ssl: {
+          ca: process.env.DB_CA_CERT,
+          rejectUnauthorized: false,
+        },
+
+        /*host: process.env.DB_HOST,
         port: process.env.DB_PORT ? +process.env.DB_PORT : 5432,
         username: process.env.DB_USERNAME,
         password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
+        database: process.env.DB_NAME,*/
+
         autoLoadEntities: true, // Carga automáticamente las entidades registradas
         synchronize: true, //TODO: cambiar a false en prod.
       }),
