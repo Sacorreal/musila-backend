@@ -14,9 +14,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         type: 'postgres',
         url: process.env.DB_URL,
         ssl: {
+          ca: process.env.DB_CA_CERT,
           rejectUnauthorized: false,
         },
-        username: process.env.DB_USERNAME,
 
         /*host: process.env.DB_HOST,
         port: process.env.DB_PORT ? +process.env.DB_PORT : 5432,
