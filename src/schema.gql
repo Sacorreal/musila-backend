@@ -36,7 +36,7 @@ scalar DateTime
 type MusicalGenre {
   id: ID!
   genre: String!
-  subgnre: [String!]
+  subGenre: [String!]
   tracks: [Track!]!
   createdAt: DateTime!
 }
@@ -118,7 +118,8 @@ type Query {
   guest(id: ID!): Guest!
   requestedTracks: [RequestedTrack!]!
   requestedTrack(id: Int!): RequestedTrack!
-  musicalGenre(id: Int!): MusicalGenre!
+  musicalGenres: [MusicalGenre!]!
+  musicalGenre(id: ID!): MusicalGenre!
 }
 
 type Mutation {
@@ -136,9 +137,9 @@ type Mutation {
   createRequestedTrack(createRequestedTrackInput: CreateRequestedTrackInput!): RequestedTrack!
   updateRequestedTrack(updateRequestedTrackInput: UpdateRequestedTrackInput!): RequestedTrack!
   removeRequestedTrack(id: Int!): RequestedTrack!
-  createMusicalGenre(createMusicalGenreInput: CreateMusicalGenreInput!): MusicalGenre!
-  updateMusicalGenre(updateMusicalGenreInput: UpdateMusicalGenreInput!): MusicalGenre!
-  removeMusicalGenre(id: Int!): MusicalGenre!
+  createMusicalGenreResolver(createMusicalGenreInput: CreateMusicalGenreInput!): MusicalGenre!
+  updateMusicalGenreResolver(updateMusicalGenreInput: UpdateMusicalGenreInput!): MusicalGenre!
+  removeMusicalGenreResolver(id: ID!): Boolean!
 }
 
 input UpdateUserInput {
@@ -199,12 +200,12 @@ input UpdateRequestedTrackInput {
 }
 
 input CreateMusicalGenreInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  genre: String!
+  subGenre: [String!]
 }
 
 input UpdateMusicalGenreInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  genre: String
+  subGenre: [String!]
+  id: ID!
 }

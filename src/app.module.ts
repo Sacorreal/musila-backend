@@ -6,12 +6,12 @@ import { GraphQLModule } from '@nestjs/graphql';
 import { join } from 'path';
 import { AuthModule } from './auth/auth.module';
 import { DatabaseModule } from './database/database.module';
-import { UsersModule } from './users/users.module';
-import { TracksModule } from './tracks/tracks.module';
-import { PlaylistsModule } from './playlists/playlists.module';
 import { GuestsModule } from './guests/guests.module';
-import { RequestedTracksModule } from './requested-tracks/requested-tracks.module';
 import { MusicalGenreModule } from './musical-genre/musical-genre.module';
+import { PlaylistsModule } from './playlists/playlists.module';
+import { RequestedTracksModule } from './requested-tracks/requested-tracks.module';
+import { TracksModule } from './tracks/tracks.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -31,6 +31,7 @@ import { MusicalGenreModule } from './musical-genre/musical-genre.module';
       driver: ApolloDriver,
       autoSchemaFile: join(process.cwd(), 'src/schema.gql'),
       playground: false,
+      introspection: true,
       plugins: [ApolloServerPluginLandingPageLocalDefault()],
     }),
     AuthModule,
