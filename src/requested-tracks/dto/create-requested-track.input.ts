@@ -1,7 +1,18 @@
-import { InputType, Int, Field } from '@nestjs/graphql';
+import { InputType, Field, ID } from '@nestjs/graphql';
+import { LicenseType } from '../entities/license-type.enum';
 
 @InputType()
 export class CreateRequestedTrackInput {
-  @Field(() => Int, { description: 'Example field (placeholder)' })
-  exampleField: number;
+  
+  @Field(() => ID)
+  userId: string
+
+  @Field(() => ID)
+  trackId: string
+
+  @Field(() => LicenseType)
+  licenseType: LicenseType
+
+  @Field(() => Boolean)
+  approvedByRequester: boolean
 }

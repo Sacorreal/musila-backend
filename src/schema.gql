@@ -117,7 +117,7 @@ type Query {
   guests: [Guest!]!
   guest(id: ID!): Guest!
   requestedTracks: [RequestedTrack!]!
-  requestedTrack(id: Int!): RequestedTrack!
+  requestedTrack(id: ID!): RequestedTrack!
   musicalGenres: [MusicalGenre!]!
   musicalGenre(id: ID!): MusicalGenre!
 }
@@ -134,9 +134,9 @@ type Mutation {
   createGuestResolver(createGuestInput: CreateGuestInput!): Guest!
   updateGuestResolver(updateGuestInput: UpdateGuestInput!): Guest!
   removeGuestResolver(id: ID!): Boolean!
-  createRequestedTrack(createRequestedTrackInput: CreateRequestedTrackInput!): RequestedTrack!
-  updateRequestedTrack(updateRequestedTrackInput: UpdateRequestedTrackInput!): RequestedTrack!
-  removeRequestedTrack(id: Int!): RequestedTrack!
+  createRequestedTrackResolver(createRequestedTrackInput: CreateRequestedTrackInput!): RequestedTrack!
+  updateRequestedTrackResolver(updateRequestedTrackInput: UpdateRequestedTrackInput!): RequestedTrack!
+  removeRequestedTrackResolver(id: ID!): RequestedTrack!
   createMusicalGenreResolver(createMusicalGenreInput: CreateMusicalGenreInput!): MusicalGenre!
   updateMusicalGenreResolver(updateMusicalGenreInput: UpdateMusicalGenreInput!): MusicalGenre!
   removeMusicalGenreResolver(id: ID!): Boolean!
@@ -189,14 +189,18 @@ input UpdateGuestInput {
 }
 
 input CreateRequestedTrackInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  userId: ID!
+  trackId: ID!
+  licenseType: LicenseType!
+  approvedByRequester: Boolean!
 }
 
 input UpdateRequestedTrackInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  userId: ID
+  trackId: ID
+  licenseType: LicenseType
+  approvedByRequester: Boolean
+  id: ID!
 }
 
 input CreateMusicalGenreInput {
