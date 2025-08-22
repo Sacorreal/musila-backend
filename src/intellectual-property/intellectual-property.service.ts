@@ -12,15 +12,18 @@ export class IntellectualPropertyService {
     return `This action returns all intellectualProperty`;
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} intellectualProperty`;
   }
 
-  update(id: number, updateIntellectualPropertyInput: UpdateIntellectualPropertyInput) {
+  update(
+    id: string,
+    updateIntellectualPropertyInput: UpdateIntellectualPropertyInput,
+  ) {
     return `This action updates a #${id} intellectualProperty`;
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return `This action removes a #${id} intellectualProperty`;
   }
 }

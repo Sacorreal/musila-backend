@@ -12,15 +12,15 @@ export class RequestedTracksService {
     return `This action returns all requestedTracks`;
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} requestedTrack`;
   }
 
-  update(id: number, updateRequestedTrackInput: UpdateRequestedTrackInput) {
+  update(id: string, updateRequestedTrackInput: UpdateRequestedTrackInput) {
     return `This action updates a #${id} requestedTrack`;
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return `This action removes a #${id} requestedTrack`;
   }
 }

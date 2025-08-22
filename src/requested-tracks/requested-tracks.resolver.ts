@@ -1,4 +1,4 @@
-import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
 import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
 import { RequestedTrack } from './entities/requested-track.entity';
@@ -26,7 +26,7 @@ export class RequestedTracksResolver {
   }
 
   @Query(() => RequestedTrack, { name: 'requestedTrack' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  findOne(@Args('id', { type: () => String }) id: string) {
     return this.requestedTracksService.findOne(id);
   }
 
@@ -42,7 +42,7 @@ export class RequestedTracksResolver {
   }
 
   @Mutation(() => RequestedTrack)
-  removeRequestedTrack(@Args('id', { type: () => Int }) id: number) {
+  removeRequestedTrack(@Args('id', { type: () => String }) id: string) {
     return this.requestedTracksService.remove(id);
   }
 }
