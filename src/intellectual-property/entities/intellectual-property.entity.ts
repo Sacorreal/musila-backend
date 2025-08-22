@@ -11,7 +11,7 @@ import {
 } from 'typeorm';
 
 @ObjectType({
-  description: 'Registros de propiedad intelectual que posee la cancion',
+  description: 'Registros de propiedad intelectual que posee cada cancion',
 })
 @Entity({ name: 'intellectual_property' })
 export class IntellectualProperty {
