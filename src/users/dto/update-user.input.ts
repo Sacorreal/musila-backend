@@ -1,10 +1,11 @@
-import { IsUUID } from 'class-validator';
+import { Field, ID, InputType, PartialType } from '@nestjs/graphql';
+import { IsNotEmpty, IsUUID } from 'class-validator';
 import { CreateUserInput } from './create-user.input';
-import { InputType, Field, PartialType, ID } from '@nestjs/graphql';
 
 @InputType()
 export class UpdateUserInput extends PartialType(CreateUserInput) {
   @Field(() => ID)
-  @IsUUID()
+  @IsUUID('4', { message: 'El id debe ser un UUID válido' })
+  @IsNotEmpty({ message: 'El id es obligatorio' })
   id: string;
 }
