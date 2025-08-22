@@ -1,52 +1,73 @@
-import { ObjectType, Field, ID } from '@nestjs/graphql';
-// import { Track } from 'src/tracks/entities/track.entity';
-// import { User } from 'src/users/entities/user.entity';
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
-import { RequestsStatus } from './requests-status.enum';
+import { Field, ID, ObjectType } from '@nestjs/graphql';
+import { Track } from 'src/tracks/entities/track.entity';
+import { User } from 'src/users/entities/user.entity';
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { LicenseType } from './license-type.enum';
+import { RequestsStatus } from './requests-status.enum';
 
-
-@ObjectType()
+@ObjectType({
+  description:
+    'Solicitudes enviadas por el usuario para el uso de las canciones',
+})
 @Entity({ name: 'requested_track' })
 export class RequestedTrack {
-
   @PrimaryGeneratedColumn('uuid')
   @Field(() => ID)
-  id: string
+  id: string;
 
-  // @ManyToOne(() => User, user => user.requestedTrack)//TODO: consultar si se hace está relación en la entiedad User
-  // @Field(() => User)
-  // user: User
+  @ManyToOne(() => User, (user) => user.requestSent)
+  @Field(() => User)
+  requester: User;
 
-  // @ManyToOne(() => Track, track => track.requestedTrack)//TODO: consultar si se hace está relación en la entiedad User
-  // @Field(() => Track)
-  // track: Track
+  @ManyToOne(() => Track, (track) => track.requestedTrack)
+  @Field(() => Track)
+  track: Track;
 
-  // @OneToMany(() => RequestsComment, comment => comment.requestedTrack)
-  // @Field(() => [RequestsComment])
-  // comments: RequestsComment[]
-
-  @Column({ type: 'enum', enum: RequestsStatus, default: RequestsStatus.PENDIENTE })
+  @Column({
+    type: 'enum',
+    enum: RequestsStatus,
+    default: RequestsStatus.PENDIENTE,
+  })
   @Field(() => RequestsStatus)
-  status: RequestsStatus
+  status: RequestsStatus;
 
   @Column({ type: 'enum', enum: LicenseType })
   @Field(() => LicenseType)
-  licenseType: LicenseType
+  licenseType: LicenseType;
 
-  @CreateDateColumn({ name: 'created_at', type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  @Column({ name: 'approved_by_requester', default: false })
   @Field()
-  createdAt: Date
+  approvedByRequester: boolean;
 
-  @UpdateDateColumn({ name: 'update_at', type: 'timestamptz' })
-  @Field()
-  updatedAt: Date
+  @CreateDateColumn({
+    name: 'created_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  @Field(() => String)
+  createdAt: Date;
 
-  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamptz' })
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   @Field()
-  deletedAt: Date
+  updatedAt: Date;
 
-  @Column({ name: 'approved_by_requester' })
+  @DeleteDateColumn({
+    name: 'deleted_at',
+    type: 'timestamp',
+    nullable: true,
+  })
   @Field()
-  approvedByRequester: boolean
+  deletedAt?: Date;
 }

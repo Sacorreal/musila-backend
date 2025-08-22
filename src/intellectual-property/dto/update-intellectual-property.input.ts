@@ -1,9 +1,11 @@
 import { Field, ID, InputType, PartialType } from '@nestjs/graphql';
 import { IsNotEmpty, IsUUID } from 'class-validator';
-import { CreateTrackInput } from './create-track.input';
+import { CreateIntellectualPropertyInput } from './create-intellectual-property.input';
 
 @InputType()
-export class UpdateTrackInput extends PartialType(CreateTrackInput) {
+export class UpdateIntellectualPropertyInput extends PartialType(
+  CreateIntellectualPropertyInput,
+) {
   @Field(() => ID)
   @IsUUID('4', { message: 'El id debe ser un UUID v4 válido' })
   @IsNotEmpty({ message: 'El id es obligatorio' })

@@ -12,20 +12,14 @@ import { PlaylistsModule } from './playlists/playlists.module';
 import { RequestedTracksModule } from './requested-tracks/requested-tracks.module';
 import { TracksModule } from './tracks/tracks.module';
 import { UsersModule } from './users/users.module';
+import { IntellectualPropertyModule } from './intellectual-property/intellectual-property.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: (() => {
-        switch (process.env.NODE_ENV) {
-          case 'production':
-            return '.env.production';
-          case 'development':
-          default:
-            return '.env.development';
-        }
-      })(),
+      //TODO: verificar configuracion para conexion con BD en local
+      //envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
     GraphQLModule.forRoot<ApolloDriverConfig>({
       driver: ApolloDriver,
@@ -42,6 +36,7 @@ import { UsersModule } from './users/users.module';
     GuestsModule,
     RequestedTracksModule,
     MusicalGenreModule,
+    IntellectualPropertyModule,
   ],
   controllers: [],
   providers: [],

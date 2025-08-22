@@ -1,15 +1,22 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
-import { RequestedTracksService } from './requested-tracks.service';
-import { RequestedTrack } from './entities/requested-track.entity';
+import { Args, Int, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
 import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
+import { RequestedTrack } from './entities/requested-track.entity';
+import { RequestedTracksService } from './requested-tracks.service';
 
 @Resolver(() => RequestedTrack)
 export class RequestedTracksResolver {
-  constructor(private readonly requestedTracksService: RequestedTracksService) {}
+  constructor(
+    private readonly requestedTracksService: RequestedTracksService,
+  ) {}
 
-  @Mutation(() => RequestedTrack)
-  createRequestedTrack(@Args('createRequestedTrackInput') createRequestedTrackInput: CreateRequestedTrackInput) {
+  @Mutation(() => RequestedTrack, {
+    description: 'Crear solicitud del uso de una cancion',
+  })
+  createRequestedTrack(
+    @Args('createRequestedTrackInput')
+    createRequestedTrackInput: CreateRequestedTrackInput,
+  ) {
     return this.requestedTracksService.create(createRequestedTrackInput);
   }
 
@@ -24,8 +31,14 @@ export class RequestedTracksResolver {
   }
 
   @Mutation(() => RequestedTrack)
-  updateRequestedTrack(@Args('updateRequestedTrackInput') updateRequestedTrackInput: UpdateRequestedTrackInput) {
-    return this.requestedTracksService.update(updateRequestedTrackInput.id, updateRequestedTrackInput);
+  updateRequestedTrack(
+    @Args('updateRequestedTrackInput')
+    updateRequestedTrackInput: UpdateRequestedTrackInput,
+  ) {
+    return this.requestedTracksService.update(
+      updateRequestedTrackInput.id,
+      updateRequestedTrackInput,
+    );
   }
 
   @Mutation(() => RequestedTrack)
