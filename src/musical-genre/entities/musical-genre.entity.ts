@@ -1,30 +1,51 @@
-import { ObjectType, Field, ID } from '@nestjs/graphql';
+import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Track } from 'src/tracks/entities/track.entity';
-import { Column, CreateDateColumn, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity({ name: 'musical_genre' })
 @ObjectType()
 export class MusicalGenre {
-
   @PrimaryGeneratedColumn('uuid')
   @Field(() => ID)
-  id: string
+  id: string;
 
   @Column()
   @Field()
-  genre: string
+  genre: string;
 
   @Column({ type: 'text', nullable: true, array: true })
   @Field(() => [String], { nullable: true })
-  subGenre?: string[]
+  subGenre?: string[];
 
-  @OneToMany(() => Track, track => track.genre, { cascade: true })
+  @OneToMany(() => Track, (track) => track.genre, { cascade: true })
   @Field(() => [Track])
-  tracks: Track[]
+  tracks: Track[];
 
   @CreateDateColumn({ name: 'created_at' })
   @Field(() => Date)
-  createdAt: Date
+  createdAt: Date;
 
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  @Field()
+  updatedAt: Date;
 
+  @DeleteDateColumn({
+    name: 'deleted_at',
+    type: 'timestamp',
+    nullable: true,
+  })
+  @Field()
+  deletedAt?: Date;
 }

@@ -29,6 +29,9 @@ type Track {
   isAvailable: Boolean!
   authors: User!
   isGospel: Boolean!
+
+  """Listado de solicitudes de uso que ha recibido la cancion"""
+  requestedTrack: [RequestedTrack!]!
   createdAt: String!
   updatedAt: DateTime!
   deletedAt: DateTime!
@@ -86,8 +89,11 @@ type User {
   deletedAt: String!
 }
 
+"""Solicitudes enviadas por el usuario para el uso de las canciones"""
 type RequestedTrack {
   id: ID!
+  requester: User!
+  track: Track!
   status: RequestsStatus!
   licenseType: LicenseType!
   createdAt: DateTime!
@@ -111,6 +117,29 @@ enum LicenseType {
   LICENCIA_SINCRONIZACION
 }
 
+type User {
+  id: ID!
+  name: String!
+  lastName: String!
+  email: String!
+  password: String!
+  countryCode: String
+  phone: String
+  typeCitizenID: String
+  citizenID: String
+  role: UserRole!
+  avatar: String
+  isVerified: Boolean!
+  biography: String
+  socialNetworks: [String!]
+  tracks: Track!
+  guests: [Guest!]
+  requestSent: [RequestedTrack!]!
+  createdAt: String!
+  updatedAt: String!
+  deletedAt: String!
+}
+
 type Query {
   users: [User!]!
   user(id: ID!): User!
@@ -121,7 +150,7 @@ type Query {
   guests: [Guest!]!
   guest(id: ID!): Guest!
   requestedTracks: [RequestedTrack!]!
-  requestedTrack(id: Int!): RequestedTrack!
+  requestedTrack(id: ID!): RequestedTrack!
   musicalGenres: [MusicalGenre!]!
   musicalGenre(id: ID!): MusicalGenre!
 }
@@ -139,6 +168,8 @@ type Mutation {
   createGuestResolver(createGuestInput: CreateGuestInput!): Guest!
   updateGuestResolver(updateGuestInput: UpdateGuestInput!): Guest!
   removeGuestResolver(id: ID!): Boolean!
+
+  """Crear solicitud del uso de una cancion"""
   createRequestedTrack(createRequestedTrackInput: CreateRequestedTrackInput!): RequestedTrack!
   updateRequestedTrack(updateRequestedTrackInput: UpdateRequestedTrackInput!): RequestedTrack!
   removeRequestedTrack(id: Int!): RequestedTrack!
@@ -212,14 +243,18 @@ input UpdateGuestInput {
 }
 
 input CreateRequestedTrackInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  userId: ID!
+  trackId: ID!
+  licenseType: LicenseType!
+  approvedByRequester: Boolean!
 }
 
 input UpdateRequestedTrackInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  userId: ID
+  trackId: ID
+  licenseType: LicenseType
+  approvedByRequester: Boolean
+  id: ID!
 }
 
 input CreateMusicalGenreInput {

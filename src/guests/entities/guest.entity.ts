@@ -7,20 +7,19 @@ import { Column, Entity, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from 't
 @Entity({ name: 'guest' })
 @ObjectType()
 export class Guest {
+  @PrimaryGeneratedColumn('uuid')
+  @Field(() => ID)
+  id: string;
 
-    @PrimaryGeneratedColumn('uuid')
-    @Field(() => ID)
-    id: string
+  @Column({ type: 'enum', enum: UserRole, default: UserRole.INVITADO })
+  @Field(() => UserRole)
+  role: UserRole;
 
-    @Column({ type: 'enum', enum: UserRole, default: UserRole.INVITADO })
-    @Field(() => UserRole)
-    role: UserRole
+  @ManyToOne(() => User, (user) => user.guests, { nullable: false })
+  @Field(() => User)
+  invited_by: User;
 
-    @ManyToOne(() => User, (user) => user.guests, { nullable: false })
-    @Field(() => User)
-    invited_by: User
-
-    @Field(() => [Playlist], { nullable: true })
-    @ManyToMany(() => Playlist, playlist => playlist.guests)
-    playlists?: Playlist[]
+  @ManyToMany(() => Playlist, (playlist) => playlist.guests, { nullable: true })
+  @Field(() => [Playlist], { nullable: true })
+  playlists?: Playlist[];
 }

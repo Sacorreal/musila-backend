@@ -1,4 +1,4 @@
-import { ObjectType, Field, ID } from '@nestjs/graphql';
+import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Guest } from 'src/guests/entities/guest.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { User } from 'src/users/entities/user.entity';
@@ -7,15 +7,15 @@ import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, JoinTab
 @Entity({ name: 'playlist' })
 @ObjectType()
 export class Playlist {
-
   @PrimaryGeneratedColumn('uuid')
   @Field(() => ID)
-  id: string
+  id: string;
 
   @Column({ type: 'varchar' })
   @Field()
-  title: string
+  title: string;
 
+  @ManyToOne(() => User, (user) => user.playlists)
   @Field(() => User)
   @JoinColumn()
   @ManyToOne(() => User, user => user.playlists, {
@@ -27,7 +27,10 @@ export class Playlist {
   @Field({ nullable: true })
   cover?: string
 
-  @Field(() => [Guest], { nullable: true })
+  @Field(() => [Guest], {
+    nullable: true,
+    description: 'usuarios invitados para hacer CRUD a la lista de reproducción '
+  })
   @ManyToMany(() => Guest, guest => guest.playlists, { cascade: true })
   @JoinTable({ name: 'playlist_guests' })
   guests?: Guest[]
@@ -37,17 +40,27 @@ export class Playlist {
   @JoinTable({ name: 'playlist_tracks' })
   tracks?: Track[]
 
-  @CreateDateColumn()
+  @CreateDateColumn({
+    name: 'created_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP'
+  })
   @Field()
   createdAt: Date
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({
+    name: 'update_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP'
+  })
   @Field()
   updatedAt: Date
 
-  @DeleteDateColumn({ nullable: true })
+  @DeleteDateColumn({
+    name: 'delete_at',
+    type: 'timestamp',
+    nullable: true
+  })
   @Field({ nullable: true })
   deletedAt?: Date
 }
-
-

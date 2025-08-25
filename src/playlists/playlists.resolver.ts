@@ -4,6 +4,7 @@ import { Playlist } from './entities/playlist.entity';
 import { CreatePlaylistInput } from './dto/create-playlist.input';
 import { UpdatePlaylistInput } from './dto/update-playlist.input';
 
+
 @Resolver(() => Playlist)
 export class PlaylistsResolver {
   constructor(private readonly playlistsService: PlaylistsService) { }
