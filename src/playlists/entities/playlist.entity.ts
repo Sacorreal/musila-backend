@@ -1,43 +1,72 @@
-import { ObjectType, Field, ID } from '@nestjs/graphql';
+import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Guest } from 'src/guests/entities/guest.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { User } from 'src/users/entities/user.entity';
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Column,
+  CreateDateColumn,
+  DeleteDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToMany,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity({ name: 'playlist' })
 @ObjectType()
 export class Playlist {
-
   @PrimaryGeneratedColumn('uuid')
   @Field(() => ID)
-  id: string
+  id: string;
 
   @Column({ type: 'varchar' })
   @Field()
-  title: string
+  title: string;
 
+  @ManyToOne(() => User, (user) => user.playlists)
   @Field(() => User)
-  @ManyToOne(() => User, user => user.playlists)
-  owner: User
+  owner: User;
 
-  @Column({ type: 'varchar' })
+  @Column({ type: 'varchar', nullable: true })
+  @Field(() => String, { nullable: true })
+  cover?: string;
+
+  @ManyToMany(() => Guest, (guest) => guest.playlists, { nullable: true })
+  @JoinColumn()
+  @Field(() => [Guest], {
+    nullable: true,
+    description:
+      'usuarios invitados para hacer CRUD a la lista de reproducción',
+  })
+  guests?: Guest[];
+
+  @ManyToMany(() => Track, (track) => track.playlists, { nullable: true })
+  @Field(() => [Track], { nullable: true })
+  tracks?: Track[];
+
+  @CreateDateColumn({
+    name: 'created_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
+  @Field(() => String)
+  createdAt: Date;
+
+  @UpdateDateColumn({
+    name: 'updated_at',
+    type: 'timestamp',
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   @Field()
-  cover?: string
+  updatedAt: Date;
 
-  guests: Guest
-  tracks: Track
-
-  @CreateDateColumn()
+  @DeleteDateColumn({
+    name: 'deleted_at',
+    type: 'timestamp',
+    nullable: true,
+  })
   @Field()
-  createdAt: Date
-
-  @UpdateDateColumn()
-  @Field()
-  updatedAt: Date
-
-  @DeleteDateColumn()
-  @Field()
-  deletedAt: Date
+  deletedAt?: Date;
 }
-
-

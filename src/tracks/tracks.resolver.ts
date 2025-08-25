@@ -1,8 +1,8 @@
-import { Resolver, Query, Mutation, Args, Int } from '@nestjs/graphql';
-import { TracksService } from './tracks.service';
-import { Track } from './entities/track.entity';
+import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
+import { Track } from './entities/track.entity';
+import { TracksService } from './tracks.service';
 
 @Resolver(() => Track)
 export class TracksResolver {
@@ -19,7 +19,7 @@ export class TracksResolver {
   }
 
   @Query(() => Track, { name: 'track' })
-  findOne(@Args('id', { type: () => Int }) id: number) {
+  findOne(@Args('id', { type: () => String }) id: string) {
     return this.tracksService.findOne(id);
   }
 
@@ -29,7 +29,7 @@ export class TracksResolver {
   }
 
   @Mutation(() => Track)
-  removeTrack(@Args('id', { type: () => Int }) id: number) {
+  removeTrack(@Args('id', { type: () => String }) id: string) {
     return this.tracksService.remove(id);
   }
 }

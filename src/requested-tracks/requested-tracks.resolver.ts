@@ -6,7 +6,9 @@ import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
 
 @Resolver(() => RequestedTrack)
 export class RequestedTracksResolver {
-  constructor(private readonly requestedTracksService: RequestedTracksService) {}
+  constructor(
+    private readonly requestedTracksService: RequestedTracksService,
+  ) {}
 
   @Mutation(() => RequestedTrack)
   createRequestedTrackResolver(@Args('createRequestedTrackInput') createRequestedTrackInput: CreateRequestedTrackInput) {

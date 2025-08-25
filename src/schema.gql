@@ -55,35 +55,19 @@ type Track {
   isAvailable: Boolean!
   authors: User!
   isGospel: Boolean!
+
+  """Listado de solicitudes de uso que ha recibido la cancion"""
+  requestedTrack: [RequestedTrack!]!
   createdAt: String!
   updatedAt: DateTime!
   deletedAt: DateTime!
 }
 
-type User {
-  id: ID!
-  name: String!
-  lastName: String!
-  email: String!
-  password: String!
-  countryCode: String
-  phone: String
-  typeCitizenID: String
-  citizenID: String
-  role: UserRole!
-  avatar: String
-  isVerified: Boolean!
-  biography: String
-  socialNetworks: [String!]
-  tracks: Track!
-  guests: [Guest!]
-  createdAt: String!
-  updatedAt: String!
-  deletedAt: String!
-}
-
+"""Solicitudes enviadas por el usuario para el uso de las canciones"""
 type RequestedTrack {
   id: ID!
+  requester: User!
+  track: Track!
   status: RequestsStatus!
   licenseType: LicenseType!
   createdAt: DateTime!
@@ -105,6 +89,29 @@ enum LicenseType {
   LICENCIA_TRADUCCION
   LICENCIA_REPRODUCCION
   LICENCIA_SINCRONIZACION
+}
+
+type User {
+  id: ID!
+  name: String!
+  lastName: String!
+  email: String!
+  password: String!
+  countryCode: String
+  phone: String
+  typeCitizenID: String
+  citizenID: String
+  role: UserRole!
+  avatar: String
+  isVerified: Boolean!
+  biography: String
+  socialNetworks: [String!]
+  tracks: Track!
+  guests: [Guest!]
+  requestSent: [RequestedTrack!]!
+  createdAt: String!
+  updatedAt: String!
+  deletedAt: String!
 }
 
 type Query {
@@ -134,9 +141,11 @@ type Mutation {
   createGuestResolver(createGuestInput: CreateGuestInput!): Guest!
   updateGuestResolver(updateGuestInput: UpdateGuestInput!): Guest!
   removeGuestResolver(id: ID!): Boolean!
-  createRequestedTrackResolver(createRequestedTrackInput: CreateRequestedTrackInput!): RequestedTrack!
-  updateRequestedTrackResolver(updateRequestedTrackInput: UpdateRequestedTrackInput!): RequestedTrack!
-  removeRequestedTrackResolver(id: ID!): RequestedTrack!
+
+  """Crear solicitud del uso de una cancion"""
+  createRequestedTrack(createRequestedTrackInput: CreateRequestedTrackInput!): RequestedTrack!
+  updateRequestedTrack(updateRequestedTrackInput: UpdateRequestedTrackInput!): RequestedTrack!
+  removeRequestedTrack(id: Int!): RequestedTrack!
   createMusicalGenreResolver(createMusicalGenreInput: CreateMusicalGenreInput!): MusicalGenre!
   updateMusicalGenreResolver(updateMusicalGenreInput: UpdateMusicalGenreInput!): MusicalGenre!
   removeMusicalGenreResolver(id: ID!): Boolean!

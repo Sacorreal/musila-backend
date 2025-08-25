@@ -1,18 +1,23 @@
-import { InputType, Field, ID } from '@nestjs/graphql';
+import { Field, ID, InputType } from '@nestjs/graphql';
+import { IsEnum, IsNotEmpty, IsUUID } from 'class-validator';
 import { LicenseType } from '../entities/license-type.enum';
 
 @InputType()
 export class CreateRequestedTrackInput {
-  
   @Field(() => ID)
-  userId: string
+  @IsUUID('4', { message: 'El requesterId debe ser un UUID v4 válido' })
+  @IsNotEmpty({ message: 'El requesterId es obligatorio' })
+  requesterId: string;
 
   @Field(() => ID)
-  trackId: string
+  @IsUUID('4', { message: 'El trackId debe ser un UUID v4 válido' })
+  @IsNotEmpty({ message: 'El trackId es obligatorio' })
+  trackId: string;
 
   @Field(() => LicenseType)
-  licenseType: LicenseType
-
-  @Field(() => Boolean)
-  approvedByRequester: boolean
+  @IsEnum(LicenseType, {
+    message:
+      'El licenseType debe ser un valor válido dentro del enum LicenseType',
+  })
+  licenseType: LicenseType;
 }
