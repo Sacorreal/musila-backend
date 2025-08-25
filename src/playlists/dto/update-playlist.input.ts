@@ -1,8 +1,10 @@
+import { IsUUID } from 'class-validator';
 import { CreatePlaylistInput } from './create-playlist.input';
-import { InputType, Field, Int, PartialType } from '@nestjs/graphql';
+import { InputType, Field, PartialType, ID } from '@nestjs/graphql';
 
 @InputType()
 export class UpdatePlaylistInput extends PartialType(CreatePlaylistInput) {
-  @Field(() => Int)
-  id: number;
+  @IsUUID()
+  @Field(() => ID)
+  id: string;
 }

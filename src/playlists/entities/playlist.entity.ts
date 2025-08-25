@@ -2,7 +2,7 @@ import { ObjectType, Field, ID } from '@nestjs/graphql';
 import { Guest } from 'src/guests/entities/guest.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { User } from 'src/users/entities/user.entity';
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity({ name: 'playlist' })
 @ObjectType()
@@ -17,15 +17,25 @@ export class Playlist {
   title: string
 
   @Field(() => User)
-  @ManyToOne(() => User, user => user.playlists)
+  @JoinColumn()
+  @ManyToOne(() => User, user => user.playlists, {
+    onDelete: 'CASCADE' // Borra el playlists al borrar el user
+  })
   owner: User
 
-  @Column({ type: 'varchar' })
-  @Field()
+  @Column({ type: 'varchar', nullable: true })
+  @Field({ nullable: true })
   cover?: string
 
-  guests: Guest
-  tracks: Track
+  @Field(() => [Guest], { nullable: true })
+  @ManyToMany(() => Guest, guest => guest.playlists, { cascade: true })
+  @JoinTable({ name: 'playlist_guests' })
+  guests?: Guest[]
+
+  @Field(() => [Track], { nullable: true })
+  @ManyToMany(() => Track, track => track.playlists, { cascade: true })
+  @JoinTable({ name: 'playlist_tracks' })
+  tracks?: Track[]
 
   @CreateDateColumn()
   @Field()
@@ -35,9 +45,9 @@ export class Playlist {
   @Field()
   updatedAt: Date
 
-  @DeleteDateColumn()
-  @Field()
-  deletedAt: Date
+  @DeleteDateColumn({ nullable: true })
+  @Field({ nullable: true })
+  deletedAt?: Date
 }
 
 

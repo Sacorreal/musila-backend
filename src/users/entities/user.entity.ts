@@ -85,6 +85,7 @@ export class User {
   guests?: Guest[];
 
   @OneToMany(() => Playlist, (playlist) => playlist.owner)
+  @Field(() => [Playlist])
   playlists: Playlist[];
 
   @CreateDateColumn({
