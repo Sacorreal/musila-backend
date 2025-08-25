@@ -1,7 +1,16 @@
-import { InputType, Int, Field } from '@nestjs/graphql';
+import { Field, InputType } from '@nestjs/graphql';
+import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 @InputType()
 export class CreateMusicalGenreInput {
-  @Field(() => Int, { description: 'Example field (placeholder)' })
-  exampleField: number;
+
+  @IsString()
+  @IsNotEmpty()
+  @Field()
+  genre: string
+
+  @IsArray()
+  @IsOptional()
+  @Field(() => [String], { nullable: true })
+  subGenre?: string[]
 }

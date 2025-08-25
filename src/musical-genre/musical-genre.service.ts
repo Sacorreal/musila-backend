@@ -1,26 +1,44 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateMusicalGenreInput } from './dto/create-musical-genre.input';
 import { UpdateMusicalGenreInput } from './dto/update-musical-genre.input';
+import { InjectRepository } from '@nestjs/typeorm';
+import { MusicalGenre } from './entities/musical-genre.entity';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class MusicalGenreService {
-  create(createMusicalGenreInput: CreateMusicalGenreInput) {
-    return 'This action adds a new musicalGenre';
+  constructor(@InjectRepository(MusicalGenre) private readonly musicalGenreRepository: Repository<MusicalGenre>) { }
+  async createMusicalGenreService(createMusicalGenreInput: CreateMusicalGenreInput) {
+    return await this.musicalGenreRepository.save(
+      this.musicalGenreRepository.create(createMusicalGenreInput)
+    )
   }
 
-  findAll() {
-    return `This action returns all musicalGenre`;
+  async findAllMusicalGenreService() {
+    return await this.musicalGenreRepository.find()
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} musicalGenre`;
+  async findOneMusicalGenreService(id: string) {
+    return await this.musicalGenreRepository.findOne({ where: { id } })
   }
 
-  update(id: number, updateMusicalGenreInput: UpdateMusicalGenreInput) {
-    return `This action updates a #${id} musicalGenre`;
+  async updateMusicalGenreService(id: string, updateMusicalGenreInput: UpdateMusicalGenreInput) {
+    const existingGenre = await this.musicalGenreRepository.findOne({ where: { id } })
+    if (!existingGenre) throw new NotFoundException('El genero no existe')
+
+    Object.assign(existingGenre, updateMusicalGenreInput)
+
+    return await this.musicalGenreRepository.save(existingGenre)
+
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} musicalGenre`;
+  async removeMusicalGenreService(id: string) {
+    const genreToRemove = await this.musicalGenreRepository.findOne({ where: { id } })
+    if (!genreToRemove) throw new NotFoundException('El genero no existe')
+
+    await this.musicalGenreRepository.remove(genreToRemove)
+
+    return true
+      
   }
 }

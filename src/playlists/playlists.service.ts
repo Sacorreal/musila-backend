@@ -12,15 +12,15 @@ export class PlaylistsService {
     return `This action returns all playlists`;
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} playlist`;
   }
 
-  update(id: number, updatePlaylistInput: UpdatePlaylistInput) {
+  update(id: string, updatePlaylistInput: UpdatePlaylistInput) {
     return `This action updates a #${id} playlist`;
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return `This action removes a #${id} playlist`;
   }
 }

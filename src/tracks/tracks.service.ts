@@ -12,15 +12,15 @@ export class TracksService {
     return `This action returns all tracks`;
   }
 
-  findOne(id: number) {
+  findOne(id: string) {
     return `This action returns a #${id} track`;
   }
 
-  update(id: number, updateTrackInput: UpdateTrackInput) {
+  update(id: string, updateTrackInput: UpdateTrackInput) {
     return `This action updates a #${id} track`;
   }
 
-  remove(id: number) {
+  remove(id: string) {
     return `This action removes a #${id} track`;
   }
 }

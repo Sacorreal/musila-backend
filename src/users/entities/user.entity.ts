@@ -1,6 +1,7 @@
 import { Field, ID, ObjectType } from '@nestjs/graphql';
 import { Guest } from 'src/guests/entities/guest.entity';
 import { Playlist } from 'src/playlists/entities/playlist.entity';
+import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import {
   Column,
@@ -56,13 +57,14 @@ export class User {
   @Column({
     type: 'enum',
     enum: UserRole,
+    default: UserRole.INVITADO
   })
   @Field(() => UserRole)
   role: UserRole;
 
   @Column('varchar', { name: 'avatar', nullable: true })
   @Field({ nullable: true })
-  avatar: string;
+  avatar?: string;
 
   @Column('boolean', { default: false, name: 'is_verified' })
   @Field()
@@ -76,16 +78,28 @@ export class User {
   @Field(() => [String], { nullable: true })
   socialNetworks?: Record<string, string>;
 
-  @ManyToMany(() => Track, (track) => track.authors)
-  @Field(() => Track)
-  tracks: Track[];
+  @ManyToMany(() => Track, (track) => track.authors, { nullable: true })
+  @Field(() => Track, { nullable: true })
+  tracks?: Track[];
 
-  @OneToMany(() => Guest, (guest) => guest.invited_by)
+  @OneToMany(() => Guest, (guest) => guest.invited_by, { nullable: true })
   @Field(() => [Guest], { nullable: true })
   guests?: Guest[];
 
-  @OneToMany(() => Playlist, (playlist) => playlist.owner)
-  playlists: Playlist[];
+  @OneToMany(() => Playlist, (playlist) => playlist.owner, {
+    nullable: true,
+    lazy: true,
+  })
+  @Field(() => [Playlist], { nullable: true })
+  playlists?: Playlist[];
+
+  @OneToMany(
+    () => RequestedTrack,
+    (requestedTrack) => requestedTrack.requester,
+    { nullable: true, lazy: true },
+  )
+  @Field(() => [RequestedTrack], { nullable: true })
+  requestSent?: RequestedTrack[];
 
   @CreateDateColumn({
     name: 'created_at',
@@ -98,7 +112,7 @@ export class User {
   @UpdateDateColumn({
     name: 'updated_at',
     type: 'timestamp',
-    default: () => 'CURRENT_TIMESTAMP', //TODO: Preguntar sobre si esta propiedad va en este decorador tambien o no, ya que en el DBM no esta
+    default: () => 'CURRENT_TIMESTAMP',
   })
   @Field(() => String)
   updatedAt: Date;
@@ -108,6 +122,6 @@ export class User {
     type: 'timestamp',
     nullable: true,
   })
-  @Field(() => String)
-  deletedAt: Date;
+  @Field(() => String, { nullable: true })
+  deletedAt?: Date;
 }
