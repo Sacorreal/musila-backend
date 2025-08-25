@@ -2,37 +2,6 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type Guest {
-  id: ID!
-  role: UserRole!
-  invited_by: User!
-}
-
-"""Roles de los usuarios"""
-enum UserRole {
-  ADMIN
-  AUTOR
-  INTERPRETE
-  CANTAUTOR
-  INVITADO
-  EDITOR
-}
-
-type Playlist {
-  id: ID!
-  title: String!
-  owner: User!
-  cover: String!
-  createdAt: DateTime!
-  updatedAt: DateTime!
-  deletedAt: DateTime!
-}
-
-"""
-A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
-"""
-scalar DateTime
-
 type MusicalGenre {
   id: ID!
   genre: String!
@@ -40,6 +9,11 @@ type MusicalGenre {
   tracks: [Track!]!
   createdAt: DateTime!
 }
+
+"""
+A date-time string at UTC, such as 2019-12-03T09:54:33Z, compliant with the date-time format.
+"""
+scalar DateTime
 
 type Track {
   id: ID!
@@ -61,6 +35,58 @@ type Track {
   createdAt: String!
   updatedAt: DateTime!
   deletedAt: DateTime!
+}
+
+type Playlist {
+  id: ID!
+  title: String!
+  owner: User!
+  cover: String
+  guests: [Guest!]
+  tracks: [Track!]
+  createdAt: DateTime!
+  updatedAt: DateTime!
+  deletedAt: DateTime
+}
+
+type Guest {
+  id: ID!
+  role: UserRole!
+  invited_by: User!
+  playlists: [Playlist!]
+}
+
+"""Roles de los usuarios"""
+enum UserRole {
+  ADMIN
+  AUTOR
+  INTERPRETE
+  CANTAUTOR
+  INVITADO
+  EDITOR
+}
+
+type User {
+  id: ID!
+  name: String!
+  lastName: String!
+  email: String!
+  password: String!
+  countryCode: String
+  phone: String
+  typeCitizenID: String
+  citizenID: String
+  role: UserRole!
+  avatar: String
+  isVerified: Boolean!
+  biography: String
+  socialNetworks: [String!]
+  tracks: Track!
+  guests: [Guest!]
+  playlists: [Playlist!]!
+  createdAt: String!
+  updatedAt: String!
+  deletedAt: String!
 }
 
 """Solicitudes enviadas por el usuario para el uso de las canciones"""
@@ -120,7 +146,7 @@ type Query {
   tracks: [Track!]!
   track(id: Int!): Track!
   playlists: [Playlist!]!
-  playlist(id: Int!): Playlist!
+  playlist(id: ID!): Playlist!
   guests: [Guest!]!
   guest(id: ID!): Guest!
   requestedTracks: [RequestedTrack!]!
@@ -130,14 +156,15 @@ type Query {
 }
 
 type Mutation {
+  createUser(createUserInput: CreateUserInput!): User!
   updateUser(updateUserInput: UpdateUserInput!): User!
   removeUser(id: ID!): User!
   createTrack(createTrackInput: CreateTrackInput!): Track!
   updateTrack(updateTrackInput: UpdateTrackInput!): Track!
   removeTrack(id: Int!): Track!
-  createPlaylist(createPlaylistInput: CreatePlaylistInput!): Playlist!
-  updatePlaylist(updatePlaylistInput: UpdatePlaylistInput!): Playlist!
-  removePlaylist(id: Int!): Playlist!
+  createPlaylistsResolver(createPlaylistInput: CreatePlaylistInput!): Playlist!
+  updatePlaylistsResolver(updatePlaylistInput: UpdatePlaylistInput!): Playlist!
+  removePlaylistsResolver(id: ID!): Playlist!
   createGuestResolver(createGuestInput: CreateGuestInput!): Guest!
   updateGuestResolver(updateGuestInput: UpdateGuestInput!): Guest!
   removeGuestResolver(id: ID!): Boolean!
@@ -149,6 +176,18 @@ type Mutation {
   createMusicalGenreResolver(createMusicalGenreInput: CreateMusicalGenreInput!): MusicalGenre!
   updateMusicalGenreResolver(updateMusicalGenreInput: UpdateMusicalGenreInput!): MusicalGenre!
   removeMusicalGenreResolver(id: ID!): Boolean!
+}
+
+input CreateUserInput {
+  name: String!
+  lastName: String!
+  email: String!
+  password: String!
+  countryCode: String
+  phone: String
+  typeCitizenID: String
+  citizenID: String
+  avatar: String
 }
 
 input UpdateUserInput {
@@ -176,14 +215,20 @@ input UpdateTrackInput {
 }
 
 input CreatePlaylistInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  title: String!
+  owner: ID!
+  cover: String
+  guestIds: [ID!]
+  trackIds: [ID!]
 }
 
 input UpdatePlaylistInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  title: String
+  owner: ID
+  cover: String
+  guestIds: [ID!]
+  trackIds: [ID!]
+  id: ID!
 }
 
 input CreateGuestInput {
