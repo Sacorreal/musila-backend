@@ -58,7 +58,8 @@ export class CreateUserInput {
 
   @Field(() => UserRole)
   @IsEnum(UserRole, { message: 'El rol debe ser un valor válido de UserRole' })
-  role: UserRole;
+  @IsOptional()
+  role?: UserRole;
 
   @Field({ nullable: true })
   @IsOptional()

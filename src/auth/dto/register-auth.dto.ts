@@ -1,4 +1,5 @@
 import { IsEmail, IsOptional, IsString, MinLength } from "class-validator"
+import { UserRole } from "src/users/entities/user-role.enum"
 
 
 
@@ -38,4 +39,8 @@ export class RegisterAuthDto {
     @IsString()
     @IsOptional()
     avatar?: string
+
+    @IsOptional()
+    @IsString()
+    role?: UserRole
 }

@@ -57,6 +57,7 @@ export class User {
   @Column({
     type: 'enum',
     enum: UserRole,
+    default: UserRole.INVITADO
   })
   @Field(() => UserRole)
   role: UserRole;
