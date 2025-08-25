@@ -1,8 +1,8 @@
-import { Args, Mutation, Query, Resolver } from '@nestjs/graphql';
+import { Resolver, Query, Mutation, Args, ID } from '@nestjs/graphql';
+import { RequestedTracksService } from './requested-tracks.service';
+import { RequestedTrack } from './entities/requested-track.entity';
 import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
 import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
-import { RequestedTrack } from './entities/requested-track.entity';
-import { RequestedTracksService } from './requested-tracks.service';
 
 @Resolver(() => RequestedTrack)
 export class RequestedTracksResolver {
@@ -10,39 +10,28 @@ export class RequestedTracksResolver {
     private readonly requestedTracksService: RequestedTracksService,
   ) {}
 
-  @Mutation(() => RequestedTrack, {
-    description: 'Crear solicitud del uso de una cancion',
-  })
-  createRequestedTrack(
-    @Args('createRequestedTrackInput')
-    createRequestedTrackInput: CreateRequestedTrackInput,
-  ) {
-    return this.requestedTracksService.create(createRequestedTrackInput);
+  @Mutation(() => RequestedTrack)
+  createRequestedTrackResolver(@Args('createRequestedTrackInput') createRequestedTrackInput: CreateRequestedTrackInput) {
+    return this.requestedTracksService.createRequestedTracksService(createRequestedTrackInput);
   }
 
   @Query(() => [RequestedTrack], { name: 'requestedTracks' })
-  findAll() {
-    return this.requestedTracksService.findAll();
+  findAllRequestedTrackResolver() {
+    return this.requestedTracksService.findAllRequestedTracksService();
   }
 
   @Query(() => RequestedTrack, { name: 'requestedTrack' })
-  findOne(@Args('id', { type: () => String }) id: string) {
-    return this.requestedTracksService.findOne(id);
+  findOneRequestedTrackResolver(@Args('id', { type: () => ID }) id: string) {
+    return this.requestedTracksService.findOneRequestedTracksService(id);
   }
 
   @Mutation(() => RequestedTrack)
-  updateRequestedTrack(
-    @Args('updateRequestedTrackInput')
-    updateRequestedTrackInput: UpdateRequestedTrackInput,
-  ) {
-    return this.requestedTracksService.update(
-      updateRequestedTrackInput.id,
-      updateRequestedTrackInput,
-    );
+  updateRequestedTrackResolver(@Args('updateRequestedTrackInput') updateRequestedTrackInput: UpdateRequestedTrackInput) {
+    return this.requestedTracksService.updateRequestedTracksService(updateRequestedTrackInput.id, updateRequestedTrackInput);
   }
 
   @Mutation(() => RequestedTrack)
-  removeRequestedTrack(@Args('id', { type: () => String }) id: string) {
-    return this.requestedTracksService.remove(id);
+  removeRequestedTrackResolver(@Args('id', { type: () => ID }) id: string) {
+    return this.requestedTracksService.removeRequestedTracksService(id);
   }
 }

@@ -124,7 +124,7 @@ type Query {
   guests: [Guest!]!
   guest(id: ID!): Guest!
   requestedTracks: [RequestedTrack!]!
-  requestedTrack(id: Int!): RequestedTrack!
+  requestedTrack(id: ID!): RequestedTrack!
   musicalGenres: [MusicalGenre!]!
   musicalGenre(id: ID!): MusicalGenre!
 }
@@ -198,14 +198,18 @@ input UpdateGuestInput {
 }
 
 input CreateRequestedTrackInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  userId: ID!
+  trackId: ID!
+  licenseType: LicenseType!
+  approvedByRequester: Boolean!
 }
 
 input UpdateRequestedTrackInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  userId: ID
+  trackId: ID
+  licenseType: LicenseType
+  approvedByRequester: Boolean
+  id: ID!
 }
 
 input CreateMusicalGenreInput {
