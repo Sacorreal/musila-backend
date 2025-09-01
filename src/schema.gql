@@ -63,7 +63,6 @@ type Track {
   subGenre: String
   cover: String
   url: String!
-  year: Float!
   language: String!
   lyric: String!
   externalsIds: [String!]
@@ -86,12 +85,12 @@ type Playlist {
   owner: User!
   cover: String
 
-  """usuarios invitados para hacer CRUD a la lista de reproducción"""
+  """usuarios invitados para hacer CRUD a la lista de reproducción """
   guests: [Guest!]
   tracks: [Track!]
-  createdAt: String!
+  createdAt: DateTime!
   updatedAt: DateTime!
-  deletedAt: DateTime!
+  deletedAt: DateTime
 }
 
 type Guest {
@@ -141,7 +140,7 @@ type Query {
   tracks: [Track!]!
   track(id: String!): Track!
   playlists: [Playlist!]!
-  playlist(id: String!): Playlist!
+  playlist(id: ID!): Playlist!
   guests: [Guest!]!
   guest(id: ID!): Guest!
   requestedTracks: [RequestedTrack!]!
@@ -157,9 +156,9 @@ type Mutation {
   createTrack(createTrackInput: CreateTrackInput!): Track!
   updateTrack(updateTrackInput: UpdateTrackInput!): Track!
   removeTrack(id: String!): Track!
-  createPlaylist(createPlaylistInput: CreatePlaylistInput!): Playlist!
-  updatePlaylist(updatePlaylistInput: UpdatePlaylistInput!): Playlist!
-  removePlaylist(id: String!): Playlist!
+  createPlaylistsResolver(createPlaylistInput: CreatePlaylistInput!): Playlist!
+  updatePlaylistsResolver(updatePlaylistInput: UpdatePlaylistInput!): Playlist!
+  removePlaylistsResolver(id: ID!): Playlist!
   createGuestResolver(createGuestInput: CreateGuestInput!): Guest!
   updateGuestResolver(updateGuestInput: UpdateGuestInput!): Guest!
   removeGuestResolver(id: ID!): Boolean!
@@ -222,19 +221,19 @@ input UpdateTrackInput {
 
 input CreatePlaylistInput {
   title: String!
-  ownerId: ID!
+  owner: ID!
   cover: String
-  guestsIds: [ID!]
-  tracksIds: [ID!]
+  guestIds: [ID!]
+  trackIds: [ID!]
 }
 
 input UpdatePlaylistInput {
   title: String
-  ownerId: ID
+  owner: ID
   cover: String
-  guestsIds: [ID!]
-  tracksIds: [ID!]
-  id: String!
+  guestIds: [ID!]
+  trackIds: [ID!]
+  id: ID!
 }
 
 input CreateGuestInput {

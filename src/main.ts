@@ -1,5 +1,6 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { graphqlUploadExpress } from 'graphql-upload-ts';
 import { AppModule } from './app.module';
 import { UsersSeed } from './seeds/users/users.seed';
 import { PlaylistsSeed } from './seeds/playlists/playlists.seed';
@@ -39,6 +40,11 @@ async function bootstrap() {
 
 
 
+  app.use(
+    graphqlUploadExpress({
+      maxFieldSize: 10_000_000,
+    }),
+  );
   await app.listen(process.env.PORT || 3000);
 
 }
