@@ -2,28 +2,13 @@
 # THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
 # ------------------------------------------------------
 
-type Guest {
-  id: ID!
-  role: UserRole!
-  invited_by: User!
-}
-
-"""Roles de los usuarios"""
-enum UserRole {
-  ADMIN
-  AUTOR
-  INTERPRETE
-  CANTAUTOR
-  INVITADO
-  EDITOR
-}
-
-type Playlist {
+"""Registros de propiedad intelectual que posee cada cancion"""
+type IntellectualProperty {
   id: ID!
   title: String!
-  owner: User!
-  cover: String!
-  createdAt: DateTime!
+  track: Track!
+  documentUrl: String!
+  createdAt: String!
   updatedAt: DateTime!
   deletedAt: DateTime!
 }
@@ -39,26 +24,6 @@ type MusicalGenre {
   subGenre: [String!]
   tracks: [Track!]!
   createdAt: DateTime!
-}
-
-type Track {
-  id: ID!
-  title: String!
-  subGenre: String
-  cover: String
-  url: String!
-  language: String!
-  lyric: String!
-  externalsIds: [String!]!
-  splitSheet: String!
-  certificatesDNDA: [String!]!
-  isAvailable: Boolean!
-  authors: User!
-  isGospel: Boolean!
-
-  """Listado de solicitudes de uso que ha recibido la cancion"""
-  requestedTrack: [RequestedTrack!]!
-  createdAt: String!
   updatedAt: DateTime!
   deletedAt: DateTime!
 }
@@ -70,10 +35,10 @@ type RequestedTrack {
   track: Track!
   status: RequestsStatus!
   licenseType: LicenseType!
-  createdAt: DateTime!
+  approvedByRequester: Boolean!
+  createdAt: String!
   updatedAt: DateTime!
   deletedAt: DateTime!
-  approvedByRequester: Boolean!
 }
 
 """Estado de las peticiones"""
@@ -91,6 +56,61 @@ enum LicenseType {
   LICENCIA_SINCRONIZACION
 }
 
+type Track {
+  id: ID!
+  title: String!
+  genre: MusicalGenre!
+  subGenre: String
+  cover: String
+  url: String!
+  year: Float!
+  language: String!
+  lyric: String!
+  externalsIds: [String!]
+  intellectualProperties: [IntellectualProperty!]!
+  isAvailable: Boolean!
+  authors: User!
+  playlists: Playlist
+  isGospel: Boolean!
+
+  """Listado de solicitudes de uso que ha recibido la cancion"""
+  requestedTrack: [RequestedTrack!]
+  createdAt: String!
+  updatedAt: DateTime!
+  deletedAt: DateTime!
+}
+
+type Playlist {
+  id: ID!
+  title: String!
+  owner: User!
+  cover: String
+
+  """usuarios invitados para hacer CRUD a la lista de reproducción"""
+  guests: [Guest!]
+  tracks: [Track!]
+  createdAt: String!
+  updatedAt: DateTime!
+  deletedAt: DateTime!
+}
+
+type Guest {
+  id: ID!
+  role: UserRole!
+  invited_by: User!
+  playlists: [Playlist!]
+}
+
+"""Roles de los usuarios"""
+enum UserRole {
+  ADMIN
+  AUTOR
+  INTERPRETE
+  CANTAUTOR
+  INVITADO
+  EDITOR
+}
+
 type User {
   id: ID!
   name: String!
@@ -106,27 +126,29 @@ type User {
   isVerified: Boolean!
   biography: String
   socialNetworks: [String!]
-  tracks: Track!
+  tracks: Track
   guests: [Guest!]
-  requestSent: [RequestedTrack!]!
+  playlists: [Playlist!]
+  requestSent: [RequestedTrack!]
   createdAt: String!
   updatedAt: String!
-  deletedAt: String!
+  deletedAt: String
 }
 
 type Query {
   users: [User!]!
   user(id: ID!): User!
   tracks: [Track!]!
-  track(id: Int!): Track!
+  track(id: String!): Track!
   playlists: [Playlist!]!
-  playlist(id: Int!): Playlist!
+  playlist(id: String!): Playlist!
   guests: [Guest!]!
   guest(id: ID!): Guest!
   requestedTracks: [RequestedTrack!]!
   requestedTrack(id: ID!): RequestedTrack!
   musicalGenres: [MusicalGenre!]!
   musicalGenre(id: ID!): MusicalGenre!
+  intellectualProperty(id: String!): IntellectualProperty!
 }
 
 type Mutation {
@@ -134,21 +156,22 @@ type Mutation {
   removeUser(id: ID!): User!
   createTrack(createTrackInput: CreateTrackInput!): Track!
   updateTrack(updateTrackInput: UpdateTrackInput!): Track!
-  removeTrack(id: Int!): Track!
+  removeTrack(id: String!): Track!
   createPlaylist(createPlaylistInput: CreatePlaylistInput!): Playlist!
   updatePlaylist(updatePlaylistInput: UpdatePlaylistInput!): Playlist!
-  removePlaylist(id: Int!): Playlist!
+  removePlaylist(id: String!): Playlist!
   createGuestResolver(createGuestInput: CreateGuestInput!): Guest!
   updateGuestResolver(updateGuestInput: UpdateGuestInput!): Guest!
   removeGuestResolver(id: ID!): Boolean!
-
-  """Crear solicitud del uso de una cancion"""
-  createRequestedTrack(createRequestedTrackInput: CreateRequestedTrackInput!): RequestedTrack!
-  updateRequestedTrack(updateRequestedTrackInput: UpdateRequestedTrackInput!): RequestedTrack!
-  removeRequestedTrack(id: Int!): RequestedTrack!
+  createRequestedTrackResolver(createRequestedTrackInput: CreateRequestedTrackInput!): RequestedTrack!
+  updateRequestedTrackResolver(updateRequestedTrackInput: UpdateRequestedTrackInput!): RequestedTrack!
+  removeRequestedTrackResolver(id: ID!): RequestedTrack!
   createMusicalGenreResolver(createMusicalGenreInput: CreateMusicalGenreInput!): MusicalGenre!
   updateMusicalGenreResolver(updateMusicalGenreInput: UpdateMusicalGenreInput!): MusicalGenre!
   removeMusicalGenreResolver(id: ID!): Boolean!
+  createIntellectualProperty(createIntellectualPropertyInput: CreateIntellectualPropertyInput!): IntellectualProperty!
+  updateIntellectualProperty(updateIntellectualPropertyInput: UpdateIntellectualPropertyInput!): IntellectualProperty!
+  removeIntellectualProperty(id: String!): IntellectualProperty!
 }
 
 input UpdateUserInput {
@@ -160,30 +183,58 @@ input UpdateUserInput {
   phone: String
   typeCitizenID: String
   citizenID: String
+  role: UserRole
   avatar: String
+  isVerified: Boolean
+  biography: String
+  socialNetworks: [String!]
   id: ID!
 }
 
 input CreateTrackInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  title: String!
+  genreId: ID!
+  subGenre: String
+  cover: String
+  url: String!
+  language: String!
+  lyric: String!
+  externalsIds: [String!]
+  authorsIds: [ID!]!
+  isAvailable: Boolean
+  isGospel: Boolean
 }
 
 input UpdateTrackInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  title: String
+  genreId: ID
+  subGenre: String
+  cover: String
+  url: String
+  language: String
+  lyric: String
+  externalsIds: [String!]
+  authorsIds: [ID!]
+  isAvailable: Boolean
+  isGospel: Boolean
+  id: ID!
 }
 
 input CreatePlaylistInput {
-  """Example field (placeholder)"""
-  exampleField: Int!
+  title: String!
+  ownerId: ID!
+  cover: String
+  guestsIds: [ID!]
+  tracksIds: [ID!]
 }
 
 input UpdatePlaylistInput {
-  """Example field (placeholder)"""
-  exampleField: Int
-  id: Int!
+  title: String
+  ownerId: ID
+  cover: String
+  guestsIds: [ID!]
+  tracksIds: [ID!]
+  id: String!
 }
 
 input CreateGuestInput {
@@ -198,17 +249,15 @@ input UpdateGuestInput {
 }
 
 input CreateRequestedTrackInput {
-  userId: ID!
+  requesterId: ID!
   trackId: ID!
   licenseType: LicenseType!
-  approvedByRequester: Boolean!
 }
 
 input UpdateRequestedTrackInput {
-  userId: ID
+  requesterId: ID
   trackId: ID
   licenseType: LicenseType
-  approvedByRequester: Boolean
   id: ID!
 }
 
@@ -220,5 +269,18 @@ input CreateMusicalGenreInput {
 input UpdateMusicalGenreInput {
   genre: String
   subGenre: [String!]
+  id: ID!
+}
+
+input CreateIntellectualPropertyInput {
+  title: String!
+  trackId: ID!
+  documentUrl: String!
+}
+
+input UpdateIntellectualPropertyInput {
+  title: String
+  trackId: ID
+  documentUrl: String
   id: ID!
 }
