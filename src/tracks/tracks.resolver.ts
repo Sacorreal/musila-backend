@@ -9,27 +9,27 @@ export class TracksResolver {
   constructor(private readonly tracksService: TracksService) {}
 
   @Mutation(() => Track)
-  createTrack(@Args('createTrackInput') createTrackInput: CreateTrackInput) {
-    return this.tracksService.create(createTrackInput);
+  createTrackResolver(@Args('createTrackInput') createTrackInput: CreateTrackInput) {
+    return this.tracksService.createTrackService(createTrackInput);
   }
 
   @Query(() => [Track], { name: 'tracks' })
-  findAll() {
-    return this.tracksService.findAll();
+  findAllTracksResolver() {
+    return this.tracksService.findAllTracksService();
   }
 
   @Query(() => Track, { name: 'track' })
-  findOne(@Args('id', { type: () => String }) id: string) {
-    return this.tracksService.findOne(id);
+  findOneTrackResolver(@Args('id', { type: () => String }) id: string) {
+    return this.tracksService.findOneTrackService(id);
   }
 
   @Mutation(() => Track)
-  updateTrack(@Args('updateTrackInput') updateTrackInput: UpdateTrackInput) {
-    return this.tracksService.update(updateTrackInput.id, updateTrackInput);
+  updateTrackResolver(@Args('updateTrackInput') updateTrackInput: UpdateTrackInput) {
+    return this.tracksService.updateTrackService(updateTrackInput.id, updateTrackInput);
   }
 
   @Mutation(() => Track)
-  removeTrack(@Args('id', { type: () => String }) id: string) {
-    return this.tracksService.remove(id);
+  removeTrackResolver(@Args('id', { type: () => String }) id: string) {
+    return this.tracksService.removeTrackService(id);
   }
 }
