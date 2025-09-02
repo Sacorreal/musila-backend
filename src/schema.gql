@@ -143,6 +143,7 @@ type User {
 type Query {
   users: [User!]!
   user(id: ID!): User!
+  userRoles: [UserRole!]!
   tracks: [Track!]!
   track(id: String!): Track!
   playlists: [Playlist!]!

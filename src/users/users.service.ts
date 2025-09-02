@@ -4,6 +4,7 @@ import { UpdateUserInput } from './dto/update-user.input';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
 import { Repository } from 'typeorm';
+import { UserRole } from './entities/user-role.enum';
 
 @Injectable()
 export class UsersService {
@@ -49,5 +50,9 @@ export class UsersService {
       where: { email },
       select: ['id', 'email', 'password'],
     })
+  }
+
+  getUserRolesService(){
+    return Object.values(UserRole)
   }
 }
