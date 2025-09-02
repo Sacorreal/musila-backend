@@ -10,11 +10,12 @@ import { UsersSeed } from "./users/users.seed";
 import { PlaylistsSeed } from "./playlists/playlists.seed";
 import { TracksSeed } from "./tracks/tracks.seed";
 import { MusicalGenreSeed } from "./musical-genre.ts/musical-genre.seed";
+import { SeedRunnerService } from "./seed-runner.service";
 
 
 @Module({
     imports: [TypeOrmModule.forFeature([User, Track, Guest, Playlist, RequestedTrack, MusicalGenre])],
-    providers: [UsersSeed, PlaylistsSeed, TracksSeed, MusicalGenreSeed],
+    providers: [UsersSeed, PlaylistsSeed, TracksSeed, MusicalGenreSeed, SeedRunnerService],
     exports: [UsersSeed, PlaylistsSeed, TracksSeed, MusicalGenreSeed]
 })
 
