@@ -3,11 +3,13 @@ import {
   IsArray,
   IsBoolean,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   IsUrl,
   IsUUID,
 } from 'class-validator';
+import { ExternalIdInput } from './external-id.input';
 
 @InputType()
 export class CreateTrackInput {
@@ -44,14 +46,19 @@ export class CreateTrackInput {
   language: string;
 
   @Field()
+  @IsNotEmpty({ message: 'El año es obligatorio' })
+  @IsNumber({}, { message: 'El año debe ser un número' })
+  year: number
+
+  @Field()
   @IsString({ message: 'La letra debe ser un texto válido' })
   @IsNotEmpty({ message: 'La letra es obligatoria' })
   lyric: string;
 
-  @Field(() => [String], { nullable: true })
+  @Field(() => [ExternalIdInput], { nullable: true })
   @IsOptional()
   @IsArray({ message: 'externalsIds debe ser un arreglo de strings' })
-  externalsIds?: string[];
+  externalsIds?: ExternalIdInput[];
 
   @Field(() => [ID])
   @IsArray({ message: 'authorsIds debe ser un arreglo de UUIDs' })
