@@ -56,6 +56,11 @@ enum LicenseType {
   LICENCIA_SINCRONIZACION
 }
 
+type ExternalId {
+  type: String!
+  value: String!
+}
+
 type Track {
   id: ID!
   title: String!
@@ -63,9 +68,10 @@ type Track {
   subGenre: String
   cover: String
   url: String!
+  year: Float!
   language: String!
   lyric: String!
-  externalsIds: [String!]
+  externalsIds: [ExternalId!]
   intellectualProperties: [IntellectualProperty!]!
   isAvailable: Boolean!
   authors: User!
@@ -76,7 +82,7 @@ type Track {
   requestedTrack: [RequestedTrack!]
   createdAt: String!
   updatedAt: DateTime!
-  deletedAt: DateTime!
+  deletedAt: DateTime
 }
 
 type Playlist {
@@ -153,9 +159,9 @@ type Query {
 type Mutation {
   updateUser(updateUserInput: UpdateUserInput!): User!
   removeUser(id: ID!): User!
-  createTrack(createTrackInput: CreateTrackInput!): Track!
-  updateTrack(updateTrackInput: UpdateTrackInput!): Track!
-  removeTrack(id: String!): Track!
+  createTrackResolver(createTrackInput: CreateTrackInput!): Track!
+  updateTrackResolver(updateTrackInput: UpdateTrackInput!): Track!
+  removeTrackResolver(id: String!): Track!
   createPlaylistsResolver(createPlaylistInput: CreatePlaylistInput!): Playlist!
   updatePlaylistsResolver(updatePlaylistInput: UpdatePlaylistInput!): Playlist!
   removePlaylistsResolver(id: ID!): Playlist!
@@ -197,11 +203,17 @@ input CreateTrackInput {
   cover: String
   url: String!
   language: String!
+  year: Float!
   lyric: String!
-  externalsIds: [String!]
+  externalsIds: [ExternalIdInput!]
   authorsIds: [ID!]!
   isAvailable: Boolean
   isGospel: Boolean
+}
+
+input ExternalIdInput {
+  type: String!
+  value: String!
 }
 
 input UpdateTrackInput {
@@ -211,8 +223,9 @@ input UpdateTrackInput {
   cover: String
   url: String
   language: String
+  year: Float
   lyric: String
-  externalsIds: [String!]
+  externalsIds: [ExternalIdInput!]
   authorsIds: [ID!]
   isAvailable: Boolean
   isGospel: Boolean

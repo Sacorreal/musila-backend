@@ -18,6 +18,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { ExternalId } from './external-id.entity';
 
 @ObjectType()
 @Entity({ name: 'track' })
@@ -51,9 +52,9 @@ export class Track {
   @Field()
   url: string;
 
-  /*@Column('int', { nullable: false })
+  @Column('int', { nullable: false })
   @Field()
-  year: number;*/
+  year: number;
 
   @Column('varchar', { nullable: false })
   @Field()
@@ -64,8 +65,8 @@ export class Track {
   lyric: string;
 
   @Column('jsonb', { name: 'externals_ids', nullable: true })
-  @Field(() => [String], { nullable: true })
-  externalsIds?: Record<string, string>;
+  @Field(() => [ExternalId], { nullable: true })
+  externalsIds?: ExternalId[]
 
   @OneToMany(() => IntellectualProperty, (it) => it.track)
   @Field(() => [IntellectualProperty])
@@ -122,6 +123,6 @@ export class Track {
     type: 'timestamp',
     nullable: true,
   })
-  @Field()
+  @Field({ nullable: true })
   deletedAt?: Date;
 }
