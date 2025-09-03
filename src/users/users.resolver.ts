@@ -3,10 +3,11 @@ import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 // import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
+import { UserRole } from './entities/user-role.enum';
 
 @Resolver(() => User)
 export class UsersResolver {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService) { }
 
   // Método cosnultar si es necesario ya que no se usa
   // @Mutation(() => User)
@@ -32,5 +33,10 @@ export class UsersResolver {
   @Mutation(() => User)
   removeUser(@Args('id', { type: () => ID }) id: string) {
     return this.usersService.removeUserService(id);
+  }
+
+  @Query(() => [UserRole], { name: 'userRoles' })
+  getUserRolesResolver() {
+    return this.usersService.getUserRolesService()
   }
 }
