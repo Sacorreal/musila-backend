@@ -11,6 +11,7 @@ import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './config/database/database.module';
 import { GraphqlModule } from './config/graphql/graphql.module';
 import { StorageModule } from './storage/storage.module';
+import { SeedsModule } from './seeds/seeds.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { StorageModule } from './storage/storage.module';
     RequestedTracksModule,
     MusicalGenreModule,
     IntellectualPropertyModule,
+    SeedsModule,
     StorageModule.forRootAsync(),
   ],
   controllers: [],
