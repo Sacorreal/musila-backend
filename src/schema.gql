@@ -22,7 +22,7 @@ type MusicalGenre {
   id: ID!
   genre: String!
   subGenre: [String!]
-  tracks: [Track!]!
+  tracks: [Track!]
   createdAt: DateTime!
   updatedAt: DateTime!
   deletedAt: DateTime!
@@ -144,6 +144,8 @@ type Query {
   users: [User!]!
   user(id: ID!): User!
   userRoles: [UserRole!]!
+
+  """listado de tracks"""
   tracks: [Track!]!
   track(id: String!): Track!
   playlists: [Playlist!]!
