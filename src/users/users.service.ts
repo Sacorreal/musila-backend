@@ -1,19 +1,21 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
-import { InjectRepository } from '@nestjs/typeorm';
-import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
 import { UserRole } from './entities/user-role.enum';
+import { User } from './entities/user.entity';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectRepository(User) private readonly usersRepository: Repository<User>) { }
+  constructor(
+    @InjectRepository(User) private readonly usersRepository: Repository<User>,
+  ) {}
 
   async createUserService(createUserInput: CreateUserInput) {
     return await this.usersRepository.save(
-      this.usersRepository.create(createUserInput)
-    )
+      this.usersRepository.create(createUserInput),
+    );
   }
 
   async findAllUsersService() {
@@ -25,7 +27,6 @@ export class UsersService {
   }
 
   async updateUserService(id: string, updateUserInput: UpdateUserInput) {
-
     const existingUser = await this.usersRepository.findOne({ where: { id } });
 
     if (!existingUser) throw new NotFoundException('El usuario no existe');
@@ -48,11 +49,11 @@ export class UsersService {
   async findUserByEmailService(email: string) {
     return await this.usersRepository.findOne({
       where: { email },
-      select: ['id', 'email', 'password'],
-    })
+      select: ['id', 'email', 'password', 'role'],
+    });
   }
 
-  getUserRolesService(){
-    return Object.values(UserRole)
+  getUserRolesService() {
+    return Object.values(UserRole);
   }
 }

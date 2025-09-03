@@ -25,8 +25,11 @@ export class MusicalGenre {
   @Field(() => [String], { nullable: true })
   subGenre?: string[];
 
-  @OneToMany(() => Track, (track) => track.genre, { cascade: true })
-  @Field(() => [Track])
+  @OneToMany(() => Track, (track) => track.genre, {
+    cascade: true,
+    nullable: true,
+  })
+  @Field(() => [Track], { nullable: true })
   tracks: Track[];
 
   @CreateDateColumn({ name: 'created_at' })
