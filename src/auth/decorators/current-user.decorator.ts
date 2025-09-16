@@ -3,14 +3,14 @@ import {
   ExecutionContext,
   ForbiddenException,
 } from '@nestjs/common';
-import { GqlExecutionContext } from '@nestjs/graphql';
 import { UserRole } from 'src/users/entities/user-role.enum';
-import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { AuthenticatedRequest, JwtPayload } from '../interfaces/jwt-payload.interface';
+
 
 export const CurrentUser = createParamDecorator(
   (roles: UserRole[] | undefined, context: ExecutionContext): JwtPayload => {
-    const ctx = GqlExecutionContext.create(context);
-    const user: JwtPayload = ctx.getContext().req.user;
+    const request = context.switchToHttp().getRequest<AuthenticatedRequest>()
+    const user = request.user
 
     if (!user) {
       throw new ForbiddenException('No user found in request');

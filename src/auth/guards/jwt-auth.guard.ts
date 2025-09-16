@@ -4,28 +4,37 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { GqlExecutionContext } from '@nestjs/graphql';
 import { JwtService } from '@nestjs/jwt';
 import { JwtPayload } from '../interfaces/jwt-payload.interface';
+import { Request } from 'express';
 
 @Injectable()
-export class GqlAuthGuard implements CanActivate {
-  constructor(private jwtService: JwtService) {}
+export class AuthGuard implements CanActivate {
+  constructor(private readonly jwtService: JwtService) { }
 
-  canActivate(context: ExecutionContext): boolean {
-    const ctx = GqlExecutionContext.create(context);
-    const req = ctx.getContext().req;
-    const token = req.headers.authorization?.replace('Bearer ', '');
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request: Request = context.switchToHttp().getRequest();
+    const token = this.extractTokenFromHeader(request)
 
     if (!token) {
       throw new UnauthorizedException('Necesitas un token de acceso');
     }
+
     try {
-      const payload = this.jwtService.verify<JwtPayload>(token);
-      req.user = payload;
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(token)
+      request['user'] = payload;
       return true;
+
     } catch {
-      throw new UnauthorizedException('Token no válido o expirado');
+      throw new UnauthorizedException('Token inválido o expirado');
     }
+
+
   }
+
+  private extractTokenFromHeader(request: Request) {
+    const [type, token] = request.headers.authorization?.split(' ') ?? []
+    return type === 'Bearer' ? token : undefined;
+  }
+
 }
