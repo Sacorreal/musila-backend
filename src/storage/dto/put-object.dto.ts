@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
-import { FileUpload } from 'graphql-upload-ts';
+
 
 export class PutObjectDto {
   /**
@@ -9,7 +9,4 @@ export class PutObjectDto {
   @IsNotEmpty()
   @IsUUID()
   key!: string;
-
-  @IsNotEmpty()
-  file: Promise<FileUpload>;
 }

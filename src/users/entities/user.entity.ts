@@ -86,18 +86,11 @@ export class User {
   @Field(() => [Guest], { nullable: true })
   guests?: Guest[];
 
-  @OneToMany(() => Playlist, (playlist) => playlist.owner, {
-    nullable: true,
-    lazy: true,
-  })
+  @OneToMany(() => Playlist, (playlist) => playlist.owner, { nullable: true })
   @Field(() => [Playlist], { nullable: true })
   playlists?: Playlist[];
 
-  @OneToMany(
-    () => RequestedTrack,
-    (requestedTrack) => requestedTrack.requester,
-    { nullable: true, lazy: true },
-  )
+  @OneToMany(() => RequestedTrack, (requestedTrack) => requestedTrack.requester, { nullable: true })
   @Field(() => [RequestedTrack], { nullable: true })
   requestSent?: RequestedTrack[];
 

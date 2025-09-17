@@ -33,7 +33,6 @@ export class Track {
 
   @ManyToOne(() => MusicalGenre, (musicalGenre) => musicalGenre.tracks, {
     onDelete: 'CASCADE',
-    eager: false,
     nullable: false,
   })
   @Field(() => MusicalGenre)
@@ -81,10 +80,7 @@ export class Track {
   @Field(() => User)
   authors: User[];
 
-  @ManyToMany(() => Playlist, (playlist) => playlist.tracks, {
-    nullable: true,
-    lazy: true,
-  })
+  @ManyToMany(() => Playlist, (playlist) => playlist.tracks, { nullable: true })
   @Field(() => Playlist, { nullable: true })
   playlists?: Playlist[];
 
@@ -92,10 +88,7 @@ export class Track {
   @Field()
   isGospel: boolean;
 
-  @OneToMany(() => RequestedTrack, (requestedTrack) => requestedTrack.track, {
-    nullable: true,
-    lazy: true,
-  })
+  @OneToMany(() => RequestedTrack, (requestedTrack) => requestedTrack.track, { nullable: true })
   @Field(() => [RequestedTrack], {
     description: 'Listado de solicitudes de uso que ha recibido la cancion',
     nullable: true,
