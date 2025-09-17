@@ -1,19 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { RequestedTracksResolver } from './requested-tracks.resolver';
+import { RequestedTracksController } from './requested-tracks.controller';
 import { RequestedTracksService } from './requested-tracks.service';
 
 describe('RequestedTracksResolver', () => {
-  let resolver: RequestedTracksResolver;
+  let controller: RequestedTracksController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [RequestedTracksResolver, RequestedTracksService],
+      providers: [RequestedTracksController, RequestedTracksService],
     }).compile();
 
-    resolver = module.get<RequestedTracksResolver>(RequestedTracksResolver);
+    controller = module.get<RequestedTracksController>(RequestedTracksController);
   });
 
   it('should be defined', () => {
-    expect(resolver).toBeDefined();
+    expect(controller).toBeDefined();
   });
 });

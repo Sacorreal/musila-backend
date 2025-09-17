@@ -1,4 +1,4 @@
-import { Field, ID, ObjectType } from '@nestjs/graphql';
+
 import { Track } from 'src/tracks/entities/track.entity';
 import {
   Column,
@@ -11,29 +11,23 @@ import {
 } from 'typeorm';
 
 @Entity({ name: 'musical_genre' })
-@ObjectType()
 export class MusicalGenre {
   @PrimaryGeneratedColumn('uuid')
-  @Field(() => ID)
   id: string;
 
   @Column()
-  @Field()
   genre: string;
 
   @Column({ type: 'text', nullable: true, array: true })
-  @Field(() => [String], { nullable: true })
   subGenre?: string[];
 
   @OneToMany(() => Track, (track) => track.genre, {
     cascade: true,
     nullable: true,
   })
-  @Field(() => [Track], { nullable: true })
   tracks: Track[];
 
   @CreateDateColumn({ name: 'created_at' })
-  @Field(() => Date)
   createdAt: Date;
 
   @UpdateDateColumn({
@@ -41,7 +35,6 @@ export class MusicalGenre {
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP',
   })
-  @Field()
   updatedAt: Date;
 
   @DeleteDateColumn({
@@ -49,6 +42,5 @@ export class MusicalGenre {
     type: 'timestamp',
     nullable: true,
   })
-  @Field()
   deletedAt?: Date;
 }

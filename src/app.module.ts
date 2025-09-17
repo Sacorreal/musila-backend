@@ -9,7 +9,6 @@ import { TracksModule } from './tracks/tracks.module';
 import { UsersModule } from './users/users.module';
 import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './config/database/database.module';
-import { GraphqlModule } from './config/graphql/graphql.module';
 import { StorageModule } from './storage/storage.module';
 import { SeedsModule } from './seeds/seeds.module';
 
@@ -17,7 +16,6 @@ import { SeedsModule } from './seeds/seeds.module';
   imports: [
     ConfigModule,
     DatabaseModule,
-    GraphqlModule,
     AuthModule,
     UsersModule,
     TracksModule,
