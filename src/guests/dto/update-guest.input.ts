@@ -1,8 +1,9 @@
+import { PartialType } from '@nestjs/mapped-types';
 import { CreateGuestInput } from './create-guest.input';
-import { InputType, Field, PartialType, ID } from '@nestjs/graphql';
+import { IsUUID } from 'class-validator';
 
-@InputType()
 export class UpdateGuestInput extends PartialType(CreateGuestInput) {
-  @Field(() => ID)
+
+  @IsUUID()
   id: string;
 }

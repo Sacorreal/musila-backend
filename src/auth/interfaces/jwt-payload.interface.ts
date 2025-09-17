@@ -7,3 +7,7 @@ export interface JwtPayload {
   iat?: number;
   exp?: number;
 }
+
+export interface AuthenticatedRequest extends Request {
+  user?: JwtPayload;
+}

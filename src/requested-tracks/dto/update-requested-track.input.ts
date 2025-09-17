@@ -1,10 +1,9 @@
 import { IsUUID } from 'class-validator';
 import { CreateRequestedTrackInput } from './create-requested-track.input';
-import { InputType, Field, PartialType, ID } from '@nestjs/graphql';
+import { PartialType } from '@nestjs/mapped-types';
 
-@InputType()
+
 export class UpdateRequestedTrackInput extends PartialType(CreateRequestedTrackInput) {
   @IsUUID()
-  @Field(() => ID)
   id: string;
 }

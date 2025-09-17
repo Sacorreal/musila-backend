@@ -1,4 +1,3 @@
-import { registerEnumType } from "@nestjs/graphql";
 
 
 export enum RequestsStatus {
@@ -7,4 +6,3 @@ export enum RequestsStatus {
     PENDIENTE = 'pendiente'
 }
 
-registerEnumType(RequestsStatus, { name: 'RequestsStatus', description: 'Estado de las peticiones' })
