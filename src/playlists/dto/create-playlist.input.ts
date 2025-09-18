@@ -1,7 +1,27 @@
-import { InputType, Int, Field } from '@nestjs/graphql';
 
-@InputType()
+import { IsArray, IsOptional, IsString, IsUUID } from 'class-validator';
+
+
 export class CreatePlaylistInput {
-  @Field(() => Int, { description: 'Example field (placeholder)' })
-  exampleField: number;
+
+  @IsString()
+  title: string
+
+  @IsUUID()
+  owner: string
+
+  @IsOptional()
+  @IsString()
+  cover?: string
+
+  @IsArray()
+  @IsOptional()
+  @IsUUID('4', { each: true })
+  guestIds?: string[]
+
+  @IsOptional()
+  @IsArray()
+  @IsUUID('4', { each: true })
+  trackIds?: string[]
+
 }

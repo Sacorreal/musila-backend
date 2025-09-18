@@ -6,6 +6,8 @@ import { Guest } from './entities/guest.entity';
 import { Repository } from 'typeorm';
 import { User } from 'src/users/entities/user.entity';
 
+const guestRelations: string[] = ['invited_by', 'playlists']
+
 @Injectable()
 export class GuestsService {
   constructor(
@@ -13,45 +15,58 @@ export class GuestsService {
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
   ) { }
 
+  private async findGuestWithRelations(id: string): Promise<Guest> {
+    const guest = await this.guestsRepository.findOne({
+      where: { id },
+      relations: guestRelations
+    })
+
+    if (!guest) throw new NotFoundException('El invitado no existe')
+    return guest
+  }
+
+  private async saveAndReturnWithRelations(guest: Guest): Promise<Guest> {
+    const savedGuest = await this.guestsRepository.save(guest)
+    return this.findGuestWithRelations(savedGuest.id)
+  }
+
 
   async createGuestsService(createGuestInput: CreateGuestInput) {
-    const inviter = await this.usersRepository.findOne({ where: { id: createGuestInput.invitedById } })
+    const inviter = await this.usersRepository.findOne({
+      where: { id: createGuestInput.invitedById }
+    })
 
-    if (!inviter) throw new NotFoundException('El invitado no existe')
+    if (!inviter) throw new NotFoundException('El usuario que invita no existe')
 
     const newGuest = this.guestsRepository.create({
       invited_by: inviter
     })
 
-    return await this.guestsRepository.save(newGuest) 
+    return await this.saveAndReturnWithRelations(newGuest)
 
   }
 
   async findAllGuestsService() {
-    return await this.guestsRepository.find({relations: ['invited_by']})
+    return await this.guestsRepository.find({ relations: guestRelations })
   }
 
   async findOneGuestsService(id: string) {
-    return await this.guestsRepository.findOne({ where: { id } })
+    return await this.findGuestWithRelations(id)
   }
 
   async updateGuestsService(id: string, updateGuestInput: UpdateGuestInput) {
-    const existingGuest = await this.guestsRepository.findOne({ where: { id } })
-
-    if (!existingGuest) throw new NotFoundException('El invitado no existe')
+    const existingGuest = await this.findGuestWithRelations(id)
 
     Object.assign(existingGuest, updateGuestInput)
 
-    return await this.guestsRepository.save(existingGuest)
+    return await this.saveAndReturnWithRelations(existingGuest)
   }
 
   async removeGuestsService(id: string) {
-    const guestToRemove = await this.guestsRepository.findOne({ where: { id } })
-
-    if (!guestToRemove) throw new NotFoundException('El invitado no existe')
+    const guestToRemove = await this.findGuestWithRelations(id)
 
     await this.guestsRepository.remove(guestToRemove)
 
-    return true
+    return guestToRemove
   }
 }

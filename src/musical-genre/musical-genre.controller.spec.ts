@@ -1,19 +1,19 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { MusicalGenreResolver } from './musical-genre.resolver';
+import { MusicalGenreController } from './musical-genre.controller';
 import { MusicalGenreService } from './musical-genre.service';
 
 describe('MusicalGenreResolver', () => {
-  let resolver: MusicalGenreResolver;
+  let controller: MusicalGenreController;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [MusicalGenreResolver, MusicalGenreService],
+      providers: [MusicalGenreController, MusicalGenreService],
     }).compile();
 
-    resolver = module.get<MusicalGenreResolver>(MusicalGenreResolver);
+    controller = module.get<MusicalGenreController>(MusicalGenreController);
   });
 
   it('should be defined', () => {
-    expect(resolver).toBeDefined();
+    expect(controller).toBeDefined();
   });
 });

@@ -1,11 +1,12 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MusicalGenre } from './entities/musical-genre.entity';
-import { MusicalGenreResolver } from './musical-genre.resolver';
+import { MusicalGenreController } from './musical-genre.controller';
 import { MusicalGenreService } from './musical-genre.service';
+import { Track } from 'src/tracks/entities/track.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([MusicalGenre])],
-  providers: [MusicalGenreResolver, MusicalGenreService],
+  imports: [TypeOrmModule.forFeature([MusicalGenre, Track])],
+  providers: [MusicalGenreController, MusicalGenreService],
 })
-export class MusicalGenreModule {}
+export class MusicalGenreModule { }

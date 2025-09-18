@@ -1,26 +1,81 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
 import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
+import { InjectRepository } from '@nestjs/typeorm';
+import { RequestedTrack } from './entities/requested-track.entity';
+import { Repository } from 'typeorm';
+import { Track } from 'src/tracks/entities/track.entity';
+import { User } from 'src/users/entities/user.entity';
+
+const requestedTracksRelations: string[] = [
+  'requester',
+  'track',
+]
 
 @Injectable()
 export class RequestedTracksService {
-  create(createRequestedTrackInput: CreateRequestedTrackInput) {
-    return 'This action adds a new requestedTrack';
+  constructor(
+    @InjectRepository(RequestedTrack) private readonly requestedTracksRepository: Repository<RequestedTrack>,
+    @InjectRepository(Track) private readonly tracksRepository: Repository<Track>,
+    @InjectRepository(User) private readonly usersRepository: Repository<User>
+
+  ) { }
+
+  private async findRequestedTrackWithRelations(id: string): Promise<RequestedTrack> {
+    const requestedTrack = await this.requestedTracksRepository.findOne({
+      where: { id },
+      relations: requestedTracksRelations
+    })
+
+    if (!requestedTrack) throw new NotFoundException('La pista solicitada no existe')
+
+    return requestedTrack
   }
 
-  findAll() {
-    return `This action returns all requestedTracks`;
+  private async saveAndReturnWithRelations(requestedTrack: RequestedTrack): Promise<RequestedTrack> {
+    const savedRequestedTrack = await this.requestedTracksRepository.save(requestedTrack)
+    return await this.findRequestedTrackWithRelations(savedRequestedTrack.id)
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} requestedTrack`;
+  async createRequestedTracksService(createRequestedTrackInput: CreateRequestedTrackInput) {
+    const { requesterId, trackId, licenseType } = createRequestedTrackInput
+
+    const requester = await this.usersRepository.findOne({ where: { id: requesterId } })
+    if (!requester) throw new NotFoundException('El usuario solicitante no existe')
+
+    const track = await this.tracksRepository.findOne({ where: { id: trackId } })
+    if (!track) throw new NotFoundException('La pista no existe')
+
+    const newRequestedTrack = this.requestedTracksRepository.create({
+      requester,
+      track,
+      licenseType
+    })
+
+    return await this.saveAndReturnWithRelations(newRequestedTrack)
   }
 
-  update(id: number, updateRequestedTrackInput: UpdateRequestedTrackInput) {
-    return `This action updates a #${id} requestedTrack`;
+  async findAllRequestedTracksService() {
+    return await this.requestedTracksRepository.find({ relations: requestedTracksRelations })
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} requestedTrack`;
+  async findOneRequestedTracksService(id: string) {
+    return await this.findRequestedTrackWithRelations(id)
+  }
+
+  async updateRequestedTracksService(id: string, updateRequestedTrackInput: UpdateRequestedTrackInput) {
+    const existingRequestedTrack = await this.findRequestedTrackWithRelations(id)
+
+    Object.assign(existingRequestedTrack, updateRequestedTrackInput)
+
+    return await this.saveAndReturnWithRelations(existingRequestedTrack)
+  }
+
+  async removeRequestedTracksService(id: string) {
+    const requestedTrackToRemove = await this.findRequestedTrackWithRelations(id)
+
+    await this.requestedTracksRepository.remove(requestedTrackToRemove)
+
+    return requestedTrackToRemove
   }
 }
