@@ -4,9 +4,11 @@ import { Playlist } from './entities/playlist.entity';
 import { PlaylistsController } from './playlists.controller';
 import { PlaylistsService } from './playlists.service';
 import { User } from 'src/users/entities/user.entity';
+import { Guest } from 'src/guests/entities/guest.entity';
+import { Track } from 'src/tracks/entities/track.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Playlist, User])],
+  imports: [TypeOrmModule.forFeature([Playlist, User, Guest, Track])],
   providers: [PlaylistsController, PlaylistsService],
 })
 export class PlaylistsModule { }

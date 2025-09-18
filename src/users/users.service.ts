@@ -6,40 +6,58 @@ import { UpdateUserInput } from './dto/update-user.input';
 import { UserRole } from './entities/user-role.enum';
 import { User } from './entities/user.entity';
 
+const userRelations: string[] = [
+  'tracks',
+  'guests',
+  'playlists',
+  'requestSent'
+]
+
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
-  ) {}
+  ) { }
+
+  private async findUserWithRelations(id: string): Promise<User> {
+    const user = await this.usersRepository.findOne({
+      where: { id },
+      relations: userRelations
+    })
+
+    if (!user) throw new NotFoundException('El usuario no existe');
+
+    return user;
+  }
+
+  private async saveAndReturnWithRelations(user: User): Promise<User> {
+    const savedUser = await this.usersRepository.save(user);
+    return this.findUserWithRelations(savedUser.id)
+  }
 
   async createUserService(createUserInput: CreateUserInput) {
-    return await this.usersRepository.save(
-      this.usersRepository.create(createUserInput),
-    );
+    const newUser = this.usersRepository.create(createUserInput)
+    return this.saveAndReturnWithRelations(newUser)
   }
 
   async findAllUsersService() {
-    return await this.usersRepository.find();
+    return await this.usersRepository.find({ relations: userRelations });
   }
 
   async findOneUserService(id: string) {
-    return await this.usersRepository.findOne({ where: { id } });
+    return this.findUserWithRelations(id)
   }
 
   async updateUserService(id: string, updateUserInput: UpdateUserInput) {
-    const existingUser = await this.usersRepository.findOne({ where: { id } });
-
-    if (!existingUser) throw new NotFoundException('El usuario no existe');
+    const existingUser = await this.findUserWithRelations(id);
 
     Object.assign(existingUser, updateUserInput);
 
-    return await this.usersRepository.save(existingUser);
+    return this.saveAndReturnWithRelations(existingUser)
   }
 
   async removeUserService(id: string) {
-    const userToRemove = await this.usersRepository.findOne({ where: { id } });
-
-    if (!userToRemove) throw new NotFoundException('El usuario no existe');
+    const userToRemove = await this.findUserWithRelations(id);
 
     await this.usersRepository.remove(userToRemove);
 

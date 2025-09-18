@@ -77,7 +77,7 @@ export class User {
   @OneToMany(
     () => RequestedTrack,
     (requestedTrack) => requestedTrack.requester,
-    { nullable: true, lazy: true },
+    { nullable: true },
   )
   requestSent?: RequestedTrack[];
 
