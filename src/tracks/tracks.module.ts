@@ -10,6 +10,7 @@ import { TracksService } from './tracks.service';
   imports: [
     TypeOrmModule.forFeature([Track, User, MusicalGenre]),
   ],
-  providers: [TracksController, TracksService],
+  controllers: [TracksController],
+  providers: [TracksService],
 })
 export class TracksModule { }

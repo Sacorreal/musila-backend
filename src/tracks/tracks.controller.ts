@@ -6,7 +6,9 @@ import { UserRole } from 'src/users/entities/user-role.enum';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { TracksService } from './tracks.service';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Tracks')
 @Controller('tracks')
 export class TracksController {
   constructor(private readonly tracksService: TracksService) { }

@@ -1,8 +1,10 @@
+import { ApiTags } from '@nestjs/swagger';
 import { CreateIntellectualPropertyInput } from './dto/create-intellectual-property.input';
 import { UpdateIntellectualPropertyInput } from './dto/update-intellectual-property.input';
 import { IntellectualPropertyService } from './intellectual-property.service';
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
 
+@ApiTags('Intellectual Property')
 @Controller('intellectual-property')
 export class IntellectualPropertyController {
   constructor(

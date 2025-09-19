@@ -10,47 +10,59 @@ import {
   IsUUID,
 } from 'class-validator';
 import { ExternalIdInput } from './external-id.input';
+import { ApiProperty } from '@nestjs/swagger';
 
 
 export class CreateTrackInput {
+
+  @ApiProperty({ example: '', description: '' })
   @IsString({ message: 'El título debe ser un texto válido' })
   @IsNotEmpty({ message: 'El título es obligatorio' })
   title: string;
 
+  @ApiProperty({ example: '', description: '' })
   @IsUUID('4', { message: 'El genreId debe ser un UUID v4 válido' })
   @IsNotEmpty({ message: 'El genreId es obligatorio' })
   genreId: string;
 
+  @ApiProperty({ example: '', description: '' })
   @IsOptional()
   @IsString({ message: 'El subgénero debe ser un texto válido' })
   subGenre?: string;
 
+  @ApiProperty({ example: '', description: '' })
   @IsOptional()
   @IsString({ message: 'La portada debe ser un texto válido (URL esperada)' })
   @IsUrl({}, { message: 'La portada debe ser una URL válida' })
   cover?: string;
 
+  @ApiProperty({ example: '', description: '' })
   @IsString({ message: 'La URL debe ser un texto válido' })
   @IsUrl({}, { message: 'La URL de la canción debe ser válida' })
   @IsNotEmpty({ message: 'La URL es obligatoria' })
   url: string;
 
+  @ApiProperty({ example: '', description: '' })
   @IsString({ message: 'El idioma debe ser un texto válido' })
   @IsNotEmpty({ message: 'El idioma es obligatorio' })
   language: string;
 
+  @ApiProperty({ example: '', description: '' })
   @IsNotEmpty({ message: 'El año es obligatorio' })
   @IsNumber({}, { message: 'El año debe ser un número' })
   year: number
-  
+
+  @ApiProperty({ example: '', description: '' })
   @IsString({ message: 'La letra debe ser un texto válido' })
   @IsNotEmpty({ message: 'La letra es obligatoria' })
   lyric: string;
 
+  @ApiProperty({ example: '', description: '' })
   @IsOptional()
   @IsArray({ message: 'externalsIds debe ser un arreglo de strings' })
   externalsIds?: ExternalIdInput[];
 
+  @ApiProperty({ example: '', description: '' })
   @IsArray({ message: 'authorsIds debe ser un arreglo de UUIDs' })
   @IsUUID('4', {
     each: true,
@@ -59,10 +71,12 @@ export class CreateTrackInput {
   @IsNotEmpty({ message: 'authorsIds no puede estar vacío' })
   authorsIds: string[];
 
+  @ApiProperty({ example: '', description: '' })
   @IsOptional()
   @IsBoolean({ message: 'isAvailable debe ser un valor booleano' })
   isAvailable?: boolean;
 
+  @ApiProperty({ example: '', description: '' })
   @IsOptional()
   @IsBoolean({ message: 'isGospel debe ser un valor booleano' })
   isGospel?: boolean;

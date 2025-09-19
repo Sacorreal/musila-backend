@@ -2,7 +2,9 @@ import { MusicalGenreService } from './musical-genre.service';
 import { CreateMusicalGenreInput } from './dto/create-musical-genre.input';
 import { UpdateMusicalGenreInput } from './dto/update-musical-genre.input';
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Musical Genre')
 @Controller('musical-genre')
 export class MusicalGenreController {
   constructor(private readonly musicalGenreService: MusicalGenreService) { }

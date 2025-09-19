@@ -8,6 +8,7 @@ import { RequestedTracksService } from './requested-tracks.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([RequestedTrack, User, Track])],
-  providers: [RequestedTracksController, RequestedTracksService],
+  controllers: [RequestedTracksController],
+  providers: [RequestedTracksService],
 })
 export class RequestedTracksModule { }
