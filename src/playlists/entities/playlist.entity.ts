@@ -1,5 +1,3 @@
-
-import { ApiProperty } from '@nestjs/swagger';
 import { Guest } from 'src/guests/entities/guest.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { User } from 'src/users/entities/user.entity';
@@ -7,15 +5,13 @@ import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, JoinTab
 
 @Entity({ name: 'playlist' })
 export class Playlist {
-  @ApiProperty({ example: '', description: '' })
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ApiProperty({ example: '', description: '' })
   @Column({ type: 'varchar' })
   title: string;
 
-  @ApiProperty({ example: '', description: '' })
   @ManyToOne(() => User, (user) => user.playlists)
   @JoinColumn()
   @ManyToOne(() => User, user => user.playlists, {
@@ -23,27 +19,22 @@ export class Playlist {
   })
   owner: User
 
-  @ApiProperty({ example: '', description: '' })
   @Column({ type: 'varchar', nullable: true })
   cover?: string
 
-  @ApiProperty({ example: '', description: '' })
   @ManyToMany(() => Guest, guest => guest.playlists, { cascade: true })
   @JoinTable({ name: 'playlist_guests' })
   guests?: Guest[]
 
-  @ApiProperty({ example: '', description: '' })
   @ManyToMany(() => Track, track => track.playlists, { cascade: true })
   @JoinTable({ name: 'playlist_tracks' })
   tracks?: Track[]
 
-  @ApiProperty({ example: '', description: '' })
   @CreateDateColumn({
     name: 'created_at',
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP'
   })
-
 
   @UpdateDateColumn({
     name: 'update_at',
@@ -51,7 +42,6 @@ export class Playlist {
     default: () => 'CURRENT_TIMESTAMP'
   })
   updatedAt: Date
-
 
   @DeleteDateColumn({
     name: 'delete_at',
