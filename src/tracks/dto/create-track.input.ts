@@ -30,11 +30,6 @@ export class CreateTrackInput {
   @IsUrl({}, { message: 'La portada debe ser una URL válida' })
   cover?: string;
 
-  @IsString({ message: 'La URL debe ser un texto válido' })
-  @IsUrl({}, { message: 'La URL de la canción debe ser válida' })
-  @IsNotEmpty({ message: 'La URL es obligatoria' })
-  url: string;
-
   @IsString({ message: 'El idioma debe ser un texto válido' })
   @IsNotEmpty({ message: 'El idioma es obligatorio' })
   language: string;
