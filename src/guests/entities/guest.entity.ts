@@ -5,6 +5,7 @@ import { Column, Entity, ManyToMany, ManyToOne, PrimaryGeneratedColumn } from 't
 
 @Entity({ name: 'guest' })
 export class Guest {
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

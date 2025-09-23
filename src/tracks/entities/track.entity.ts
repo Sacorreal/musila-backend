@@ -21,6 +21,7 @@ import { ExternalId } from './external-id.entity';
 
 @Entity({ name: 'track' })
 export class Track {
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

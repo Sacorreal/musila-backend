@@ -9,6 +9,7 @@ import { Track } from 'src/tracks/entities/track.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Playlist, User, Guest, Track])],
-  providers: [PlaylistsController, PlaylistsService],
+  controllers: [PlaylistsController],
+  providers: [PlaylistsService],
 })
 export class PlaylistsModule { }

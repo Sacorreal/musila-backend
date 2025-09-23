@@ -7,6 +7,7 @@ import { IntellectualPropertyService } from './intellectual-property.service';
 
 @Module({
   imports: [TypeOrmModule.forFeature([IntellectualProperty, Track])],
-  providers: [IntellectualPropertyController, IntellectualPropertyService],
+  controllers: [IntellectualPropertyController],
+  providers: [IntellectualPropertyService],
 })
 export class IntellectualPropertyModule { }

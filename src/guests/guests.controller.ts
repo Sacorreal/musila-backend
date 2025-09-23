@@ -2,7 +2,9 @@ import { GuestsService } from './guests.service';
 import { CreateGuestInput } from './dto/create-guest.input';
 import { UpdateGuestInput } from './dto/update-guest.input';
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Guests')
 @Controller('guests')
 export class GuestsController {
   constructor(private readonly guestsService: GuestsService) { }
