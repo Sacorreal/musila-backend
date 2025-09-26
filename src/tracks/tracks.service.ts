@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -6,6 +6,8 @@ import { Track } from './entities/track.entity';
 import { In, Repository } from 'typeorm';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { User } from 'src/users/entities/user.entity';
+import { StorageService } from 'src/storage/storage.service';
+import { PutObjectDto } from 'src/storage/dto/put-object.dto';
 
 const tracksRelations: string[] = [
   'genre',
@@ -21,6 +23,7 @@ export class TracksService {
     @InjectRepository(Track) private readonly tracksRepository: Repository<Track>,
     @InjectRepository(MusicalGenre) private readonly genreRepository: Repository<MusicalGenre>,
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
+    private readonly storageService: StorageService
   ) { }
 
   private async findTrackWithRelations(id: string): Promise<Track> {
@@ -39,7 +42,7 @@ export class TracksService {
     return this.findTrackWithRelations(savedTrack.id)
   }
 
-  async createTrackService(createTrackInput: CreateTrackInput) {
+  async createTrackService(createTrackInput: CreateTrackInput, file: Express.Multer.File) {
     const { genreId, authorsIds, ...rest } = createTrackInput
 
     const genre = await this.genreRepository.findOne({ where: { id: genreId } })
@@ -50,10 +53,15 @@ export class TracksService {
 
     if (authors.length !== authorsIds.length) throw new NotFoundException('Uno o más autores no existen');
 
+    if (!file) throw new BadRequestException('El archivo de la canción es obligatorio');
+    const putObjectDto: PutObjectDto = { key: crypto.randomUUID()}
+    const uploadResult = await this.storageService.uploadObject(putObjectDto, file)
+
     const newTrack = this.tracksRepository.create({
       ...rest,
       genre,
-      authors
+      authors,
+      url: uploadResult.url
     })
 
     return await this.saveAndReturnWithRelations(newTrack)
