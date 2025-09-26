@@ -13,9 +13,9 @@ import {
 import { LicenseType } from './license-type.enum';
 import { RequestsStatus } from './requests-status.enum';
 
-
 @Entity({ name: 'requested_track' })
 export class RequestedTrack {
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

@@ -3,7 +3,9 @@ import { RequestedTracksService } from './requested-tracks.service';
 import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
 import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Requested Tracks')
 @Controller('requested-tracks')
 export class RequestedTracksController {
   constructor(

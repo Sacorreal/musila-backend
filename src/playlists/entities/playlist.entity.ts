@@ -1,4 +1,3 @@
-
 import { Guest } from 'src/guests/entities/guest.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { User } from 'src/users/entities/user.entity';
@@ -6,6 +5,7 @@ import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, JoinTab
 
 @Entity({ name: 'playlist' })
 export class Playlist {
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

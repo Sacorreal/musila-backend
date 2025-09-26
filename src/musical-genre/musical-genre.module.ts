@@ -7,6 +7,7 @@ import { Track } from 'src/tracks/entities/track.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([MusicalGenre, Track])],
-  providers: [MusicalGenreController, MusicalGenreService],
+  controllers: [MusicalGenreController],
+  providers: [MusicalGenreService],
 })
 export class MusicalGenreModule { }
