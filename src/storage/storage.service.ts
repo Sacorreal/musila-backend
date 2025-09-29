@@ -22,7 +22,7 @@ export class StorageService {
     private readonly options: StorageOptions,
   ) {
     this.s3 = new S3Client({
-      endpoint: this.options.endpoint,
+      endpoint: `https://${this.options.endpoint}`,
       region: this.options.region,
       credentials: {
         accessKeyId: this.options.accessKeyId,
@@ -33,11 +33,11 @@ export class StorageService {
 
   async uploadObject(putObjectDto: PutObjectDto, file: Express.Multer.File): Promise<UploadResultDto> {
     try {
-
+      console.log('Entró al uploadObject con:', { putObjectDto, hasFile: !!file });
       if (!file || !file.mimetype || !file.originalname || !file.buffer) {
         throw new BadRequestException('Archivo inválido');
       }
-      
+
       const { key } = putObjectDto;
       const mimetype: string = file.mimetype
       const originalname: string = file.originalname
