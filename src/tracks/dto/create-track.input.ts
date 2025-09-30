@@ -11,6 +11,8 @@ import {
 } from 'class-validator';
 import { ExternalIdInput } from './external-id.input';
 import { ApiProperty } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
+
 
 
 export class CreateTrackInput {
@@ -47,15 +49,6 @@ export class CreateTrackInput {
   @IsString({ message: 'La portada debe ser un texto válido (URL esperada)' })
   @IsUrl({}, { message: 'La portada debe ser una URL válida' })
   cover?: string;
-
-  @ApiProperty({
-    example: 'https://ejemplo.com/musica/bohemian-rhapsody.mp3',
-    description: 'URL del archivo de audio del track.'
-  })
-  @IsString({ message: 'La URL debe ser un texto válido' })
-  @IsUrl({}, { message: 'La URL de la canción debe ser válida' })
-  @IsNotEmpty({ message: 'La URL es obligatoria' })
-  url: string;
 
   @ApiProperty({
     example: 'Inglés',
@@ -107,6 +100,7 @@ export class CreateTrackInput {
     message: 'Cada authorId debe ser un UUID v4 válido',
   })
   @IsNotEmpty({ message: 'authorsIds no puede estar vacío' })
+  @Transform(({ value }) => JSON.parse(value))
   authorsIds: string[];
 
   @ApiProperty({

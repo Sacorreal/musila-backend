@@ -1,10 +1,10 @@
-import { IsBoolean, IsInt, IsNotEmpty, IsString, IsUrl } from 'class-validator';
+import { IsBoolean, IsInt, IsNotEmpty, IsString } from 'class-validator';
 
 export class UploadResultDto {
   @IsBoolean()
   success: boolean;
 
-  @IsUrl()
+  @IsString()
   url: string;
 
   @IsString()
