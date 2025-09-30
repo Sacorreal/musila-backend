@@ -1,7 +1,8 @@
 import { UsersService } from './users.service';
 import { UpdateUserInput } from './dto/update-user.input';
-import { Body, Controller, Delete, Get, Param, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Put, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @ApiTags('Users')
 @Controller('users')
@@ -19,12 +20,13 @@ export class UsersController {
   }
 
   @Put(':id')
-  async updateUserController(@Body() updateUserInput: UpdateUserInput, @Param('id') id: string) {
-    return await this.usersService.updateUserService(id, updateUserInput);
+  @UseInterceptors(FileInterceptor('file'))
+  async updateUserController(@Body() updateUserInput: UpdateUserInput, @Param('id', new ParseUUIDPipe({ version: '4' })) id: string, @UploadedFile() file?: Express.Multer.File) {
+    return await this.usersService.updateUserService(id, updateUserInput, file);
   }
 
   @Delete(':id')
-  async removeUserController(@Param() id: string) {
+  async removeUserController(@Param('id') id: string) {
     return await this.usersService.removeUserService(id);
   }
 

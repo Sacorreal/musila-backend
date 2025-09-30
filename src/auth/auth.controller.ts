@@ -1,7 +1,8 @@
-import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
 
 @Controller('auth')
 export class AuthController {
@@ -13,10 +14,12 @@ export class AuthController {
   }
 
   @Post('register')
-  async registerController(@Body() user: RegisterAuthDto) {
+  @UseInterceptors(FileInterceptor('avatar'))
+  async registerController(@Body() user: RegisterAuthDto, @UploadedFile() file?: Express.Multer.File) {
     if (user.password !== user.repeatPassword)
       throw new BadRequestException('Las contraseñas no coinciden');
 
-    return this.authService.registerService(user);
+
+    return this.authService.registerService(user, file);
   }
 }

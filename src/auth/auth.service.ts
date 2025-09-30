@@ -29,7 +29,7 @@ export class AuthService {
     return { token };
   }
 
-  async registerService(user: RegisterAuthDto) {
+  async registerService(user: RegisterAuthDto, file?: Express.Multer.File) {
     const userExists = await this.usersService.findUserByEmailService(
       user.email,
     );
@@ -40,8 +40,10 @@ export class AuthService {
 
     const newUser = await this.usersService.createUserService({
       ...user,
-      password: hashedPassword,
-    });
+      password: hashedPassword
+    },
+      file
+    );
 
     //eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...sanitizedUser } = newUser;
