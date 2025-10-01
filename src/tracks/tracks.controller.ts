@@ -21,8 +21,8 @@ export class TracksController {
   }
 
   @Get()
-  @UseGuards(AuthGuard)
-  async findAllTracksController(@CurrentUser([UserRole.ADMIN]) user: JwtPayload) {
+  // @UseGuards(AuthGuard)
+  async findAllTracksController() {
     return await this.tracksService.findAllTracksService();
   }
 
