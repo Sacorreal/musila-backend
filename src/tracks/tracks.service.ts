@@ -3,7 +3,7 @@ import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Track } from './entities/track.entity';
-import { In, Repository } from 'typeorm';
+import { ILike, In, Repository } from 'typeorm';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { User } from 'src/users/entities/user.entity';
 import { StorageService } from 'src/storage/storage.service';
@@ -54,7 +54,7 @@ export class TracksService {
     if (authors.length !== authorsIds.length) throw new NotFoundException('Uno o más autores no existen');
 
     if (!file) throw new BadRequestException('El archivo de la canción es obligatorio');
-    const putObjectDto: PutObjectDto = { key: crypto.randomUUID()}
+    const putObjectDto: PutObjectDto = { key: crypto.randomUUID() }
     const uploadResult = await this.storageService.uploadObject(putObjectDto, file)
 
     const newTrack = this.tracksRepository.create({
@@ -90,5 +90,14 @@ export class TracksService {
     await this.tracksRepository.remove(trackToRemove);
 
     return trackToRemove
+  }
+
+  async searchTracksService(q: string) {
+    return await this.tracksRepository.find({
+      where: {
+        isAvailable: true,
+        title: ILike(`%${q}%`)
+      }
+    })
   }
 }
