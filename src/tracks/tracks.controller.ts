@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { AuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
@@ -24,6 +24,11 @@ export class TracksController {
   // @UseGuards(AuthGuard)
   async findAllTracksController() {
     return await this.tracksService.findAllTracksService();
+  }
+
+  @Get('search')
+  async searchTracksController(@Query('q') q: string) {
+    return await this.tracksService.searchTracksService(q)
   }
 
   @Get(':id')
