@@ -1,5 +1,6 @@
 
 import {
+  IsArray,
   IsBoolean,
   IsEmail,
   IsEnum,
@@ -7,6 +8,7 @@ import {
   IsOptional,
   IsString,
   IsUrl,
+  IsUUID,
   MaxLength,
   MinLength,
 } from 'class-validator';
@@ -121,4 +123,10 @@ export class CreateUserInput {
   })
   @IsOptional()
   socialNetworks?: Record<string, string>;
+
+  @ApiProperty({ example: ['uuid1', 'uuid2'], description: 'IDs de géneros preferidos' })
+  @IsArray()
+  @IsOptional()
+  @IsUUID('4', { each: true })
+  preferredGenres?: string[]
 }
