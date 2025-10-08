@@ -6,19 +6,23 @@ import { UpdateUserInput } from './dto/update-user.input';
 import { UserRole } from './entities/user-role.enum';
 import { User } from './entities/user.entity';
 import { StorageService } from 'src/storage/storage.service';
+import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
+import { In } from 'typeorm';
 
 const userRelations: string[] = [
   'tracks',
   'guests',
   'playlists',
-  'requestSent'
+  'requestSent',
+  'preferredGenres',
 ]
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
-    private readonly storageService: StorageService
+    private readonly storageService: StorageService,
+    @InjectRepository(MusicalGenre) private readonly musicalGenreRepository: Repository<MusicalGenre>
   ) { }
 
 
@@ -55,8 +59,18 @@ export class UsersService {
     createUserInput: CreateUserInput,
     file?: Express.Multer.File
   ) {
-    const newUser = this.usersRepository.create(createUserInput)
 
+    const { preferredGenres, ...rest } = createUserInput
+
+    const newUser = this.usersRepository.create(rest)
+
+    if (preferredGenres && preferredGenres.length > 0) {
+      const genres = await this.musicalGenreRepository.findBy({
+        id: In(preferredGenres)
+      })
+
+      newUser.preferredGenres = genres
+    }
 
     newUser.avatar = await this.handleAvatar(file)
 
@@ -75,7 +89,17 @@ export class UsersService {
 
     const existingUser = await this.findUserWithRelations(id);
 
-    Object.assign(existingUser, updateUserInput);
+    const { preferredGenres, ...rest } = updateUserInput
+
+    Object.assign(existingUser, rest);
+
+    if (preferredGenres) {
+      const genres = await this.musicalGenreRepository.findBy({
+        id: In(preferredGenres)
+      })
+
+      existingUser.preferredGenres = genres
+    }
 
     existingUser.avatar = await this.handleAvatar(file, existingUser.avatar)
 

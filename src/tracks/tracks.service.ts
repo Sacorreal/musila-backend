@@ -100,4 +100,20 @@ export class TracksService {
       }
     })
   }
+
+
+  async findTracksByUserPreferredGenresService(user: User): Promise<Track[]> {
+    if (!user.preferredGenres || user.preferredGenres.length === 0) {
+      throw new NotFoundException('El usuario no tiene géneros preferidos configurados.')
+    }
+
+    const preferredGenreIds = user.preferredGenres.map(genre => genre.id)
+
+    return await this.tracksRepository.find({
+      where: {
+        genre: { id: In(preferredGenreIds) },
+        isAvailable: true,
+      }
+    })
+  }
 }
