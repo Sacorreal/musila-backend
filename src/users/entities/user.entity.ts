@@ -7,12 +7,14 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinTable,
   ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { UserRole } from './user-role.enum';
+import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 
 @Entity({ name: 'users' })
 export class User {
@@ -65,6 +67,14 @@ export class User {
 
   @ManyToMany(() => Track, (track) => track.authors, { nullable: true })
   tracks?: Track[];
+
+  @ManyToMany(() => MusicalGenre, { nullable: true })
+  @JoinTable({
+    name: 'user_preferred_genres',
+    joinColumn: { name: 'user_id' },
+    inverseJoinColumn: { name: 'genre_id' },
+  })
+  preferredGenres?: MusicalGenre[]
 
   @OneToMany(() => Guest, (guest) => guest.invited_by, { nullable: true })
   guests?: Guest[];
