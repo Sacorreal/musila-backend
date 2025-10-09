@@ -38,6 +38,9 @@ export class RequestedTrack {
   @Column({ name: 'approved_by_requester', default: false })
   approvedByRequester: boolean;
 
+  @Column({ type: 'text', nullable: true })
+  documentUrl?: string | null;
+
   @CreateDateColumn({
     name: 'created_at',
     type: 'timestamp',

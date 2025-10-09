@@ -33,7 +33,6 @@ export class StorageService {
 
   async uploadObject(putObjectDto: PutObjectDto, file: Express.Multer.File): Promise<UploadResultDto> {
     try {
-      console.log('Entró al uploadObject con:', { putObjectDto, hasFile: !!file });
       if (!file || !file.mimetype || !file.originalname || !file.buffer) {
         throw new BadRequestException('Archivo inválido');
       }

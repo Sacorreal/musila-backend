@@ -6,6 +6,7 @@ import { RequestedTrack } from './entities/requested-track.entity';
 import { Repository } from 'typeorm';
 import { Track } from 'src/tracks/entities/track.entity';
 import { User } from 'src/users/entities/user.entity';
+import { StorageService } from 'src/storage/storage.service';
 
 const requestedTracksRelations: string[] = [
   'requester',
@@ -17,7 +18,8 @@ export class RequestedTracksService {
   constructor(
     @InjectRepository(RequestedTrack) private readonly requestedTracksRepository: Repository<RequestedTrack>,
     @InjectRepository(Track) private readonly tracksRepository: Repository<Track>,
-    @InjectRepository(User) private readonly usersRepository: Repository<User>
+    @InjectRepository(User) private readonly usersRepository: Repository<User>,
+    private readonly storageService: StorageService
 
   ) { }
 
@@ -37,7 +39,7 @@ export class RequestedTracksService {
     return await this.findRequestedTrackWithRelations(savedRequestedTrack.id)
   }
 
-  async createRequestedTracksService(createRequestedTrackInput: CreateRequestedTrackInput) {
+  async createRequestedTracksService(createRequestedTrackInput: CreateRequestedTrackInput, file?: Express.Multer.File) {
     const { requesterId, trackId, licenseType } = createRequestedTrackInput
 
     const requester = await this.usersRepository.findOne({ where: { id: requesterId } })
@@ -46,10 +48,22 @@ export class RequestedTracksService {
     const track = await this.tracksRepository.findOne({ where: { id: trackId } })
     if (!track) throw new NotFoundException('La pista no existe')
 
+    let documentUrl: string | null = null
+
+    if (file) {
+      const uploadResult = await this.storageService.uploadObject(
+        { key: `${requesterId}-${Date.now()}-${file.originalname}` },
+        file
+      )
+      documentUrl = uploadResult.url
+    }
+
+
     const newRequestedTrack = this.requestedTracksRepository.create({
       requester,
       track,
-      licenseType
+      licenseType,
+      documentUrl
     })
 
     return await this.saveAndReturnWithRelations(newRequestedTrack)
