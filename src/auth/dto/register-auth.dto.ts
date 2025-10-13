@@ -1,91 +1,130 @@
-import { ApiProperty } from "@nestjs/swagger"
-import { IsEmail, IsOptional, IsString, MinLength } from "class-validator"
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger"
+import { IsArray, IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength } from "class-validator"
 import { UserRole } from "src/users/entities/user-role.enum"
 
 
 
 export class RegisterAuthDto {
 
-    @ApiProperty({
-        example: "Valentino",
-        description: "Nombre del usuario."
-    })
-    @IsString()
-    name: string
 
     @ApiProperty({
-        example: "Perez",
-        description: "Apellido del usuario."
+        example: 'Sofía',
+        description: 'Nombre del usuario.'
     })
-    @IsString()
-    lastName: string
+    @IsString({ message: 'El nombre debe ser un texto válido' })
+    @IsNotEmpty({ message: 'El nombre es obligatorio' })
+    @MaxLength(255, { message: 'El nombre no puede superar los 255 caracteres' })
+    name: string;
 
     @ApiProperty({
-        example: 'valentino@example.com',
-        description: "Correo electrónico del usuario. Debe ser único y válido."
+        example: 'Pérez',
+        description: 'Apellido del usuario.'
     })
-    @IsEmail()
-    email: string
+    @IsString({ message: 'El apellido debe ser un texto válido' })
+    @IsNotEmpty({ message: 'El apellido es obligatorio' })
+    lastName: string;
+
 
     @ApiProperty({
-        example: "password123",
-        description: "Contraseña del usuario. Debe tener al menos 6 caracteres."
+        example: 'sofi.perez@mail.com',
+        description: 'Correo electrónico único del usuario.'
     })
-    @IsString()
-    @MinLength(6)
-    password: string
+    @IsEmail({}, { message: 'Debe proporcionar un email válido' })
+    @IsNotEmpty({ message: 'El email es obligatorio' })
+    email: string;
 
     @ApiProperty({
-        example: "password123",
-        description: "Repetición de la contraseña para validar coincidencia."
+        example: 'miContraseña123',
+        description: 'Contraseña de acceso (mínimo 6 caracteres).'
+    })
+    @IsString({ message: 'La contraseña debe ser un texto válido' })
+    @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
+    @IsNotEmpty({ message: 'La contraseña es obligatoria' })
+    password: string;
+
+    @ApiProperty({
+        example: 'micontraseña123',
+        description: 'Repetición de la contraseña para validar coincidencia'
     })
     @IsString()
-    @MinLength(6)
+    @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
     repeatPassword: string
 
-    @ApiProperty({
-        example: "+54",
-        description: "Código de país asociado al número de teléfono (opcional)."
+    @ApiPropertyOptional({
+        example: '+54',
+        description: 'Código de país del usuario (opcional).'
     })
-    @IsString()
     @IsOptional()
-    countryCode?: string
+    @IsString({ message: 'El código de país debe ser un texto válido' })
+    countryCode?: string;
 
-    @ApiProperty({
-        example: "2611234567",
-        description: "Número de teléfono del usuario (opcional)."
+    @ApiPropertyOptional({
+        example: '2615551234',
+        description: 'Número de teléfono del usuario (opcional).'
     })
     @IsOptional()
-    phone?: string
+    @IsString({ message: 'El teléfono debe ser un texto válido' })
+    phone?: string;
 
-    @ApiProperty({
-        example: "DNI",
-        description: "Tipo de documento de identidad (ej: DNI, Pasaporte, etc.) (opcional)."
+    @ApiPropertyOptional({
+        example: 'DNI',
+        description: 'Tipo de documento de identidad (opcional).'
     })
-    @IsString()
     @IsOptional()
-    typeCitizenID?: string
+    @IsString({ message: 'El tipo de documento debe ser un texto válido' })
+    typeCitizenID?: string;
 
-    @ApiProperty({
-        example: "12345678",
-        description: "Número de documento de identidad del usuario (opcional)."
+    @ApiPropertyOptional({
+        example: '40123456',
+        description: 'Número de documento de identidad del usuario (opcional).'
     })
     @IsOptional()
-    citizenID?: string
+    @IsString({ message: 'El número de documento debe ser un texto válido' })
+    citizenID?: string;
 
-    @ApiProperty({
-        example: "https://example.com/avatar.jpg",
-        description: "URL de la imagen de perfil del usuario (opcional)."
+    @ApiPropertyOptional({
+        example: UserRole.ADMIN,
+        enum: UserRole,
+        description: 'Rol asignado al usuario dentro del sistema (opcional). Valores posibles definidos en el enum UserRole.'
     })
-    @IsString()
+    @IsEnum(UserRole, { message: 'El rol debe ser un valor válido de UserRole' })
     @IsOptional()
-    avatar?: string
+    role?: UserRole;
 
-    @ApiProperty({
-        example: "USER",
-        description: "Rol asignado al usuario dentro de la plataforma. Valores posibles: ADMIN, USER (opcional)."
+    @ApiPropertyOptional({
+        example: 'https://ejemplo.com/imagenes/avatar.jpg',
+        description: 'URL de la imagen de perfil del usuario (opcional).'
     })
     @IsOptional()
-    @IsString()
-    role?: UserRole
+    @IsUrl({}, { message: 'El avatar debe ser una URL válida' })
+    avatar?: string;
+
+    @ApiPropertyOptional({
+        example: true,
+        description: 'Indica si la cuenta del usuario está verificada (opcional).'
+    })
+    @IsOptional()
+    @IsBoolean({ message: 'isVerified debe ser un valor booleano' })
+    isVerified?: boolean;
+
+    @ApiPropertyOptional({
+        example: 'Desarrolladora full stack apasionada por la música.',
+        description: 'Breve biografía o descripción personal del usuario (opcional).'
+    })
+    @IsOptional()
+    @IsString({ message: 'La biografía debe ser un texto válido' })
+    biography?: string;
+
+    @ApiPropertyOptional({
+        example: { instagram: 'https://urlderedsocial.com', twitter: 'https://urlderedsocial2.com' },
+        description: 'Redes sociales asociadas al usuario como un objeto clave-valor (opcional).'
+    })
+    @IsOptional()
+    socialNetworks?: Record<string, string>;
+
+    @ApiPropertyOptional({ example: ['uuid1', 'uuid2'], description: 'IDs de géneros preferidos' })
+    @IsArray()
+    @IsOptional()
+    @IsUUID('4', { each: true })
+    preferredGenres?: string[]
 }

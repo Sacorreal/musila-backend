@@ -1,5 +1,5 @@
 
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsOptional, IsString, IsUUID } from 'class-validator';
 
 
@@ -19,7 +19,7 @@ export class CreatePlaylistInput {
   @IsUUID()
   owner: string
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'https://ejemplo.com/imagenes/playlist-verano.jpg',
     description: 'URL de la imagen de portada de la playlist (opcional).'
   })
@@ -27,7 +27,7 @@ export class CreatePlaylistInput {
   @IsString()
   cover?: string
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: [
       '111e8400-e29b-41d4-a716-446655440000',
       '222e8400-e29b-41d4-a716-446655440000'
@@ -39,7 +39,7 @@ export class CreatePlaylistInput {
   @IsUUID('4', { each: true })
   guestIds?: string[]
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: [
       '333e8400-e29b-41d4-a716-446655440000',
       '444e8400-e29b-41d4-a716-446655440000'
