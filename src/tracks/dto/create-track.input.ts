@@ -10,7 +10,7 @@ import {
   IsUUID,
 } from 'class-validator';
 import { ExternalIdInput } from './external-id.input';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 
 
@@ -33,7 +33,7 @@ export class CreateTrackInput {
   @IsNotEmpty({ message: 'El genreId es obligatorio' })
   genreId: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'Rock Progresivo',
     description: 'Subgénero musical de la canción (opcional)'
   })
@@ -41,7 +41,7 @@ export class CreateTrackInput {
   @IsString({ message: 'El subgénero debe ser un texto válido' })
   subGenre?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'https://ejemplo.com/imagenes/bohemian-rhapsody.jpg',
     description: 'URL de la imagen de portada del track (opcional).'
   })
@@ -74,7 +74,7 @@ export class CreateTrackInput {
   @IsNotEmpty({ message: 'La letra es obligatoria' })
   lyric: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: [
       { type: 'ISRC', value: 'USRC17607839' },
       { type: 'IPI', value: '00012345678' }
@@ -103,7 +103,7 @@ export class CreateTrackInput {
   @Transform(({ value }) => JSON.parse(value))
   authorsIds: string[];
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: true,
     description: 'Indica si el track está disponible en el sistema (opcional).'
   })
@@ -111,7 +111,7 @@ export class CreateTrackInput {
   @IsBoolean({ message: 'isAvailable debe ser un valor booleano' })
   isAvailable?: boolean;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: false,
     description: 'Indica si el track pertenece al género Gospel (opcional).'
   })

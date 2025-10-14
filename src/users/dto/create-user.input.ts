@@ -13,7 +13,7 @@ import {
   MinLength,
 } from 'class-validator';
 import { UserRole } from '../entities/user-role.enum';
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 
 export class CreateUserInput {
@@ -53,7 +53,7 @@ export class CreateUserInput {
   @IsNotEmpty({ message: 'La contraseña es obligatoria' })
   password: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '+54',
     description: 'Código de país del usuario (opcional).'
   })
@@ -61,7 +61,7 @@ export class CreateUserInput {
   @IsString({ message: 'El código de país debe ser un texto válido' })
   countryCode?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '2615551234',
     description: 'Número de teléfono del usuario (opcional).'
   })
@@ -69,7 +69,7 @@ export class CreateUserInput {
   @IsString({ message: 'El teléfono debe ser un texto válido' })
   phone?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'DNI',
     description: 'Tipo de documento de identidad (opcional).'
   })
@@ -77,7 +77,7 @@ export class CreateUserInput {
   @IsString({ message: 'El tipo de documento debe ser un texto válido' })
   typeCitizenID?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: '40123456',
     description: 'Número de documento de identidad del usuario (opcional).'
   })
@@ -85,15 +85,16 @@ export class CreateUserInput {
   @IsString({ message: 'El número de documento debe ser un texto válido' })
   citizenID?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: UserRole.ADMIN,
+    enum: UserRole,
     description: 'Rol asignado al usuario dentro del sistema (opcional). Valores posibles definidos en el enum UserRole.'
   })
   @IsEnum(UserRole, { message: 'El rol debe ser un valor válido de UserRole' })
   @IsOptional()
   role?: UserRole;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'https://ejemplo.com/imagenes/avatar.jpg',
     description: 'URL de la imagen de perfil del usuario (opcional).'
   })
@@ -101,7 +102,7 @@ export class CreateUserInput {
   @IsUrl({}, { message: 'El avatar debe ser una URL válida' })
   avatar?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: true,
     description: 'Indica si la cuenta del usuario está verificada (opcional).'
   })
@@ -109,7 +110,7 @@ export class CreateUserInput {
   @IsBoolean({ message: 'isVerified debe ser un valor booleano' })
   isVerified?: boolean;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'Desarrolladora full stack apasionada por la música.',
     description: 'Breve biografía o descripción personal del usuario (opcional).'
   })
@@ -117,14 +118,14 @@ export class CreateUserInput {
   @IsString({ message: 'La biografía debe ser un texto válido' })
   biography?: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: { instagram: 'https://urlderedsocial.com', twitter: 'https://urlderedsocial2.com' },
     description: 'Redes sociales asociadas al usuario como un objeto clave-valor (opcional).'
   })
   @IsOptional()
   socialNetworks?: Record<string, string>;
 
-  @ApiProperty({ example: ['uuid1', 'uuid2'], description: 'IDs de géneros preferidos' })
+  @ApiPropertyOptional({ example: ['uuid1', 'uuid2'], description: 'IDs de géneros preferidos' })
   @IsArray()
   @IsOptional()
   @IsUUID('4', { each: true })

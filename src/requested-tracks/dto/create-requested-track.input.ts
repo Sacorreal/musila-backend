@@ -24,6 +24,7 @@ export class CreateRequestedTrackInput {
 
   @ApiProperty({
     example: LicenseType.LICENCIA_DE_PRIMER_USO,
+    enum: LicenseType,
     description: 'Tipo de licencia solicitada para el track. Debe ser un valor válido dentro del enum LicenseType (por ejemplo: EXCLUSIVE, NON_EXCLUSIVE).'
   })
   @IsEnum(LicenseType, {

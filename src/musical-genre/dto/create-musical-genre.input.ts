@@ -1,4 +1,4 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateMusicalGenreInput {
@@ -11,7 +11,7 @@ export class CreateMusicalGenreInput {
   @IsNotEmpty()
   genre: string
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: ['Hard Rock', 'Rock Alternativo', 'Indie Rock'],
     description: 'Lista de subgéneros asociados al género principal. Este campo es opcional.'
   })
