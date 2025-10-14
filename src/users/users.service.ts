@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { UserRole } from './entities/user-role.enum';
@@ -123,5 +123,27 @@ export class UsersService {
 
   getUserRolesService() {
     return Object.values(UserRole);
+  }
+
+  async getFeaturedAuthorsByPreferredGenresService(userId: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      relations: ['preferredGenres']
+    })
+
+    if (!user?.preferredGenres?.length) return []
+
+    const genreIds = user.preferredGenres.map(genre => genre.id)
+
+    return await this.usersRepository.find({
+      where: {
+        id: Not(userId),
+        role: UserRole.AUTOR,
+        tracks: { genre: { id: In(genreIds) } }
+      },
+      relations: ['tracks', 'tracks.genre'],
+      take: 10
+    })
+
   }
 }
