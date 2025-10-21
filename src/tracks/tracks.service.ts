@@ -43,11 +43,23 @@ export class TracksService {
   }
 
   async createTrackService(createTrackInput: CreateTrackInput, file: Express.Multer.File) {
-    const { genreId, authorsIds, ...rest } = createTrackInput
+    const { genreId, subGenre, authorsIds, ...rest } = createTrackInput
 
     const genre = await this.genreRepository.findOne({ where: { id: genreId } })
 
     if (!genre) throw new NotFoundException('El género musical no existe');
+
+    if (genre.subGenre && genre.subGenre.length > 0) {
+      const isValidSubGenre = genre.subGenre.some(sg => sg.toLowerCase() === subGenre.toLowerCase())
+
+      if (!isValidSubGenre) {
+        throw new BadRequestException(`El subgénero "${subGenre}" no pertenece al género "${genre.genre}".` +
+          ` Los subgéneros válidos son: ${genre.subGenre.join(', ')}.`
+        );
+      }
+    } else {
+      throw new BadRequestException(`El género "${genre.genre}" no tiene subgéneros definidos.`)
+    }
 
     const authors = await this.usersRepository.find({ where: { id: In(authorsIds) } })
 
@@ -60,6 +72,7 @@ export class TracksService {
     const newTrack = this.tracksRepository.create({
       ...rest,
       genre,
+      subGenre,
       authors,
       url: uploadResult.url
     })
@@ -68,7 +81,12 @@ export class TracksService {
   }
 
   async findAllTracksService() {
-    return await this.tracksRepository.find({ relations: tracksRelations })
+    const tracks = await this.tracksRepository.find({ relations: ['genre'] })
+
+    return tracks.map(track => ({
+      ...track,
+      genre: track.genre ? { id: track.genre.id, genre: track.genre.genre } : null
+    }))
   }
 
   async findOneTrackService(id: string) {

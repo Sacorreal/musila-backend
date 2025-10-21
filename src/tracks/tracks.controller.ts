@@ -5,7 +5,7 @@ import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { TracksService } from './tracks.service';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { UsersService } from 'src/users/users.service';
 
@@ -16,8 +16,10 @@ export class TracksController {
     private readonly usersService: UsersService
   ) { }
 
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({type: CreateTrackInput})
   @Post()
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(FileInterceptor('file_track'))
   async createTrackController(@Body() createTrackInput: CreateTrackInput, @UploadedFile() file: Express.Multer.File) {
     return await this.tracksService.createTrackService(createTrackInput, file);
   }

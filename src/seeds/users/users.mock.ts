@@ -1,5 +1,3 @@
-
-
 import { UserRole } from "src/users/entities/user-role.enum";
 
 export const usersMock = [
@@ -11,6 +9,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.ADMIN,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Carlos",
@@ -19,6 +19,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.ADMIN,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Lucía",
@@ -27,6 +29,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.ADMIN,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Tomás",
@@ -35,6 +39,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.ADMIN,
     isVerified: false,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Valentina",
@@ -43,6 +49,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.ADMIN,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
 
   // ===== AUTOR (5) =====
@@ -54,6 +62,8 @@ export const usersMock = [
     role: UserRole.AUTOR,
     biography: "Compositor de música clásica y experimental.",
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Micaela",
@@ -63,6 +73,8 @@ export const usersMock = [
     role: UserRole.AUTOR,
     biography: "Autora de letras urbanas.",
     isVerified: false,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Santiago",
@@ -71,6 +83,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.AUTOR,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Julieta",
@@ -79,6 +93,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.AUTOR,
     isVerified: false,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Federico",
@@ -87,6 +103,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.AUTOR,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
 
   // ===== INTERPRETE (5) =====
@@ -97,6 +115,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.INTERPRETE,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Andrés",
@@ -105,6 +125,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.INTERPRETE,
     isVerified: false,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Camila",
@@ -113,6 +135,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.INTERPRETE,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Javier",
@@ -121,6 +145,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.INTERPRETE,
     isVerified: false,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Florencia",
@@ -129,6 +155,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.INTERPRETE,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
 
   // ===== CANTAUTOR (5) =====
@@ -139,6 +167,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.CANTAUTOR,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Sofía",
@@ -147,6 +177,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.CANTAUTOR,
     isVerified: false,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Ignacio",
@@ -155,6 +187,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.CANTAUTOR,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Paula",
@@ -163,6 +197,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.CANTAUTOR,
     isVerified: false,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Esteban",
@@ -171,6 +207,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.CANTAUTOR,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
 
   // ===== INVITADO (5) =====
@@ -181,6 +219,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.INVITADO,
     isVerified: false,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Gabriel",
@@ -189,6 +229,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.INVITADO,
     isVerified: false,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Laura",
@@ -197,6 +239,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.INVITADO,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Martín",
@@ -205,6 +249,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.INVITADO,
     isVerified: false,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Natalia",
@@ -213,6 +259,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.INVITADO,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
 
   // ===== EDITOR (5) =====
@@ -223,6 +271,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.EDITOR,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Carolina",
@@ -231,6 +281,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.EDITOR,
     isVerified: false,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Hernán",
@@ -239,6 +291,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.EDITOR,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Milagros",
@@ -247,6 +301,8 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.EDITOR,
     isVerified: false,
+    countryCode: "+54",
+    phone: "1123456789",
   },
   {
     name: "Sebastián",
@@ -255,5 +311,7 @@ export const usersMock = [
     password: "prueba123",
     role: UserRole.EDITOR,
     isVerified: true,
+    countryCode: "+54",
+    phone: "1123456789",
   },
 ];

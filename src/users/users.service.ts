@@ -78,7 +78,7 @@ export class UsersService {
   }
 
   async findAllUsersService() {
-    return await this.usersRepository.find({ relations: userRelations });
+    return await this.usersRepository.find();
   }
 
   async findOneUserService(id: string) {

@@ -37,7 +37,7 @@ export class MusicalGenreService {
   }
 
   async findAllMusicalGenreService() {
-    return await this.musicalGenreRepository.find({ relations: musicalGenreRelations })
+    return await this.musicalGenreRepository.find()
   }
 
   async findOneMusicalGenreService(id: string) {
