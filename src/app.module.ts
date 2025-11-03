@@ -11,6 +11,7 @@ import { ConfigModule } from './config/config.module';
 import { DatabaseModule } from './config/database/database.module';
 import { StorageModule } from './storage/storage.module';
 import { SeedsModule } from './seeds/seeds.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { SeedsModule } from './seeds/seeds.module';
     IntellectualPropertyModule,
     SeedsModule,
     StorageModule.forRootAsync(),
+    SearchModule,
   ],
   controllers: [],
   providers: [],

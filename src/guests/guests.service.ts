@@ -47,7 +47,7 @@ export class GuestsService {
   }
 
   async findAllGuestsService() {
-    return await this.guestsRepository.find({ relations: guestRelations })
+    return await this.guestsRepository.find()
   }
 
   async findOneGuestsService(id: string) {

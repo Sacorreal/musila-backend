@@ -3,7 +3,7 @@ import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Track } from './entities/track.entity';
-import { ILike, In, Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { User } from 'src/users/entities/user.entity';
 import { StorageService } from 'src/storage/storage.service';
@@ -13,6 +13,7 @@ const tracksRelations: string[] = [
   'genre',
   'intellectualProperties',
   'authors',
+  'tracks.authors',
   'playlists',
   'requestedTrack'
 ]
@@ -90,7 +91,7 @@ export class TracksService {
   }
 
   async findOneTrackService(id: string) {
-    return await this.findTrackWithRelations(id)
+    return await this.findTrackWithRelations(id);
   }
 
   async updateTrackService(id: string, updateTrackInput: UpdateTrackInput) {
@@ -108,15 +109,6 @@ export class TracksService {
     await this.tracksRepository.remove(trackToRemove);
 
     return trackToRemove
-  }
-
-  async searchTracksService(q: string) {
-    return await this.tracksRepository.find({
-      where: {
-        isAvailable: true,
-        title: ILike(`%${q}%`)
-      }
-    })
   }
 
 
