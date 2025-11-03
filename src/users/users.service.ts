@@ -77,6 +77,14 @@ export class UsersService {
     return this.saveAndReturnWithRelations(newUser)
   }
 
+  async findOneUserByIdService(id: string) {
+    const user = await this.usersRepository.findOne({ where: { id } });
+
+    if (!user) throw new NotFoundException('El usuario no existe');
+
+    return user
+  }
+
   async findAllUsersService() {
     return await this.usersRepository.find();
   }

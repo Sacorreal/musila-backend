@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>¡Tienes una invitación para unirte como colaborador en Musila!</title>
+</head>
+
+<body>
+    <div>
+        <div>
+            <img src="https://musila.sfo3.cdn.digitaloceanspaces.com/musila-logo.jpeg" alt="Musila Logo"
+                style="width: 150px;">
+            <h1>Musila - Dale vida a la música</h1>
+        </div>
+
+        <div>
+            <p>Hola <span>
+                    {{ invitedUserName }}
+                </span>,</p>
+
+            <p>¡Tenemos buenas noticias! Has sido invitado(a) por <span>
+                    {{ hostUserName }}
+                </span> para formar parte de su e|quipo en Musila.</p>
+
+            <h3>¿Qué significa unirte al equipo de {{ hostUserName }}?</h3>
+            <p>Como miembro del equipo, tendrás acceso a funciones especiales:</p>
+            <ul>
+                <li>🎧 Podrás buscar y descubrir nuevas canciones.</li>
+                <li>⭐ Podrás marcar canciones como favoritas.</li>
+                <li>➕ Podrás agregar canciones a las **playlists de {{ hostUserName }}**.</li>
+            </ul>
+
+            <p>¡Colabora en la curación musical y descubre nuevas melodías junto a **{{ hostUserName }}**!</p>
+
+            <div>
+                <a href="{{ acceptInvitationLink }}">Aceptar Invitación y Unirme</a>
+            </div>
+
+            <p>Si el botón no funciona, copia y pega el siguiente enlace en tu navegador:</p>
+            <p><small>
+                    {{ acceptInvitationLink }}
+                </small></p>
+
+            <p>Si no reconoces a <span>
+                    {{ hostUserName }}
+                </span>, puedes ignorar este email o contactar a nuestro soporte.</p>
+        </div>
+
+        <div class="footer">
+            <p>Gracias por usar Musila.</p>
+            <p>Visita la aplicación: <a href="{{ musilaAppLink }}">
+                    {{ musilaAppLink }}
+                </a></p>
+            <p>Este es un email automático, por favor no respondas a esta dirección.</p>
+
+        </div>
+    </div>
+</body>
+
+</html>
