@@ -3,7 +3,7 @@ import { CreateMusicalGenreInput } from './dto/create-musical-genre.input';
 import { UpdateMusicalGenreInput } from './dto/update-musical-genre.input';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MusicalGenre } from './entities/musical-genre.entity';
-import { Repository } from 'typeorm';
+import { ILike, Repository } from 'typeorm';
 import { Track } from 'src/tracks/entities/track.entity';
 
 const musicalGenreRelations: string[] = ['tracks']
@@ -16,11 +16,23 @@ export class MusicalGenreService {
   ) { }
 
 
-  private async findMusicalGenreWithRelations(id: string): Promise<MusicalGenre> {
-    const genre = await this.musicalGenreRepository.findOne({
-      where: { id },
-      relations: musicalGenreRelations
-    })
+  private async findMusicalGenreWithRelations(identifier: string): Promise<MusicalGenre> {
+
+    const isUUID = /^[0-9a-fA-F-]{36}$/.test(identifier)
+
+    let genre: MusicalGenre | null = null
+
+    if (isUUID) {
+      genre = await this.musicalGenreRepository.findOne({
+        where: { id: identifier },
+        relations: musicalGenreRelations
+      })
+    } else {
+      genre = await this.musicalGenreRepository.findOne({
+        where: { genre: ILike(identifier) },
+        relations: musicalGenreRelations
+      })
+    }
 
     if (!genre) throw new NotFoundException('El genero no existe')
     return genre
