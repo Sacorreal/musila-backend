@@ -50,21 +50,21 @@ export class RegisterAuthDto {
     @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
     repeatPassword: string
 
-    @ApiPropertyOptional({
+    @ApiProperty({
         example: '+54',
         description: 'Código de país del usuario (opcional).'
     })
-    @IsOptional()
+    @IsNotEmpty({ message: 'El código de país es obligatorio' })
     @IsString({ message: 'El código de país debe ser un texto válido' })
-    countryCode?: string;
+    countryCode: string;
 
-    @ApiPropertyOptional({
+    @ApiProperty({
         example: '2615551234',
         description: 'Número de teléfono del usuario (opcional).'
     })
-    @IsOptional()
+    @IsNotEmpty({ message: 'El teléfono es obligatorio' })
     @IsString({ message: 'El teléfono debe ser un texto válido' })
-    phone?: string;
+    phone: string;
 
     @ApiPropertyOptional({
         example: 'DNI',
@@ -82,14 +82,14 @@ export class RegisterAuthDto {
     @IsString({ message: 'El número de documento debe ser un texto válido' })
     citizenID?: string;
 
-    @ApiPropertyOptional({
+    @ApiProperty({
         example: UserRole.ADMIN,
         enum: UserRole,
         description: 'Rol asignado al usuario dentro del sistema (opcional). Valores posibles definidos en el enum UserRole.'
     })
+    @IsNotEmpty({ message: 'El rol es obligatorio' })
     @IsEnum(UserRole, { message: 'El rol debe ser un valor válido de UserRole' })
-    @IsOptional()
-    role?: UserRole;
+    role: UserRole;
 
     @ApiPropertyOptional({
         example: 'https://ejemplo.com/imagenes/avatar.jpg',
@@ -127,4 +127,11 @@ export class RegisterAuthDto {
     @IsOptional()
     @IsUUID('4', { each: true })
     preferredGenres?: string[]
+
+    @ApiPropertyOptional({
+        format: 'binary',
+        description: 'Archivo de imagen para el avatar del usuario (opcional).',
+    })
+    @IsOptional()
+    file_avatar?: Express.Multer.File
 }

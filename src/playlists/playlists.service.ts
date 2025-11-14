@@ -61,7 +61,7 @@ export class PlaylistsService {
   }
 
   async findAllPlaylistsService() {
-    return await this.playlistRepository.find({ relations: playlistsRelations })
+    return await this.playlistRepository.find()
   }
 
   async findOnePlaylistsService(id: string) {
