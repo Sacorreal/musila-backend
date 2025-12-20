@@ -8,7 +8,7 @@ import { ConfigModule as NestConfigModule } from "@nestjs/config";
     imports: [
         NestConfigModule.forRoot({
             isGlobal: true,
-            envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
+            envFilePath: `.env.${process.env.NODE_ENV}`,
         })
     ]
 })

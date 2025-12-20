@@ -1,13 +1,16 @@
+import * as dotenv from "dotenv"
 import { MailerOptions } from "@nestjs-modules/mailer"
 import { join } from "path"
 import { HandlebarsAdapter } from "@nestjs-modules/mailer/dist/adapters/handlebars.adapter"
 
 
+dotenv.config({ path: `.env.${process.env.NODE_ENV}` })
+
 export const mailConfig: MailerOptions = {
 
     transport: {
         host: process.env.MAIL_HOST,
-        port: Number(process.env.MAIL_PORT) || 2525,
+        port: Number(process.env.MAIL_PORT),
         secure: false,
         auth: {
             user: process.env.MAIL_USER,
@@ -15,7 +18,7 @@ export const mailConfig: MailerOptions = {
         },
     },
     defaults: {
-        from: '"Musila", <no-reply@musila.com>'
+        from: process.env.MAIL_FROM
     },
     template: {
         dir: join(__dirname, '../mail/templates'),

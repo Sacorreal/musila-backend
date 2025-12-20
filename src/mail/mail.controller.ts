@@ -16,17 +16,24 @@ export class MailController {
   @Get('test-invite')
   async testInvite(
     @Query('email') email: string,
-    @Query('invited') invitedUserName: string,
     @CurrentUser([UserRole.CANTAUTOR, UserRole.INTERPRETE]) user: JwtPayload
   ) {
 
-    if (!email || !invitedUserName) {
-      throw new BadRequestException('Debe enviar email e invitedUserName por query')
+    if (!email) {
+      throw new BadRequestException('Debe enviar el email por query')
 
     }
 
-    await this.mailService.sendEmailCollaborationInviteService(email, invitedUserName, user.id)
+    await this.mailService.sendEmailCollaborationInviteService(
+      email,
+      user.id
+    )
 
     return { message: `Correo enviado a ${email}` };
+  }
+
+  @Get('test-reset-password')
+  async testResetPasswordController(@Query('email') email: string, @Query('name') name: string, @Query('resetLink') resetLink: string) {
+    return await this.mailService.sendPasswordResetEmailService(email, name, resetLink)
   }
 }

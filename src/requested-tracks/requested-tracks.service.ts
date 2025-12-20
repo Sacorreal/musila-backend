@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import { Track } from 'src/tracks/entities/track.entity';
 import { User } from 'src/users/entities/user.entity';
 import { StorageService } from 'src/storage/storage.service';
+import { MailService } from 'src/mail/mail.service';
 
 const requestedTracksRelations: string[] = [
   'requester',
@@ -19,7 +20,8 @@ export class RequestedTracksService {
     @InjectRepository(RequestedTrack) private readonly requestedTracksRepository: Repository<RequestedTrack>,
     @InjectRepository(Track) private readonly tracksRepository: Repository<Track>,
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
-    private readonly storageService: StorageService
+    private readonly storageService: StorageService,
+    private readonly mailService: MailService
 
   ) { }
 
@@ -45,7 +47,10 @@ export class RequestedTracksService {
     const requester = await this.usersRepository.findOne({ where: { id: requesterId } })
     if (!requester) throw new NotFoundException('El usuario solicitante no existe')
 
-    const track = await this.tracksRepository.findOne({ where: { id: trackId } })
+    const track = await this.tracksRepository.findOne({
+      where: { id: trackId },
+      relations: ['authors']
+    })
     if (!track) throw new NotFoundException('La pista no existe')
 
     let documentUrl: string | null = null
@@ -58,15 +63,40 @@ export class RequestedTracksService {
       documentUrl = uploadResult.url
     }
 
-
     const newRequestedTrack = this.requestedTracksRepository.create({
       requester,
       track,
       licenseType,
-      documentUrl
+      documentUrl,
     })
 
-    return await this.saveAndReturnWithRelations(newRequestedTrack)
+    const savedNewRequestedTrack = await this.saveAndReturnWithRelations(newRequestedTrack)
+
+    const authors = track.authors
+    const authorsNames = authors.map(author => author.name).join(', ')
+    const isMultipleAuthors = authors.length > 1;
+
+    for (const author of authors) {
+      await this.mailService.sendAuthorRequestNotificationService(
+        author.email,
+        author.name,
+        track.title,
+        requester.name,
+        licenseType,
+
+      )
+    }
+
+    await this.mailService.sendRequestTrackService(
+      requester.email,
+      requester.name,
+      track.title,
+      authorsNames,
+      savedNewRequestedTrack.status,
+      isMultipleAuthors
+    )
+
+    return savedNewRequestedTrack
   }
 
   async findAllRequestedTracksService() {

@@ -41,8 +41,8 @@ export class Track {
   @Column({ type: 'varchar', default: 'urllogoapp.img', nullable: false })
   cover?: string;
 
-  @Column('varchar', { nullable: false })
-  url: string;
+  @Column('varchar', { nullable: true })
+  url?: string;
 
   @Column('int', { nullable: false })
   year: number;

@@ -16,6 +16,7 @@ switch (nodeEnv) {
       database: process.env.DB_NAME,
       autoLoadEntities: true,
       synchronize: true,
+      dropSchema: false,
     };
     break;
 
