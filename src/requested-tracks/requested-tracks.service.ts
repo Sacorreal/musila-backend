@@ -100,7 +100,7 @@ export class RequestedTracksService {
   }
 
   async findAllRequestedTracksService() {
-    return await this.requestedTracksRepository.find({ relations: requestedTracksRelations })
+    return await this.requestedTracksRepository.find()
   }
 
   async findOneRequestedTracksService(id: string) {

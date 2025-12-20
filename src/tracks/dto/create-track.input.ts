@@ -33,13 +33,12 @@ export class CreateTrackInput {
   @IsNotEmpty({ message: 'El genreId es obligatorio' })
   genreId: string;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'Rock Progresivo',
-    description: 'Subgénero musical de la canción (opcional)'
+    description: 'Subgénero musical de la canción'
   })
-  @IsOptional()
   @IsString({ message: 'El subgénero debe ser un texto válido' })
-  subGenre?: string;
+  subGenre: string;
 
   @ApiPropertyOptional({
     example: 'https://ejemplo.com/imagenes/bohemian-rhapsody.jpg',
@@ -58,21 +57,21 @@ export class CreateTrackInput {
   @IsNotEmpty({ message: 'El idioma es obligatorio' })
   language: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 1975,
     description: 'Año de lanzamiento de la canción.'
   })
-  @IsNotEmpty({ message: 'El año es obligatorio' })
   @IsNumber({}, { message: 'El año debe ser un número' })
-  year: number
+  @IsOptional()
+  year?: number
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'Is this the real life? Is this just fantasy?...',
     description: 'Letra completa de la canción.'
   })
   @IsString({ message: 'La letra debe ser un texto válido' })
-  @IsNotEmpty({ message: 'La letra es obligatoria' })
-  lyric: string;
+  @IsOptional()
+  lyric?: string;
 
   @ApiPropertyOptional({
     example: [
@@ -88,6 +87,7 @@ export class CreateTrackInput {
   externalsIds?: ExternalIdInput[];
 
   @ApiProperty({
+    type: [String],
     example: [
       '660e8400-e29b-41d4-a716-446655440000',
       '770e8400-e29b-41d4-a716-446655440000'
@@ -115,11 +115,10 @@ export class CreateTrackInput {
   @IsBoolean({ message: 'isAvailable debe ser un valor booleano' })
   isAvailable?: boolean;
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: false,
-    description: 'Indica si el track pertenece al género Gospel (opcional).'
+    description: 'Indica si el track pertenece al género Gospel.'
   })
-  @IsOptional()
   @IsBoolean({ message: 'isGospel debe ser un valor booleano' })
-  isGospel?: boolean;
+  isGospel: boolean;
 }

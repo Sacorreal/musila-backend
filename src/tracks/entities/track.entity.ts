@@ -34,24 +34,24 @@ export class Track {
   })
   genre: MusicalGenre;
 
-  @Column('varchar', { name: 'sub_genre', nullable: true })
-  subGenre?: string;
+  @Column('varchar', { name: 'sub_genre' })
+  subGenre: string;
 
   //TODO: agregar url del logo de la app por default
-  @Column({ type: 'varchar', default: 'urllogoapp.img', nullable: false })
+  @Column({ type: 'varchar', default: 'https://musila.sfo3.cdn.digitaloceanspaces.com/musila-logo.jpeg', nullable: true })
   cover?: string;
 
   @Column('varchar', { nullable: true })
   url?: string;
 
-  @Column('int', { nullable: false })
-  year: number;
+  @Column('int', { nullable: true })
+  year?: number;
 
   @Column('varchar', { nullable: false })
   language: string;
 
-  @Column('varchar', { nullable: false })
-  lyric: string;
+  @Column('varchar', { nullable: true })
+  lyric?: string;
 
   @Column('jsonb', { name: 'externals_ids', nullable: true })
   externalsIds?: ExternalId[]

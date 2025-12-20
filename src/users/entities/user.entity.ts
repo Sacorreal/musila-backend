@@ -34,11 +34,11 @@ export class User {
   @Column('varchar', { nullable: false, select: false })
   password: string;
 
-  @Column('varchar', { name: 'country_code', nullable: true })
-  countryCode?: string;
+  @Column('varchar', { name: 'country_code'})
+  countryCode: string;
 
-  @Column({ nullable: true })
-  phone?: string;
+  @Column('varchar')
+  phone: string;
 
   @Column('varchar', { name: 'type_citizen_id', nullable: true })
   typeCitizenID?: string;
@@ -91,6 +91,9 @@ export class User {
     { nullable: true },
   )
   requestSent?: RequestedTrack[];
+
+  @Column('boolean', { default: true, name: 'is_user_free' })
+  isUserFree: boolean
 
   @CreateDateColumn({
     name: 'created_at',
