@@ -17,7 +17,7 @@ export class TracksController {
   ) { }
 
   @ApiConsumes('multipart/form-data')
-  @ApiBody({type: CreateTrackInput})
+  @ApiBody({ type: CreateTrackInput })
   @Post()
   @UseInterceptors(FileInterceptor('file_track'))
   async createTrackController(@Body() createTrackInput: CreateTrackInput, @UploadedFile() file: Express.Multer.File) {

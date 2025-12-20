@@ -118,7 +118,7 @@ export class RequestedTracksService {
   async removeRequestedTracksService(id: string) {
     const requestedTrackToRemove = await this.findRequestedTrackWithRelations(id)
 
-    await this.requestedTracksRepository.remove(requestedTrackToRemove)
+    await this.requestedTracksRepository.softRemove(requestedTrackToRemove)
 
     return requestedTrackToRemove
   }

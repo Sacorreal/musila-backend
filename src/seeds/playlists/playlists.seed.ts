@@ -19,7 +19,7 @@ export class PlaylistsSeed {
         }
 
         for (const playlist of playlistsMock) {
-            const existingPlaylist = await this.playlistsRepository.findOne({ where: { title: playlist.title } })
+            const existingPlaylist = await this.playlistsRepository.findOne({ where: { title: playlist.title }, withDeleted: true });
 
             if (!existingPlaylist) {
 

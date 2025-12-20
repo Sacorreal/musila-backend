@@ -102,7 +102,7 @@ export class PlaylistsService {
   async removePlaylistsService(id: string) {
     const playlistToRemove = await this.findPlaylistWithRelations(id)
 
-    await this.playlistRepository.remove(playlistToRemove)
+    await this.playlistRepository.softRemove(playlistToRemove)
 
     return playlistToRemove
   }

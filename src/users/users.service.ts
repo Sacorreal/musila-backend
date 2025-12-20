@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { CreateUserInput } from './dto/create-user.input';
@@ -51,7 +51,6 @@ export class UsersService {
     const uploadResult = await this.storageService.uploadObject(putObjectDto, file)
 
     return uploadResult.url
-
   }
 
 
@@ -61,6 +60,10 @@ export class UsersService {
   ) {
 
     const { preferredGenres, ...rest } = createUserInput
+
+    if(preferredGenres && preferredGenres.length > 3) {
+      throw new BadRequestException('El usuario no puede tener más de 3 géneros preferidos');
+    }
 
     const newUser = this.usersRepository.create(rest)
 
@@ -101,6 +104,10 @@ export class UsersService {
 
     Object.assign(existingUser, rest);
 
+    if(preferredGenres && preferredGenres.length > 3) {
+      throw new BadRequestException('El usuario no puede tener más de 3 géneros preferidos');
+    }
+
     if (preferredGenres) {
       const genres = await this.musicalGenreRepository.findBy({
         id: In(preferredGenres)
@@ -117,7 +124,7 @@ export class UsersService {
   async removeUserService(id: string) {
     const userToRemove = await this.findUserWithRelations(id);
 
-    await this.usersRepository.remove(userToRemove);
+    await this.usersRepository.softRemove(userToRemove);
 
     return userToRemove;
   }

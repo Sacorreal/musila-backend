@@ -68,7 +68,7 @@ export class MusicalGenreService {
   async removeMusicalGenreService(id: string) {
     const genreToRemove = await this.findMusicalGenreWithRelations(id)
 
-    await this.musicalGenreRepository.remove(genreToRemove)
+    await this.musicalGenreRepository.softRemove(genreToRemove)
 
     return genreToRemove
 

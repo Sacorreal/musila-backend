@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger"
-import { IsArray, IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength } from "class-validator"
+import { ArrayMaxSize, IsArray, IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength } from "class-validator"
 import { UserRole } from "src/users/entities/user-role.enum"
 
 
@@ -26,7 +26,7 @@ export class RegisterAuthDto {
 
 
     @ApiProperty({
-        example: 'sofi.perez@mail.com',
+        example: 'sofi.perez@gmail.com',
         description: 'Correo electrónico único del usuario.'
     })
     @IsEmail({}, { message: 'Debe proporcionar un email válido' })
@@ -43,7 +43,7 @@ export class RegisterAuthDto {
     password: string;
 
     @ApiProperty({
-        example: 'micontraseña123',
+        example: 'miContraseña123',
         description: 'Repetición de la contraseña para validar coincidencia'
     })
     @IsString()
@@ -126,6 +126,7 @@ export class RegisterAuthDto {
     @IsArray()
     @IsOptional()
     @IsUUID('4', { each: true })
+    @ArrayMaxSize(3, { message: 'El array de preferredGenres debe tener un máximo de 3 elementos' })
     preferredGenres?: string[]
 
     @ApiPropertyOptional({

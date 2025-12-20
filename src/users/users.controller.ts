@@ -6,6 +6,9 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { AuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { UserRole } from './entities/user-role.enum';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
 
 
 @ApiTags('Users')
@@ -13,6 +16,9 @@ import { AuthGuard } from 'src/auth/guards/jwt-auth.guard';
 export class UsersController {
   constructor(private readonly usersService: UsersService) { }
 
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
   @Get()
   async findAllUserController() {
     return await this.usersService.findAllUsersService();

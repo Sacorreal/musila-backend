@@ -12,7 +12,7 @@ export class UsersSeed {
     async seedUsers() {
 
         for (const user of usersMock) {
-            const existingUser = await this.usersRepository.findOne({ where: { email: user.email } })
+            const existingUser = await this.usersRepository.findOne({ where: { email: user.email }, withDeleted: true });
 
             if (!existingUser) {
                 const hashedPassword = await bcrypt.hash(user.password, 10)

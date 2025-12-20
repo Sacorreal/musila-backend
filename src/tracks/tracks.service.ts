@@ -120,7 +120,7 @@ export class TracksService {
   async removeTrackService(id: string) {
     const trackToRemove = await this.findTrackWithRelations(id);
 
-    await this.tracksRepository.remove(trackToRemove);
+    await this.tracksRepository.softRemove(trackToRemove);
 
     return trackToRemove
   }
