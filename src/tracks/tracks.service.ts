@@ -66,16 +66,15 @@ export class TracksService {
 
     if (authors.length !== authorsIds.length) throw new NotFoundException('Uno o más autores no existen');
 
-    if (!file) throw new BadRequestException('El archivo de la canción es obligatorio');
-    const putObjectDto: PutObjectDto = { key: crypto.randomUUID() }
-    const uploadResult = await this.storageService.uploadObject(putObjectDto, file)
+    // if (!file) throw new BadRequestException('El archivo de la canción es obligatorio');
+    // const putObjectDto: PutObjectDto = { key: crypto.randomUUID() }
+    // const uploadResult = await this.storageService.uploadObject(putObjectDto, file)
 
     const newTrack = this.tracksRepository.create({
       ...rest,
       genre,
       subGenre,
       authors,
-      url: uploadResult.url
     })
 
     return await this.saveAndReturnWithRelations(newTrack)
@@ -97,7 +96,22 @@ export class TracksService {
   async updateTrackService(id: string, updateTrackInput: UpdateTrackInput) {
     const existingTrack = await this.findTrackWithRelations(id);
 
-    Object.assign(existingTrack, updateTrackInput);
+    const { genreId, authorsIds, ...rest } = updateTrackInput
+
+    Object.assign(existingTrack, rest);
+
+    if (genreId) {
+      const genre = await this.genreRepository.findOne({ where: { id: genreId } })
+      if(!genre) throw new NotFoundException('El género musical no existe');
+      existingTrack.genre = genre;
+    }
+
+    if(authorsIds) {
+      const authors = await this.usersRepository.find({ where: {id: In(authorsIds) } })
+
+      if(authors.length !== authorsIds.length) throw new NotFoundException('Uno o más autores no existen');
+      existingTrack.authors = authors;
+    }
 
     return await this.saveAndReturnWithRelations(existingTrack)
 

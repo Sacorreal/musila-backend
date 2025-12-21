@@ -100,7 +100,11 @@ export class CreateTrackInput {
     message: 'Cada authorId debe ser un UUID v4 válido',
   })
   @IsNotEmpty({ message: 'authorsIds no puede estar vacío' })
-  @Transform(({ value }) => typeof value === 'string' ? value.split(',').map(v => v.trim()).filter(Boolean) : [])
+  @Transform(({ value }) => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') return value.split(',').map(v => v.trim()).filter(Boolean);
+    return [];
+  })
   authorsIds: string[];
 
   @ApiPropertyOptional({

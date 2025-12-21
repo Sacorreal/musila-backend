@@ -41,8 +41,8 @@ export class Track {
   @Column({ type: 'varchar', default: 'https://musila.sfo3.cdn.digitaloceanspaces.com/musila-logo.jpeg', nullable: true })
   cover?: string;
 
-  @Column('varchar', { nullable: false })
-  url: string;
+  @Column('varchar', { nullable: true })
+  url?: string;
 
   @Column('int', { nullable: true })
   year?: number;

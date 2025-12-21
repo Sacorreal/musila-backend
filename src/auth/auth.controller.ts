@@ -3,10 +3,12 @@ import { AuthService } from './auth.service';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ForgotPasswordDto } from './dto/forgotPassword.dto';
+import { ResetPasswordDto } from './dto/resetPassword.dto';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post('login')
   async loginController(@Body() user: LoginAuthDto) {
@@ -21,5 +23,16 @@ export class AuthController {
 
 
     return this.authService.registerService(user, file);
+  }
+
+  @Post('forgot-password')
+  async forgotPasswordController(@Body() forgotPassword: ForgotPasswordDto) {
+
+    return await this.authService.sendResetPasswordEmailService(forgotPassword)
+  }
+
+  @Post('reset-password')
+  async resetPasswordController(@Body() resetPassword: ResetPasswordDto) {
+    return this.authService.resetPasswordService(resetPassword)
   }
 }

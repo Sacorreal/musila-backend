@@ -122,10 +122,18 @@ export class UsersService {
     return userToRemove;
   }
 
+  private async findUserByEmailForAuthService(email: string) {
+    return await this.usersRepository.findOne({
+      where: { email },
+      select: ['id', 'email', 'password', 'role', 'name'],
+    })
+  }
+
+
   async findUserByEmailService(email: string) {
     return await this.usersRepository.findOne({
       where: { email },
-      select: ['id', 'email', 'password', 'role'],
+      select: ['id', 'email', 'role', 'name'],
     });
   }
 
