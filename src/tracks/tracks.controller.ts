@@ -1,26 +1,41 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { AuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+import { UsersService } from 'src/users/users.service';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { TracksService } from './tracks.service';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
-import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { UsersService } from 'src/users/users.service';
 
 @ApiTags('Tracks')
 @Controller('tracks')
 export class TracksController {
-  constructor(private readonly tracksService: TracksService,
-    private readonly usersService: UsersService
-  ) { }
+  constructor(
+    private readonly tracksService: TracksService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: CreateTrackInput })
   @Post()
   @UseInterceptors(FileInterceptor('file_track'))
-  async createTrackController(@Body() createTrackInput: CreateTrackInput, @UploadedFile() file: Express.Multer.File) {
+  async createTrackController(
+    @Body() createTrackInput: CreateTrackInput,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
     return await this.tracksService.createTrackService(createTrackInput, file);
   }
 
@@ -30,14 +45,20 @@ export class TracksController {
     return await this.tracksService.findAllTracksService();
   }
 
+  @Get('my-tracks')
+  async findMyTracksController(@CurrentUser() user: JwtPayload) {
+    return this.tracksService.findAllTracksService(user);
+  }
+
   @UseGuards(AuthGuard)
   @ApiBearerAuth()
   @Get('by-preferred-genres')
-  async getTracksByPreferredGenresController(@CurrentUser() payload: JwtPayload) {
+  async getTracksByPreferredGenresController(
+    @CurrentUser() payload: JwtPayload,
+  ) {
+    const user = await this.usersService.findOneUserService(payload.id);
 
-    const user = await this.usersService.findOneUserService(payload.id)
-
-    return this.tracksService.findTracksByUserPreferredGenresService(user)
+    return this.tracksService.findTracksByUserPreferredGenresService(user);
   }
 
   @Get(':id')
@@ -46,7 +67,10 @@ export class TracksController {
   }
 
   @Put(':id')
-  async updateTrackController(@Body() updateTrackInput: UpdateTrackInput, @Param('id') id: string,) {
+  async updateTrackController(
+    @Body() updateTrackInput: UpdateTrackInput,
+    @Param('id') id: string,
+  ) {
     return await this.tracksService.updateTrackService(id, updateTrackInput);
   }
 

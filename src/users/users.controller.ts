@@ -13,6 +13,8 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { JwtAuthRolesGuard } from 'src/auth/guards/jwt-auth-roles.guard';
 import { AuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { UpdateUserInput } from './dto/update-user.input';
@@ -25,6 +27,9 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
+  @UseGuards(JwtAuthRolesGuard)
+  @Roles(UserRole.ADMIN)
+  @ApiBearerAuth()
   async findAllUserController() {
     return await this.usersService.findAllUsersService();
   }
