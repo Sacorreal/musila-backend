@@ -4,14 +4,16 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { StorageService } from 'src/storage/storage.service';
+import { UserRole } from 'src/users/entities/user-role.enum';
 import { User } from 'src/users/entities/user.entity';
-import { In, Repository } from 'typeorm';
+import { FindOptionsWhere, In, Repository } from 'typeorm';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { Track } from './entities/track.entity';
+
+import { FindAllTracksOptions } from './interface/tracks-options.interface';
 
 const tracksRelations: string[] = [
   'genre',
@@ -99,13 +101,29 @@ export class TracksService {
     return await this.saveAndReturnWithRelations(newTrack);
   }
 
-  async findAllTracksService(user?: JwtPayload) {
-    const tracks = await this.tracksRepository.find({
-      where: user ? { authors: { id: user.id } } : {},
-      relations: ['genre'],
-    });
+  async findAllTracksService(
+    options: FindAllTracksOptions = {},
+  ): Promise<Track[]> {
+    const { user, params } = options;
+    // Admin ve todo sin filtros
+    if (user?.role === UserRole.ADMIN) {
+      return this.tracksRepository.find();
+    }
 
-    return tracks;
+    const { limit, offset, isGospel, language, subGenre } = params ?? {};
+
+    const where: FindOptionsWhere<Track> = {
+      ...(user && { authors: { id: user.id } }),
+      ...(isGospel !== undefined && { isGospel }),
+      ...(language && { language }),
+      ...(subGenre && { subGenre }),
+    };
+
+    return this.tracksRepository.find({
+      where,
+      take: limit,
+      skip: offset,
+    });
   }
 
   async findOneTrackService(id: string) {

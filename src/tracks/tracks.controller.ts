@@ -6,12 +6,15 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UploadedFile,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiTags } from '@nestjs/swagger';
+import { FilterTrackDto } from './dto/filter-track.dto';
+
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { AuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
@@ -40,14 +43,16 @@ export class TracksController {
   }
 
   @Get()
-  // @UseGuards(AuthGuard)
-  async findAllTracksController() {
-    return await this.tracksService.findAllTracksService();
+  async findAllTracksController(
+    //@CurrentUser() user: JwtPayload,
+    @Query() params: FilterTrackDto,
+  ) {
+    return await this.tracksService.findAllTracksService({ params });
   }
 
   @Get('my-tracks')
   async findMyTracksController(@CurrentUser() user: JwtPayload) {
-    return this.tracksService.findAllTracksService(user);
+    return this.tracksService.findAllTracksService({ user });
   }
 
   @UseGuards(AuthGuard)
