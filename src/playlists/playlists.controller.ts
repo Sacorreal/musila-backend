@@ -1,22 +1,36 @@
-import { PlaylistsService } from './playlists.service';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+} from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { CreatePlaylistInput } from './dto/create-playlist.input';
 import { UpdatePlaylistInput } from './dto/update-playlist.input';
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import { PlaylistsService } from './playlists.service';
 
 @ApiTags('Playlists')
 @Controller('playlists')
 export class PlaylistsController {
-  constructor(private readonly playlistsService: PlaylistsService) { }
+  constructor(private readonly playlistsService: PlaylistsService) {}
 
   @Post()
-  async createPlaylistsController(@Body() createPlaylistInput: CreatePlaylistInput) {
-    return await this.playlistsService.createPlaylistsService(createPlaylistInput);
+  async createPlaylistsController(
+    @Body() createPlaylistInput: CreatePlaylistInput,
+  ) {
+    return await this.playlistsService.createPlaylistsService(
+      createPlaylistInput,
+    );
   }
 
   @Get()
-  async findAllPlaylistsController() {
-    return await this.playlistsService.findAllPlaylistsService();
+  async findAllPlaylistsController(@CurrentUser() user: JwtPayload) {
+    return await this.playlistsService.findAllPlaylistsService(user);
   }
 
   @Get(':id')
@@ -25,8 +39,14 @@ export class PlaylistsController {
   }
 
   @Put('id')
-  async updatePlaylistsController(@Body() updatePlaylistInput: UpdatePlaylistInput, @Param('id') id: string) {
-    return await this.playlistsService.updatePlaylistsService(id, updatePlaylistInput);
+  async updatePlaylistsController(
+    @Body() updatePlaylistInput: UpdatePlaylistInput,
+    @Param('id') id: string,
+  ) {
+    return await this.playlistsService.updatePlaylistsService(
+      id,
+      updatePlaylistInput,
+    );
   }
 
   @Delete(':id')
