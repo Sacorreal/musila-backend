@@ -1,4 +1,5 @@
 import { Guest } from 'src/guests/entities/guest.entity';
+import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Playlist } from 'src/playlists/entities/playlist.entity';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { Track } from 'src/tracks/entities/track.entity';
@@ -14,11 +15,9 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { UserRole } from './user-role.enum';
-import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 
 @Entity({ name: 'users' })
 export class User {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -34,10 +33,10 @@ export class User {
   @Column('varchar', { nullable: false, select: false })
   password: string;
 
-  @Column('varchar', { name: 'country_code'})
+  @Column('varchar', { name: 'country_code', nullable: true })
   countryCode: string;
 
-  @Column('varchar')
+  @Column('varchar', { nullable: true })
   phone: string;
 
   @Column('varchar', { name: 'type_citizen_id', nullable: true })
@@ -49,7 +48,7 @@ export class User {
   @Column({
     type: 'enum',
     enum: UserRole,
-    default: UserRole.INVITADO
+    default: UserRole.INVITADO,
   })
   role: UserRole;
 
@@ -74,7 +73,7 @@ export class User {
     joinColumn: { name: 'user_id' },
     inverseJoinColumn: { name: 'genre_id' },
   })
-  preferredGenres?: MusicalGenre[]
+  preferredGenres?: MusicalGenre[];
 
   @OneToMany(() => Guest, (guest) => guest.invited_by, { nullable: true })
   guests?: Guest[];
@@ -93,7 +92,7 @@ export class User {
   requestSent?: RequestedTrack[];
 
   @Column('boolean', { default: true, name: 'is_user_free' })
-  isUserFree: boolean
+  isUserFree: boolean;
 
   @CreateDateColumn({
     name: 'created_at',
