@@ -17,7 +17,7 @@ export class MusicalGenreSeed {
 
         for (const musicalGenre of musicalGenresMock) {
 
-            const existingMusicalGenre = await this.musicalGenreRepository.findOne({ where: { genre: musicalGenre.genre } });
+            const existingMusicalGenre = await this.musicalGenreRepository.findOne({ where: { genre: musicalGenre.genre }, withDeleted: true });
 
             if (!existingMusicalGenre) {
                 const newMusicalGenre = this.musicalGenreRepository.create(musicalGenre)

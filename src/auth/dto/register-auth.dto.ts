@@ -1,46 +1,138 @@
-import { IsEmail, IsOptional, IsString, MinLength } from "class-validator"
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger"
+import { ArrayMaxSize, IsArray, IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength } from "class-validator"
 import { UserRole } from "src/users/entities/user-role.enum"
 
 
 
 export class RegisterAuthDto {
+
+
+    @ApiProperty({
+        example: 'Sofía',
+        description: 'Nombre del usuario.'
+    })
+    @IsString({ message: 'El nombre debe ser un texto válido' })
+    @IsNotEmpty({ message: 'El nombre es obligatorio' })
+    @MaxLength(255, { message: 'El nombre no puede superar los 255 caracteres' })
+    name: string;
+
+    @ApiProperty({
+        example: 'Pérez',
+        description: 'Apellido del usuario.'
+    })
+    @IsString({ message: 'El apellido debe ser un texto válido' })
+    @IsNotEmpty({ message: 'El apellido es obligatorio' })
+    lastName: string;
+
+
+    @ApiProperty({
+        example: 'sofi.perez@gmail.com',
+        description: 'Correo electrónico único del usuario.'
+    })
+    @IsEmail({}, { message: 'Debe proporcionar un email válido' })
+    @IsNotEmpty({ message: 'El email es obligatorio' })
+    email: string;
+
+    @ApiProperty({
+        example: 'miContraseña123',
+        description: 'Contraseña de acceso (mínimo 6 caracteres).'
+    })
+    @IsString({ message: 'La contraseña debe ser un texto válido' })
+    @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
+    @IsNotEmpty({ message: 'La contraseña es obligatoria' })
+    password: string;
+
+    @ApiProperty({
+        example: 'miContraseña123',
+        description: 'Repetición de la contraseña para validar coincidencia'
+    })
     @IsString()
-    name: string
-
-    @IsString()
-    lastName: string
-
-    @IsEmail()
-    email: string
-
-    @IsString()
-    @MinLength(6)
-    password: string
-
-
-    @IsString()
-    @MinLength(6)
+    @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
     repeatPassword: string
 
-    @IsString()
-    @IsOptional()
-    countryCode?: string
+    @ApiProperty({
+        example: '+54',
+        description: 'Código de país del usuario (opcional).'
+    })
+    @IsNotEmpty({ message: 'El código de país es obligatorio' })
+    @IsString({ message: 'El código de país debe ser un texto válido' })
+    countryCode: string;
 
-    @IsOptional()
-    phone?: string
+    @ApiProperty({
+        example: '2615551234',
+        description: 'Número de teléfono del usuario (opcional).'
+    })
+    @IsNotEmpty({ message: 'El teléfono es obligatorio' })
+    @IsString({ message: 'El teléfono debe ser un texto válido' })
+    phone: string;
 
-    @IsString()
+    @ApiPropertyOptional({
+        example: 'DNI',
+        description: 'Tipo de documento de identidad (opcional).'
+    })
     @IsOptional()
-    typeCitizenID?: string
+    @IsString({ message: 'El tipo de documento debe ser un texto válido' })
+    typeCitizenID?: string;
 
+    @ApiPropertyOptional({
+        example: '40123456',
+        description: 'Número de documento de identidad del usuario (opcional).'
+    })
     @IsOptional()
-    citizenID?: string
+    @IsString({ message: 'El número de documento debe ser un texto válido' })
+    citizenID?: string;
 
-    @IsString()
-    @IsOptional()
-    avatar?: string
+    @ApiProperty({
+        example: UserRole.ADMIN,
+        enum: UserRole,
+        description: 'Rol asignado al usuario dentro del sistema (opcional). Valores posibles definidos en el enum UserRole.'
+    })
+    @IsNotEmpty({ message: 'El rol es obligatorio' })
+    @IsEnum(UserRole, { message: 'El rol debe ser un valor válido de UserRole' })
+    role: UserRole;
 
+    @ApiPropertyOptional({
+        example: 'https://ejemplo.com/imagenes/avatar.jpg',
+        description: 'URL de la imagen de perfil del usuario (opcional).'
+    })
     @IsOptional()
-    @IsString()
-    role?: UserRole
+    @IsUrl({}, { message: 'El avatar debe ser una URL válida' })
+    avatar?: string;
+
+    @ApiPropertyOptional({
+        example: true,
+        description: 'Indica si la cuenta del usuario está verificada (opcional).'
+    })
+    @IsOptional()
+    @IsBoolean({ message: 'isVerified debe ser un valor booleano' })
+    isVerified?: boolean;
+
+    @ApiPropertyOptional({
+        example: 'Desarrolladora full stack apasionada por la música.',
+        description: 'Breve biografía o descripción personal del usuario (opcional).'
+    })
+    @IsOptional()
+    @IsString({ message: 'La biografía debe ser un texto válido' })
+    biography?: string;
+
+    @ApiPropertyOptional({
+        example: { instagram: 'https://urlderedsocial.com', twitter: 'https://urlderedsocial2.com' },
+        description: 'Redes sociales asociadas al usuario como un objeto clave-valor (opcional).'
+    })
+    @IsOptional()
+    socialNetworks?: Record<string, string>;
+
+    @ApiPropertyOptional({ example: ['uuid1', 'uuid2'], description: 'IDs de géneros preferidos' })
+    @IsArray()
+    @IsOptional()
+    @IsUUID('4', { each: true })
+    @ArrayMaxSize(3, { message: 'El array de preferredGenres debe tener un máximo de 3 elementos' })
+    preferredGenres?: string[]
+
+    @ApiPropertyOptional({
+        format: 'binary',
+        description: 'Archivo de imagen para el avatar del usuario (opcional).',
+    })
+    @IsOptional()
+    file_avatar?: Express.Multer.File
 }

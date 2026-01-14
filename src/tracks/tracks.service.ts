@@ -1,33 +1,45 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
+import { StorageService } from 'src/storage/storage.service';
+import { UserRole } from 'src/users/entities/user-role.enum';
+import { User } from 'src/users/entities/user.entity';
+import { FindOptionsWhere, In, Repository } from 'typeorm';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
-import { InjectRepository } from '@nestjs/typeorm';
 import { Track } from './entities/track.entity';
-import { In, Repository } from 'typeorm';
-import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
-import { User } from 'src/users/entities/user.entity';
+
+import { FindAllTracksOptions } from './interface/tracks-options.interface';
 
 const tracksRelations: string[] = [
   'genre',
   'intellectualProperties',
   'authors',
+  'tracks.authors',
   'playlists',
-  'requestedTrack'
-]
+  'requestedTrack',
+];
 
 @Injectable()
 export class TracksService {
   constructor(
-    @InjectRepository(Track) private readonly tracksRepository: Repository<Track>,
-    @InjectRepository(MusicalGenre) private readonly genreRepository: Repository<MusicalGenre>,
+    @InjectRepository(Track)
+    private readonly tracksRepository: Repository<Track>,
+    @InjectRepository(MusicalGenre)
+    private readonly genreRepository: Repository<MusicalGenre>,
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
-  ) { }
+    private readonly storageService: StorageService,
+  ) {}
 
   private async findTrackWithRelations(id: string): Promise<Track> {
     const track = await this.tracksRepository.findOne({
       where: { id },
-      relations: tracksRelations
-    })
+      relations: tracksRelations,
+    });
 
     if (!track) throw new NotFoundException('El track no existe');
 
@@ -36,51 +48,138 @@ export class TracksService {
 
   private async saveAndReturnWithRelations(track: Track): Promise<Track> {
     const savedTrack = await this.tracksRepository.save(track);
-    return this.findTrackWithRelations(savedTrack.id)
+    return this.findTrackWithRelations(savedTrack.id);
   }
 
-  async createTrackService(createTrackInput: CreateTrackInput) {
-    const { genreId, authorsIds, ...rest } = createTrackInput
+  async createTrackService(
+    createTrackInput: CreateTrackInput,
+    file: Express.Multer.File,
+  ) {
+    const { genreId, subGenre, authorsIds, ...rest } = createTrackInput;
 
-    const genre = await this.genreRepository.findOne({ where: { id: genreId } })
+    const genre = await this.genreRepository.findOne({
+      where: { id: genreId },
+    });
 
     if (!genre) throw new NotFoundException('El género musical no existe');
 
-    const authors = await this.usersRepository.find({ where: { id: In(authorsIds) } })
+    if (genre.subGenre && genre.subGenre.length > 0) {
+      const isValidSubGenre = genre.subGenre.some(
+        (sg) => sg.toLowerCase() === subGenre.toLowerCase(),
+      );
 
-    if (authors.length !== authorsIds.length) throw new NotFoundException('Uno o más autores no existen');
+      if (!isValidSubGenre) {
+        throw new BadRequestException(
+          `El subgénero "${subGenre}" no pertenece al género "${genre.genre}".` +
+            ` Los subgéneros válidos son: ${genre.subGenre.join(', ')}.`,
+        );
+      }
+    } else {
+      throw new BadRequestException(
+        `El género "${genre.genre}" no tiene subgéneros definidos.`,
+      );
+    }
+
+    const authors = await this.usersRepository.find({
+      where: { id: In(authorsIds) },
+    });
+
+    if (authors.length !== authorsIds.length)
+      throw new NotFoundException('Uno o más autores no existen');
+
+    // if (!file) throw new BadRequestException('El archivo de la canción es obligatorio');
+    // const putObjectDto: PutObjectDto = { key: crypto.randomUUID() }
+    // const uploadResult = await this.storageService.uploadObject(putObjectDto, file)
 
     const newTrack = this.tracksRepository.create({
       ...rest,
       genre,
-      authors
-    })
+      subGenre,
+      authors,
+    });
 
-    return await this.saveAndReturnWithRelations(newTrack)
+    return await this.saveAndReturnWithRelations(newTrack);
   }
 
-  async findAllTracksService() {
-    return await this.tracksRepository.find({ relations: tracksRelations })
+  async findAllTracksService(
+    options: FindAllTracksOptions = {},
+  ): Promise<Track[]> {
+    const { user, params } = options;
+    // Admin ve todo sin filtros
+    if (user?.role === UserRole.ADMIN) {
+      return this.tracksRepository.find();
+    }
+
+    const { limit, offset, isGospel, language, subGenre } = params ?? {};
+
+    const where: FindOptionsWhere<Track> = {
+      ...(user && { authors: { id: user.id } }),
+      ...(isGospel !== undefined && { isGospel }),
+      ...(language && { language }),
+      ...(subGenre && { subGenre }),
+    };
+
+    return this.tracksRepository.find({
+      where,
+      take: limit,
+      skip: offset,
+    });
   }
 
   async findOneTrackService(id: string) {
-    return await this.findTrackWithRelations(id)
+    return await this.findTrackWithRelations(id);
   }
 
   async updateTrackService(id: string, updateTrackInput: UpdateTrackInput) {
     const existingTrack = await this.findTrackWithRelations(id);
 
-    Object.assign(existingTrack, updateTrackInput);
+    const { genreId, authorsIds, ...rest } = updateTrackInput;
 
-    return await this.saveAndReturnWithRelations(existingTrack)
+    Object.assign(existingTrack, rest);
 
+    if (genreId) {
+      const genre = await this.genreRepository.findOne({
+        where: { id: genreId },
+      });
+      if (!genre) throw new NotFoundException('El género musical no existe');
+      existingTrack.genre = genre;
+    }
+
+    if (authorsIds) {
+      const authors = await this.usersRepository.find({
+        where: { id: In(authorsIds) },
+      });
+
+      if (authors.length !== authorsIds.length)
+        throw new NotFoundException('Uno o más autores no existen');
+      existingTrack.authors = authors;
+    }
+
+    return await this.saveAndReturnWithRelations(existingTrack);
   }
 
   async removeTrackService(id: string) {
     const trackToRemove = await this.findTrackWithRelations(id);
 
-    await this.tracksRepository.remove(trackToRemove);
+    await this.tracksRepository.softRemove(trackToRemove);
 
-    return trackToRemove
+    return trackToRemove;
+  }
+
+  async findTracksByUserPreferredGenresService(user: User): Promise<Track[]> {
+    if (!user.preferredGenres || user.preferredGenres.length === 0) {
+      throw new NotFoundException(
+        'El usuario no tiene géneros preferidos configurados.',
+      );
+    }
+
+    const preferredGenreIds = user.preferredGenres.map((genre) => genre.id);
+
+    return await this.tracksRepository.find({
+      where: {
+        genre: { id: In(preferredGenreIds) },
+        isAvailable: true,
+      },
+    });
   }
 }

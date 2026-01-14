@@ -29,7 +29,7 @@ export class TracksSeed {
 
 
         for (const track of tracksMock) {
-            const existingTrack = await this.tracksRepository.findOne({ where: { title: track.title } })
+            const existingTrack = await this.tracksRepository.findOne({ where: { title: track.title }, withDeleted: true });
 
             if (!existingTrack) {
 

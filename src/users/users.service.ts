@@ -1,6 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
+import { StorageService } from 'src/storage/storage.service';
+import { In, Not, Repository } from 'typeorm';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { UserRole } from './entities/user-role.enum';
@@ -10,20 +16,27 @@ const userRelations: string[] = [
   'tracks',
   'guests',
   'playlists',
-  'requestSent'
-]
+  'requestSent',
+  'preferredGenres',
+];
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
-  ) { }
+    private readonly storageService: StorageService,
+    @InjectRepository(MusicalGenre)
+    private readonly musicalGenreRepository: Repository<MusicalGenre>,
+  ) {}
 
-  private async findUserWithRelations(id: string): Promise<User> {
+  private async findUserWithRelations(
+    id: string,
+    role?: UserRole,
+  ): Promise<User> {
     const user = await this.usersRepository.findOne({
-      where: { id },
-      relations: userRelations
-    })
+      where: { id, ...(role ? { role } : {}) },
+      relations: userRelations,
+    });
 
     if (!user) throw new NotFoundException('El usuario no existe');
 
@@ -32,46 +45,157 @@ export class UsersService {
 
   private async saveAndReturnWithRelations(user: User): Promise<User> {
     const savedUser = await this.usersRepository.save(user);
-    return this.findUserWithRelations(savedUser.id)
+    return this.findUserWithRelations(savedUser.id);
   }
 
-  async createUserService(createUserInput: CreateUserInput) {
-    const newUser = this.usersRepository.create(createUserInput)
-    return this.saveAndReturnWithRelations(newUser)
+  private async handleAvatar(
+    file?: Express.Multer.File,
+    currentAvatar?: string,
+  ): Promise<string> {
+    if (!file) {
+      return (
+        currentAvatar ??
+        'https://mi-bucket.s3.region.amazonaws.com/defaults/avatar.png'
+      );
+    }
+
+    const putObjectDto = { key: `avatars/${Date.now()}-${file.originalname}` };
+    const uploadResult = await this.storageService.uploadObject(
+      putObjectDto,
+      file,
+    );
+
+    return uploadResult.url;
+  }
+
+  async createUserService(
+    createUserInput: CreateUserInput,
+    file?: Express.Multer.File,
+  ) {
+    const { preferredGenres, ...rest } = createUserInput;
+
+    if (preferredGenres && preferredGenres.length > 3) {
+      throw new BadRequestException(
+        'El usuario no puede tener más de 3 géneros preferidos',
+      );
+    }
+
+    const newUser = this.usersRepository.create(rest);
+
+    if (preferredGenres && preferredGenres.length > 0) {
+      const genres = await this.musicalGenreRepository.findBy({
+        id: In(preferredGenres),
+      });
+
+      newUser.preferredGenres = genres;
+    }
+
+    newUser.avatar = await this.handleAvatar(file);
+
+    return this.saveAndReturnWithRelations(newUser);
+  }
+
+  async findOneUserByIdService(id: string) {
+    const user = await this.usersRepository.findOne({ where: { id } });
+
+    if (!user) throw new NotFoundException('El usuario no existe');
+
+    return user;
   }
 
   async findAllUsersService() {
-    return await this.usersRepository.find({ relations: userRelations });
+    return await this.usersRepository.find();
   }
 
   async findOneUserService(id: string) {
-    return this.findUserWithRelations(id)
+    return this.findUserWithRelations(id);
   }
 
-  async updateUserService(id: string, updateUserInput: UpdateUserInput) {
+  async updateUserService(
+    id: string,
+    updateUserInput: UpdateUserInput,
+    file?: Express.Multer.File,
+  ) {
     const existingUser = await this.findUserWithRelations(id);
 
-    Object.assign(existingUser, updateUserInput);
+    const { preferredGenres, ...rest } = updateUserInput;
 
-    return this.saveAndReturnWithRelations(existingUser)
+    Object.assign(existingUser, rest);
+
+    if (preferredGenres && preferredGenres.length > 3) {
+      throw new BadRequestException(
+        'El usuario no puede tener más de 3 géneros preferidos',
+      );
+    }
+
+    if (preferredGenres) {
+      const genres = await this.musicalGenreRepository.findBy({
+        id: In(preferredGenres),
+      });
+
+      existingUser.preferredGenres = genres;
+    }
+
+    existingUser.avatar = await this.handleAvatar(file, existingUser.avatar);
+
+    return this.saveAndReturnWithRelations(existingUser);
   }
 
   async removeUserService(id: string) {
     const userToRemove = await this.findUserWithRelations(id);
 
-    await this.usersRepository.remove(userToRemove);
+    await this.usersRepository.softRemove(userToRemove);
 
     return userToRemove;
+  }
+
+  private async findUserByEmailForAuthService(email: string) {
+    return await this.usersRepository.findOne({
+      where: { email },
+      select: ['id', 'email', 'password', 'role', 'name'],
+    });
   }
 
   async findUserByEmailService(email: string) {
     return await this.usersRepository.findOne({
       where: { email },
-      select: ['id', 'email', 'password', 'role'],
+      select: ['id', 'email', 'role', 'name'],
     });
   }
 
   getUserRolesService() {
     return Object.values(UserRole);
+  }
+
+  async getFeaturedAuthorsByPreferredGenresService(userId: string) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      relations: ['preferredGenres'],
+    });
+
+    if (!user?.preferredGenres?.length) return [];
+
+    const genreIds = user.preferredGenres.map((genre) => genre.id);
+
+    return await this.usersRepository.find({
+      where: {
+        id: Not(userId),
+        role: UserRole.AUTOR,
+        tracks: { genre: { id: In(genreIds) } },
+      },
+      relations: ['tracks', 'tracks.genre'],
+      take: 10,
+    });
+  }
+
+  async findAllAuthorsService(userRole: UserRole) {
+    return await this.usersRepository.find({
+      where: { role: userRole },
+      take: 10,
+      order: { createdAt: 'DESC' },
+    });
+  }
+  async findOneAuthorService(id: string) {
+    return this.findUserWithRelations(id, UserRole.AUTOR);
   }
 }

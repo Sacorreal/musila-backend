@@ -1,4 +1,3 @@
-
 import { Track } from 'src/tracks/entities/track.entity';
 import {
   Column,
@@ -12,6 +11,7 @@ import {
 
 @Entity({ name: 'musical_genre' })
 export class MusicalGenre {
+
   @PrimaryGeneratedColumn('uuid')
   id: string;
 

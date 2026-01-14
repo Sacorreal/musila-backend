@@ -47,7 +47,7 @@ export class GuestsService {
   }
 
   async findAllGuestsService() {
-    return await this.guestsRepository.find({ relations: guestRelations })
+    return await this.guestsRepository.find()
   }
 
   async findOneGuestsService(id: string) {
@@ -65,7 +65,7 @@ export class GuestsService {
   async removeGuestsService(id: string) {
     const guestToRemove = await this.findGuestWithRelations(id)
 
-    await this.guestsRepository.remove(guestToRemove)
+    await this.guestsRepository.softRemove(guestToRemove)
 
     return guestToRemove
   }

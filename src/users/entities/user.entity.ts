@@ -1,4 +1,5 @@
 import { Guest } from 'src/guests/entities/guest.entity';
+import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Playlist } from 'src/playlists/entities/playlist.entity';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { Track } from 'src/tracks/entities/track.entity';
@@ -7,6 +8,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinTable,
   ManyToMany,
   OneToMany,
   PrimaryGeneratedColumn,
@@ -32,10 +34,10 @@ export class User {
   password: string;
 
   @Column('varchar', { name: 'country_code', nullable: true })
-  countryCode?: string;
+  countryCode: string;
 
-  @Column({ nullable: true })
-  phone?: string;
+  @Column('varchar', { nullable: true })
+  phone: string;
 
   @Column('varchar', { name: 'type_citizen_id', nullable: true })
   typeCitizenID?: string;
@@ -46,7 +48,7 @@ export class User {
   @Column({
     type: 'enum',
     enum: UserRole,
-    default: UserRole.INVITADO
+    default: UserRole.INVITADO,
   })
   role: UserRole;
 
@@ -65,6 +67,14 @@ export class User {
   @ManyToMany(() => Track, (track) => track.authors, { nullable: true })
   tracks?: Track[];
 
+  @ManyToMany(() => MusicalGenre, { nullable: true })
+  @JoinTable({
+    name: 'user_preferred_genres',
+    joinColumn: { name: 'user_id' },
+    inverseJoinColumn: { name: 'genre_id' },
+  })
+  preferredGenres?: MusicalGenre[];
+
   @OneToMany(() => Guest, (guest) => guest.invited_by, { nullable: true })
   guests?: Guest[];
 
@@ -80,6 +90,9 @@ export class User {
     { nullable: true },
   )
   requestSent?: RequestedTrack[];
+
+  @Column('boolean', { default: true, name: 'is_user_free' })
+  isUserFree: boolean;
 
   @CreateDateColumn({
     name: 'created_at',

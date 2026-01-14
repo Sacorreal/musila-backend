@@ -6,6 +6,8 @@ import { RequestedTrack } from './entities/requested-track.entity';
 import { Repository } from 'typeorm';
 import { Track } from 'src/tracks/entities/track.entity';
 import { User } from 'src/users/entities/user.entity';
+import { StorageService } from 'src/storage/storage.service';
+import { MailService } from 'src/mail/mail.service';
 
 const requestedTracksRelations: string[] = [
   'requester',
@@ -17,7 +19,9 @@ export class RequestedTracksService {
   constructor(
     @InjectRepository(RequestedTrack) private readonly requestedTracksRepository: Repository<RequestedTrack>,
     @InjectRepository(Track) private readonly tracksRepository: Repository<Track>,
-    @InjectRepository(User) private readonly usersRepository: Repository<User>
+    @InjectRepository(User) private readonly usersRepository: Repository<User>,
+    private readonly storageService: StorageService,
+    private readonly mailService: MailService
 
   ) { }
 
@@ -37,26 +41,66 @@ export class RequestedTracksService {
     return await this.findRequestedTrackWithRelations(savedRequestedTrack.id)
   }
 
-  async createRequestedTracksService(createRequestedTrackInput: CreateRequestedTrackInput) {
+  async createRequestedTracksService(createRequestedTrackInput: CreateRequestedTrackInput, file?: Express.Multer.File) {
     const { requesterId, trackId, licenseType } = createRequestedTrackInput
 
     const requester = await this.usersRepository.findOne({ where: { id: requesterId } })
     if (!requester) throw new NotFoundException('El usuario solicitante no existe')
 
-    const track = await this.tracksRepository.findOne({ where: { id: trackId } })
+    const track = await this.tracksRepository.findOne({
+      where: { id: trackId },
+      relations: ['authors']
+    })
     if (!track) throw new NotFoundException('La pista no existe')
+
+    let documentUrl: string | null = null
+
+    if (file) {
+      const uploadResult = await this.storageService.uploadObject(
+        { key: `${requesterId}-${Date.now()}-${file.originalname}` },
+        file
+      )
+      documentUrl = uploadResult.url
+    }
 
     const newRequestedTrack = this.requestedTracksRepository.create({
       requester,
       track,
-      licenseType
+      licenseType,
+      documentUrl,
     })
 
-    return await this.saveAndReturnWithRelations(newRequestedTrack)
+    const savedNewRequestedTrack = await this.saveAndReturnWithRelations(newRequestedTrack)
+
+    const authors = track.authors
+    const authorsNames = authors.map(author => author.name).join(', ')
+    const isMultipleAuthors = authors.length > 1;
+
+    for (const author of authors) {
+      await this.mailService.sendAuthorRequestNotificationService(
+        author.email,
+        author.name,
+        track.title,
+        requester.name,
+        licenseType,
+
+      )
+    }
+
+    await this.mailService.sendRequestTrackService(
+      requester.email,
+      requester.name,
+      track.title,
+      authorsNames,
+      savedNewRequestedTrack.status,
+      isMultipleAuthors
+    )
+
+    return savedNewRequestedTrack
   }
 
   async findAllRequestedTracksService() {
-    return await this.requestedTracksRepository.find({ relations: requestedTracksRelations })
+    return await this.requestedTracksRepository.find()
   }
 
   async findOneRequestedTracksService(id: string) {
@@ -74,7 +118,7 @@ export class RequestedTracksService {
   async removeRequestedTracksService(id: string) {
     const requestedTrackToRemove = await this.findRequestedTrackWithRelations(id)
 
-    await this.requestedTracksRepository.remove(requestedTrackToRemove)
+    await this.requestedTracksRepository.softRemove(requestedTrackToRemove)
 
     return requestedTrackToRemove
   }
