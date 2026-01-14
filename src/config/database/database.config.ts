@@ -1,7 +1,12 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import * as dotenv from 'dotenv';
 
 const nodeEnv = process.env.NODE_ENV;
 const useSSL = process.env.DB_SSL === 'true';
+
+if (nodeEnv === 'production') {
+  dotenv.config({ path: '.env.production' });
+}
 
 export let databaseConfig: TypeOrmModuleOptions;
 
@@ -41,10 +46,6 @@ switch (nodeEnv) {
       url: process.env.DB_URL,
       autoLoadEntities: true,
       synchronize: true,
-      ssl: {
-        ca: process.env.DB_CA_CERT,
-        rejectUnauthorized: false,
-      },
     };
     break;
 
