@@ -27,7 +27,7 @@ switch (nodeEnv) {
   case 'development':
     databaseConfig = {
       type: 'postgres',
-      url: process.env.DB_URL,
+      url: process.env.DATABASE_URL,
       autoLoadEntities: true,
       synchronize: true,
     };
