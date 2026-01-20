@@ -11,7 +11,6 @@ import {
 
 @Entity({ name: 'musical_genre' })
 export class MusicalGenre {
-
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -20,6 +19,9 @@ export class MusicalGenre {
 
   @Column({ type: 'text', nullable: true, array: true })
   subGenre?: string[];
+
+  @Column({ type: 'text', nullable: true })
+  slug?: string;
 
   @OneToMany(() => Track, (track) => track.genre, {
     cascade: true,
