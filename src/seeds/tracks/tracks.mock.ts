@@ -1,7 +1,7 @@
 export const tracksMock = [
   {
     title: 'Amanecer en Palermo',
-    genre: { id: '748a673e-8fd6-4c52-8144-fe70d35d8724' },
+    genre: { id: '7b2a74c1-40ef-4e40-89c7-1c7de5e2c2f8' },
     subGenre: 'Synth Pop',
     cover: 'https://picsum.photos/seed/track1/600/600',
     url: 'https://cdn.musila.local/audio/track1.mp3',
@@ -19,7 +19,7 @@ export const tracksMock = [
   },
   {
     title: 'Midnight Run',
-    genre: { id: '748a673e-8fd6-4c52-8144-fe70d35d8724' },
+    genre: { id: '7b2a74c1-40ef-4e40-89c7-1c7de5e2c2f8' },
     subGenre: 'Indie Rock',
     cover: 'https://picsum.photos/seed/track2/600/600',
     url: 'https://cdn.musila.local/audio/track2.mp3',
@@ -34,7 +34,7 @@ export const tracksMock = [
   },
   {
     title: 'Lluvia de Verano',
-    genre: { id: '2d19d707-3a62-4036-aee7-7ed6f9af1d7b' },
+    genre: { id: '3c59e1f0-1db0-45d0-9f5f-4e234db03b71' },
     subGenre: 'Reggaetón',
     cover: 'https://picsum.photos/seed/track3/600/600',
     url: 'https://cdn.musila.local/audio/track3.mp3',
@@ -52,7 +52,7 @@ export const tracksMock = [
   },
   {
     title: 'Echoes of Andes',
-    genre: { id: '4b9a2ef2-5e67-498d-bc47-9d14a0a1a5cc' },
+    genre: { id: '7b2a74c1-40ef-4e40-89c7-1c7de5e2c2f8' },
     subGenre: 'Andean Folk',
     cover: 'https://picsum.photos/seed/track4/600/600',
     url: 'https://cdn.musila.local/audio/track4.mp3',
@@ -274,7 +274,7 @@ export const tracksMock = [
   },
   {
     title: 'Café de Medianoche',
-    genre: { id: '8e2f4a6b-5c7d-43d0-9a1b-4d2e3f0a6c8b' },
+    genre: { id: '3c59e1f0-1db0-45d0-9f5f-4e234db03b71' },
     subGenre: 'Smooth Jazz',
     cover: 'https://picsum.photos/seed/track18/600/600',
     url: 'https://cdn.musila.local/audio/track18.mp3',
@@ -292,7 +292,7 @@ export const tracksMock = [
   },
   {
     title: 'Polar Night',
-    genre: { id: '9a3b5c7d-6e8f-44e1-0b2c-5f3a4d1c8e7b' },
+    genre: { id: '3c59e1f0-1db0-45d0-9f5f-4e234db03b71' },
     subGenre: 'Drone',
     cover: 'https://picsum.photos/seed/track19/600/600',
     url: 'https://cdn.musila.local/audio/track19.mp3',
@@ -307,7 +307,7 @@ export const tracksMock = [
   },
   {
     title: 'Guerrero del Alba',
-    genre: { id: '0c4d6e8f-7a9b-45f2-1c3d-6a4b5e2f9d0a' },
+    genre: { id: '3c59e1f0-1db0-45d0-9f5f-4e234db03b71' },
     subGenre: 'Power Metal',
     cover: 'https://picsum.photos/seed/track20/600/600',
     url: 'https://cdn.musila.local/audio/track20.mp3',
@@ -322,7 +322,7 @@ export const tracksMock = [
   },
   {
     title: 'Laguna Rosa',
-    genre: { id: '1e5f7a9b-8c0d-46a3-2d4e-7b5c6f3a0e1b' },
+    genre: { id: '3c59e1f0-1db0-45d0-9f5f-4e234db03b71' },
     subGenre: 'Candombe',
     cover: 'https://picsum.photos/seed/track21/600/600',
     url: 'https://cdn.musila.local/audio/track21.mp3',
@@ -340,7 +340,7 @@ export const tracksMock = [
   },
   {
     title: 'Pampa Blues',
-    genre: { id: '2a6b8c0d-9e1f-47b4-3e5f-8c6d7a4b1f2c' },
+    genre: { id: '3c59e1f0-1db0-45d0-9f5f-4e234db03b71' },
     subGenre: 'Delta Blues',
     cover: 'https://picsum.photos/seed/track22/600/600',
     url: 'https://cdn.musila.local/audio/track22.mp3',
@@ -355,7 +355,7 @@ export const tracksMock = [
   },
   {
     title: 'Tokyo Driftwood',
-    genre: { id: '3c7d9e1f-0a2b-48c5-4f6a-9d7e8b5c2a3d' },
+    genre: { id: '3c59e1f0-1db0-45d0-9f5f-4e234db03b71' },
     subGenre: 'Lo-Fi',
     cover: 'https://picsum.photos/seed/track23/600/600',
     url: 'https://cdn.musila.local/audio/track23.mp3',
@@ -370,7 +370,7 @@ export const tracksMock = [
   },
   {
     title: 'Valle de Uco',
-    genre: { id: '4e8f0a2b-1c3d-49d6-5a7b-0e8f9c6d3b4a' },
+    genre: { id: '3c59e1f0-1db0-45d0-9f5f-4e234db03b71' },
     subGenre: 'Cueca',
     cover: 'https://picsum.photos/seed/track24/600/600',
     url: 'https://cdn.musila.local/audio/track24.mp3',
@@ -388,7 +388,7 @@ export const tracksMock = [
   },
   {
     title: 'Volver a Empezar',
-    genre: { id: '5a9b1c3d-2e4f-40e7-6b8c-1f9a0d7e4c5b' },
+    genre: { id: 'f5d4cbf6-7265-4714-9cb4-431cf36d7217' },
     subGenre: 'Ballad',
     cover: 'https://picsum.photos/seed/track25/600/600',
     url: 'https://cdn.musila.local/audio/track25.mp3',
@@ -403,7 +403,7 @@ export const tracksMock = [
   },
   {
     title: 'Glaciar',
-    genre: { id: '6c0d2e4f-3a5b-41f8-7c9d-2a0b1e8f5d6c' },
+    genre: { id: 'f5d4cbf6-7265-4714-9cb4-431cf36d7217' },
     subGenre: 'Cinematic',
     cover: 'https://picsum.photos/seed/track26/600/600',
     url: 'https://cdn.musila.local/audio/track26.mp3',
@@ -418,7 +418,7 @@ export const tracksMock = [
   },
   {
     title: 'El Mensaje',
-    genre: { id: '7e1f3a5b-4c6d-42a9-8d0e-3b1c2f9a6e7d' },
+    genre: { id: 'f5d4cbf6-7265-4714-9cb4-431cf36d7217' },
     subGenre: 'Worship',
     cover: 'https://picsum.photos/seed/track27/600/600',
     url: 'https://cdn.musila.local/audio/track27.mp3',
@@ -436,7 +436,7 @@ export const tracksMock = [
   },
   {
     title: 'Río Negro',
-    genre: { id: '8a2b4c6d-5e7f-43b0-9e1f-4c2d3a0b7f8e' },
+    genre: { id: '3c59e1f0-1db0-45d0-9f5f-4e234db03b71' },
     subGenre: 'Patagonia Folk',
     cover: 'https://picsum.photos/seed/track28/600/600',
     url: 'https://cdn.musila.local/audio/track28.mp3',
@@ -451,7 +451,7 @@ export const tracksMock = [
   },
   {
     title: 'Neón y Poesía',
-    genre: { id: '9c3d5e7f-6a8b-44c1-0f2a-5d3e4b1c8a9f' },
+    genre: { id: '3c59e1f0-1db0-45d0-9f5f-4e234db03b71' },
     subGenre: 'Lo-Fi Rap',
     cover: 'https://picsum.photos/seed/track29/600/600',
     url: 'https://cdn.musila.local/audio/track29.mp3',
@@ -466,7 +466,7 @@ export const tracksMock = [
   },
   {
     title: 'Cielo Abierto',
-    genre: { id: '0e4f6a8b-7c9d-45d2-1a3b-6e4f5c2d9b0a' },
+    genre: { id: '3c59e1f0-1db0-45d0-9f5f-4e234db03b71' },
     subGenre: 'Indie Pop',
     cover: 'https://picsum.photos/seed/track30/600/600',
     url: 'https://cdn.musila.local/audio/track30.mp3',

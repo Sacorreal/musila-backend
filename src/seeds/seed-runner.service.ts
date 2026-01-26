@@ -1,8 +1,8 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
-import { UsersSeed } from "./users/users.seed";
+import { MusicalGenreSeed } from "./musical-genre.ts/musical-genre.seed";
 import { PlaylistsSeed } from "./playlists/playlists.seed";
 import { TracksSeed } from "./tracks/tracks.seed";
-import { MusicalGenreSeed } from "./musical-genre.ts/musical-genre.seed";
+import { UsersSeed } from "./users/users.seed";
 
 
 function shouldSeed(env?: string): boolean {
@@ -30,7 +30,7 @@ export class SeedRunnerService implements OnModuleInit {
             await this.usersSeed.seedUsers()
             console.log('Users seeded')
 
-            await this.playlistsSeed.seedPlaylists()
+            /*await this.playlistsSeed.seedPlaylists()
             console.log('Playlists seeded')
 
             await this.musicalGenreSeed.seedMusicalGenre()
@@ -38,6 +38,8 @@ export class SeedRunnerService implements OnModuleInit {
 
             await this.tracksSeed.seedTracks()
             console.log('Tracks seeded')
+            */
+
         } else {
             console.log(`Seeds skipped (NODE_ENV=${env})`)
         }
