@@ -24,8 +24,14 @@ export class User {
   @Column('varchar', { length: 255 })
   name: string;
 
+  @Column('varchar', { length: 255, nullable: true, name: 'second_name' })
+  secondName?: string
+
   @Column('varchar', { name: 'last_name' })
   lastName: string;
+
+  @Column('varchar', { length: 255, nullable: true, name: 'last_second_name' })
+  secondLastName?: string
 
   @Column('varchar', { nullable: false, unique: true })
   email: string;

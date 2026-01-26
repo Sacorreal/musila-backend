@@ -1,6 +1,6 @@
-import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger"
-import { ArrayMaxSize, IsArray, IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength } from "class-validator"
-import { UserRole } from "src/users/entities/user-role.enum"
+import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
+import { ArrayMaxSize, IsArray, IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength } from "class-validator";
+import { UserRole } from "src/users/entities/user-role.enum";
 
 
 
@@ -57,6 +57,22 @@ export class RegisterAuthDto {
     @IsNotEmpty({ message: 'El código de país es obligatorio' })
     @IsString({ message: 'El código de país debe ser un texto válido' })
     countryCode: string;
+
+    @ApiProperty({
+        example: 'Correa',
+        description: 'Segundo apellido del usuario.'
+    })
+    @IsString({ message: 'El apellido debe ser un texto válido' })
+    @IsOptional()
+    secondLastName?: string;
+
+    @ApiProperty({
+        example: 'De jesus',
+        description: 'Segundo nombre del usuario.'
+    })
+    @IsString({ message: 'El segundo nombre debe ser un texto válido' })
+    @IsOptional()
+    secondName?: string
 
     @ApiProperty({
         example: '2615551234',

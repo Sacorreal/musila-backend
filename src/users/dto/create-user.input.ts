@@ -1,4 +1,5 @@
 
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsArray,
   IsBoolean,
@@ -13,7 +14,6 @@ import {
   MinLength,
 } from 'class-validator';
 import { UserRole } from '../entities/user-role.enum';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 
 export class CreateUserInput {
@@ -34,6 +34,22 @@ export class CreateUserInput {
   @IsString({ message: 'El apellido debe ser un texto válido' })
   @IsNotEmpty({ message: 'El apellido es obligatorio' })
   lastName: string;
+
+  @ApiProperty({
+    example: 'Correa',
+    description: 'Segundo apellido del usuario.'
+  })
+  @IsString({ message: 'El apellido debe ser un texto válido' })
+  @IsOptional()
+  secondLastName?: string;
+
+  @ApiProperty({
+    example: 'De jesus',
+    description: 'Segundo nombre del usuario.'
+  })
+  @IsString({ message: 'El segundo nombre debe ser un texto válido' })
+  @IsOptional()
+  secondName?: string
 
 
   @ApiProperty({

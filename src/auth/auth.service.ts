@@ -1,15 +1,15 @@
 import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcrypt';
+import { MailService } from 'src/mail/mail.service';
 import { UserRole } from 'src/users/entities/user-role.enum';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
+import { ForgotPasswordDto } from './dto/forgotPassword.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
-import { JwtPayload } from './interfaces/jwt-payload.interface';
-import { MailService } from 'src/mail/mail.service';
-import { ForgotPasswordDto } from './dto/forgotPassword.dto';
 import { ResetPasswordDto } from './dto/resetPassword.dto';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -64,11 +64,9 @@ export class AuthService {
         break
     }
 
+    const token = await this.createToken(newUser);
 
-    //eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...sanitizedUser } = newUser;
-
-    return sanitizedUser;
+    return { token };
   }
 
   private async createToken(user: User) {
@@ -76,6 +74,7 @@ export class AuthService {
       id: user.id,
       email: user.email,
       role: user.role as UserRole,
+      name: user.name
     };
 
     const token = await this.jwtService.signAsync(payload);
