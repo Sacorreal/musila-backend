@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { ArrayMaxSize, IsArray, IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength } from "class-validator";
+import { ArrayMaxSize, IsArray, IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength } from "class-validator";
 import { UserRole } from "src/users/entities/user-role.enum";
 
 
@@ -79,8 +79,8 @@ export class RegisterAuthDto {
         description: 'Número de teléfono del usuario'
     })
     @IsNotEmpty({ message: 'El teléfono es obligatorio' })
-    @IsNumber()
-    phone: number;
+    @IsString()
+    phone: string;
 
     @ApiPropertyOptional({
         example: 'DNI',

@@ -6,13 +6,12 @@ import {
   IsEmail,
   IsEnum,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   IsUrl,
   IsUUID,
   MaxLength,
-  MinLength,
+  MinLength
 } from 'class-validator';
 import { UserRole } from '../entities/user-role.enum';
 
@@ -83,8 +82,8 @@ export class CreateUserInput {
     description: 'Número de teléfono del usuario (opcional).'
   })
   @IsOptional()
-  @IsNumber()
-  phone?: number;
+  @IsString()
+  phone?: string;
 
   @ApiPropertyOptional({
     example: 'DNI',

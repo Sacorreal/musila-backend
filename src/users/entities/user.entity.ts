@@ -42,8 +42,8 @@ export class User {
   @Column('varchar', { name: 'country_code', nullable: true })
   countryCode: string;
 
-  @Column('int', { nullable: true })
-  phone: number;
+  @Column('varchar', { nullable: true })
+  phone: string;
 
   @Column('varchar', { name: 'type_citizen_id', nullable: true })
   typeCitizenID?: string;
