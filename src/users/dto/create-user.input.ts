@@ -6,6 +6,7 @@ import {
   IsEmail,
   IsEnum,
   IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
   IsUrl,
@@ -82,8 +83,8 @@ export class CreateUserInput {
     description: 'Número de teléfono del usuario (opcional).'
   })
   @IsOptional()
-  @IsString({ message: 'El teléfono debe ser un texto válido' })
-  phone?: string;
+  @IsNumber()
+  phone?: number;
 
   @ApiPropertyOptional({
     example: 'DNI',
