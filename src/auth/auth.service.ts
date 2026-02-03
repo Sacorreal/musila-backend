@@ -48,7 +48,8 @@ export class AuthService {
     },
       file
     );
-
+    {/* TODO: configurar servidor para envío de email
+    
     switch (newUser.role) {
       case UserRole.INTERPRETE:
       case UserRole.INVITADO:
@@ -63,6 +64,8 @@ export class AuthService {
         await this.mailService.sendWelcomeCantautorEmailService(newUser.email, newUser.name)
         break
     }
+    */}
+
 
     const token = await this.createToken(newUser);
 
