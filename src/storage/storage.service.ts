@@ -69,7 +69,7 @@ export class StorageService {
 
       const rawResponse = {
         success: true,
-        url: `https://${this.options.bucket}.${this.options.endpoint}/${stage}/${folder}/${key}`,
+        location: `https://${this.options.bucket}.${this.options.endpoint}/${stage}/${folder}/${key}`,
         filename: originalname,
         mimetype,
         result: JSON.stringify(result),
