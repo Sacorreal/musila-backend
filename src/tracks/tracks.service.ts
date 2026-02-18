@@ -14,6 +14,7 @@ import { UpdateTrackInput } from './dto/update-track.input';
 import { Track } from './entities/track.entity';
 
 import { FindAllTracksOptions } from './interface/tracks-options.interface';
+import { PutObjectDto } from 'src/storage/dto/put-object.dto';
 
 const tracksRelations: string[] = [
   'genre',
@@ -53,9 +54,12 @@ export class TracksService {
 
   async createTrackService(
     createTrackInput: CreateTrackInput,
-    file: Express.Multer.File,
+    files: {
+      audio?: Express.Multer.File[];
+      coverImage?: Express.Multer.File[];
+    },
   ) {
-    const { genreId, subGenre, authorsIds, ...rest } = createTrackInput;
+    const { genreId, subGenre, authorsIds, cover, ...rest } = createTrackInput;
 
     const genre = await this.genreRepository.findOne({
       where: { id: genreId },
@@ -87,9 +91,11 @@ export class TracksService {
     if (authors.length !== authorsIds.length)
       throw new NotFoundException('Uno o más autores no existen');
 
-    // if (!file) throw new BadRequestException('El archivo de la canción es obligatorio');
-    // const putObjectDto: PutObjectDto = { key: crypto.randomUUID() }
-    // const uploadResult = await this.storageService.uploadObject(putObjectDto, file)
+    const audioFile = files?.audio?.[0];
+  const coverFile = files?.coverImage?.[0];
+
+  if (!audioFile)
+    throw new BadRequestException('El archivo de audio es obligatorio');
 
     const newTrack = this.tracksRepository.create({
       ...rest,
@@ -97,6 +103,27 @@ export class TracksService {
       subGenre,
       authors,
     });
+    
+    const [audioUpload, coverUpload] = await Promise.all([
+      this.storageService.uploadObject(
+        { key: newTrack.id },
+        audioFile,
+      ),
+  
+      coverFile
+        ? this.storageService.uploadObject(
+            { key: newTrack.id },
+            coverFile,
+          )
+        : Promise.resolve(null),
+    ]);    
+
+    newTrack.url = audioUpload.location;
+    newTrack.year = audioUpload.year;
+
+    if(coverUpload){
+      newTrack.cover = coverUpload.location
+    }
 
     return await this.saveAndReturnWithRelations(newTrack);
   }

@@ -55,15 +55,7 @@ export class CreateTrackInput {
   })
   @IsString({ message: 'El idioma debe ser un texto válido' })
   @IsNotEmpty({ message: 'El idioma es obligatorio' })
-  language: string;
-
-  @ApiPropertyOptional({
-    example: 1975,
-    description: 'Año de lanzamiento de la canción.'
-  })
-  @IsNumber({}, { message: 'El año debe ser un número' })
-  @IsOptional()
-  year?: number
+  language: string; 
 
   @ApiPropertyOptional({
     example: 'Is this the real life? Is this just fantasy?...',

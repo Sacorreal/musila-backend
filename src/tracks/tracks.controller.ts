@@ -8,10 +8,11 @@ import {
   Put,
   Query,
   UploadedFile,
+  UploadedFiles,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -31,7 +32,7 @@ import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { TracksService } from './tracks.service';
 
-@ApiTags('Pistas Musicales')
+@ApiTags('Tracks')
 @Controller('tracks')
 export class TracksController {
   constructor(
@@ -42,15 +43,20 @@ export class TracksController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: CreateTrackInput })
   @Post()
-  @UseInterceptors(FileInterceptor('file_track'))
+  @UseInterceptors(
+    FileFieldsInterceptor([
+      { name: 'audio', maxCount: 1 },
+      { name: 'coverImage', maxCount: 1 },
+    ]),
+  )
   @ApiOperation({
-    summary: 'Crear nueva pista musical',
+    summary: 'Crear nuevo track',
     description:
-      'Crea una nueva pista musical en el sistema. Requiere subir el archivo de audio de la pista.',
+      'Crea un nuevo track en el sistema. Requiere subir el archivo de audio del track.',
   })
   @ApiResponse({
     status: 201,
-    description: 'Pista musical creada exitosamente',
+    description: 'Track creado exitosamente',
   })
   @ApiResponse({
     status: 400,
@@ -58,20 +64,23 @@ export class TracksController {
   })
   async createTrackController(
     @Body() createTrackInput: CreateTrackInput,
-    @UploadedFile() file: Express.Multer.File,
+    @UploadedFiles() files: {
+      audio?: Express.Multer.File[];
+      coverImage?: Express.Multer.File[];
+    },
   ) {
-    return await this.tracksService.createTrackService(createTrackInput, file);
+    return await this.tracksService.createTrackService(createTrackInput, files);
   }
 
   @Get()
   @ApiOperation({
-    summary: 'Obtener todas las pistas musicales',
+    summary: 'Obtener todos los tracks',
     description:
-      'Obtiene la lista de pistas musicales con opciones de filtrado por género, autor, etc.',
+      'Obtiene la lista de tracks con opciones de filtrado por género, autor, etc.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Lista de pistas musicales obtenida exitosamente',
+    description: 'Lista de tracks obtenida exitosamente',
   })
   async findAllTracksController(
     //@CurrentUser() user: JwtPayload,
@@ -84,13 +93,13 @@ export class TracksController {
   @UseGuards(AuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Obtener mis pistas musicales',
+    summary: 'Obtener mis tracks',
     description:
-      'Obtiene todas las pistas musicales creadas por el usuario autenticado.',
+      'Obtiene todas los tracks creados por el usuario autenticado.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Lista de pistas del usuario obtenida exitosamente',
+    description: 'Lista de tracks del usuario obtenida exitosamente',
   })
   @ApiResponse({ status: 401, description: 'No autorizado' })
   async findMyTracksController(@CurrentUser() user: JwtPayload) {
@@ -101,13 +110,13 @@ export class TracksController {
   @ApiBearerAuth('JWT-auth')
   @Get('by-preferred-genres')
   @ApiOperation({
-    summary: 'Obtener pistas por géneros preferidos',
+    summary: 'Obtener tracks por géneros preferidos',
     description:
-      'Obtiene pistas musicales basadas en los géneros musicales preferidos del usuario autenticado.',
+      'Obtiene tracks basados en los géneros musicales preferidos del usuario autenticado.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Lista de pistas por géneros preferidos obtenida exitosamente',
+    description: 'Lista de tracks por géneros preferidos obtenida exitosamente',
   })
   @ApiResponse({ status: 401, description: 'No autorizado' })
   async getTracksByPreferredGenresController(
@@ -120,18 +129,18 @@ export class TracksController {
 
   @Get(':id')
   @ApiOperation({
-    summary: 'Obtener una pista musical por ID',
+    summary: 'Obtener un track por ID',
     description:
-      'Obtiene la información detallada de una pista musical específica por su ID.',
+      'Obtiene la información detallada de un track específico por su ID.',
   })
   @ApiParam({
     name: 'id',
-    description: 'ID de la pista musical (UUID)',
+    description: 'ID del track (UUID)',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @ApiResponse({
     status: 200,
-    description: 'Información de la pista obtenida exitosamente',
+    description: 'Información del track obtenida exitosamente',
   })
   @ApiResponse({ status: 404, description: 'Pista musical no encontrada' })
   async findOneTrackController(@Param('id') id: string) {
@@ -140,19 +149,19 @@ export class TracksController {
 
   @Put(':id')
   @ApiOperation({
-    summary: 'Actualizar pista musical',
-    description: 'Actualiza la información de una pista musical existente.',
+    summary: 'Actualizar track',
+    description: 'Actualiza la información de un track existente.',
   })
   @ApiParam({
     name: 'id',
-    description: 'ID de la pista musical a actualizar (UUID)',
+    description: 'ID del track a actualizar (UUID)',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @ApiResponse({
     status: 200,
-    description: 'Pista musical actualizada exitosamente',
+    description: 'Track actualizado exitosamente',
   })
-  @ApiResponse({ status: 404, description: 'Pista musical no encontrada' })
+  @ApiResponse({ status: 404, description: 'Track no encontrado' })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   async updateTrackController(
     @Body() updateTrackInput: UpdateTrackInput,
@@ -163,19 +172,19 @@ export class TracksController {
 
   @Delete(':id')
   @ApiOperation({
-    summary: 'Eliminar pista musical',
-    description: 'Elimina una pista musical del sistema por su ID.',
+    summary: 'Eliminar track',
+    description: 'Elimina un track del sistema por su ID.',
   })
   @ApiParam({
     name: 'id',
-    description: 'ID de la pista musical a eliminar (UUID)',
+    description: 'ID del track a eliminar (UUID)',
     example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @ApiResponse({
     status: 200,
-    description: 'Pista musical eliminada exitosamente',
+    description: 'Track eliminado exitosamente',
   })
-  @ApiResponse({ status: 404, description: 'Pista musical no encontrada' })
+  @ApiResponse({ status: 404, description: 'Track no encontrado' })
   async removeTrackController(@Param('id') id: string) {
     return await this.tracksService.removeTrackService(id);
   }
