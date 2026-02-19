@@ -60,7 +60,7 @@ export class RequestedTracksService {
         { key: `${requesterId}-${Date.now()}-${file.originalname}` },
         file
       )
-      documentUrl = uploadResult.url
+      documentUrl = uploadResult.location
     }
 
     const newRequestedTrack = this.requestedTracksRepository.create({
