@@ -7,6 +7,7 @@ import {
   OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
+  AfterLoad
 } from 'typeorm';
 
 @Entity({ name: 'musical_genre' })
@@ -45,4 +46,11 @@ export class MusicalGenre {
     nullable: true,
   })
   deletedAt?: Date;
+
+  @AfterLoad()
+  ensureSubGenreIsArray() {
+    if (!this.subGenre) {
+      this.subGenre = [];
+    }
+  }
 }
