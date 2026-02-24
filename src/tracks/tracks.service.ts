@@ -69,7 +69,7 @@ export class TracksService {
 
     if (genre.subGenre && genre.subGenre.length > 0) {
       const isValidSubGenre = genre.subGenre.some(
-        (sg) => sg.toLowerCase() === subGenre.toLowerCase(),
+        (sg) => sg.toLowerCase() === subGenre?.toLowerCase(),
       );
 
       if (!isValidSubGenre) {

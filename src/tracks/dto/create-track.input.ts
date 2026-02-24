@@ -33,12 +33,13 @@ export class CreateTrackInput {
   @IsNotEmpty({ message: 'El genreId es obligatorio' })
   genreId: string;
 
-  @ApiProperty({
+  @ApiPropertyOptional({
     example: 'Rock Progresivo',
     description: 'Subgénero musical de la canción'
   })
   @IsString({ message: 'El subgénero debe ser un texto válido' })
-  subGenre: string;
+  @IsOptional()
+  subGenre?: string;
 
   @ApiPropertyOptional({
     example: 'https://ejemplo.com/imagenes/bohemian-rhapsody.jpg',
@@ -57,13 +58,12 @@ export class CreateTrackInput {
   @IsNotEmpty({ message: 'El idioma es obligatorio' })
   language: string; 
 
-  @ApiPropertyOptional({
+  @ApiProperty({
     example: 'Is this the real life? Is this just fantasy?...',
     description: 'Letra completa de la canción.'
   })
-  @IsString({ message: 'La letra debe ser un texto válido' })
-  @IsOptional()
-  lyric?: string;
+  @IsString({ message: 'La letra debe ser un texto válido' }) 
+  lyric: string;
 
   @ApiPropertyOptional({
     example: [
