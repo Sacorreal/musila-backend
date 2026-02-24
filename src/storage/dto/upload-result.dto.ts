@@ -5,7 +5,7 @@ export class UploadResultDto {
   success: boolean;
 
   @IsString()
-  url: string;
+  location: string;
 
   @IsString()
   @IsNotEmpty()

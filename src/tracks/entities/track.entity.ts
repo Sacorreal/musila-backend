@@ -37,7 +37,6 @@ export class Track {
   @Column('varchar', { name: 'sub_genre' })
   subGenre: string;
 
-  //TODO: agregar url del logo de la app por default
   @Column({ type: 'varchar', default: 'https://musila.sfo3.cdn.digitaloceanspaces.com/musila-logo.jpeg', nullable: true })
   cover?: string;
 

@@ -11,6 +11,7 @@ import { STORAGE_OPTIONS } from './constants/storage-options.constants';
 import { PutObjectDto } from './dto/put-object.dto';
 import { UploadResultDto } from './dto/upload-result.dto';
 import type { StorageOptions } from './interface/storage-options.interface';
+import { extname } from 'path';
 
 
 @Injectable()
@@ -42,6 +43,10 @@ export class StorageService {
       const originalname: string = file.originalname
       const buffer: Buffer = file.buffer
 
+      const fileExtension = extname(originalname);     
+    
+    const keyWithExtension = `${key}${fileExtension}`;
+
       let folder: string = 'others';
       if (mimetype.startsWith('image/')) folder = 'images'
       if (mimetype.startsWith('audio/')) folder = 'audios'
@@ -57,7 +62,7 @@ export class StorageService {
 
       const bucketParams = {
         Bucket: this.options.bucket,
-        Key: `${stage}/${folder}/${key}`,
+        Key: `${stage}/${folder}/${keyWithExtension}`,
         Body: buffer,
         ContentType: mimetype,
         ACL: ACL.PUBLIC_READ,
@@ -69,7 +74,7 @@ export class StorageService {
 
       const rawResponse = {
         success: true,
-        url: `https://${this.options.bucket}.${this.options.endpoint}/${stage}/${folder}/${key}`,
+        location: `https://${this.options.bucket}.${this.options.endpoint}/${stage}/${folder}/${keyWithExtension}`,
         filename: originalname,
         mimetype,
         result: JSON.stringify(result),

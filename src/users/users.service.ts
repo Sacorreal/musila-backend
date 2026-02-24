@@ -65,7 +65,7 @@ export class UsersService {
       file,
     );
 
-    return uploadResult.url;
+    return uploadResult.location;
   }
 
   async createUserService(

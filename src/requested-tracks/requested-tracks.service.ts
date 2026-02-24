@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
-import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
 import { InjectRepository } from '@nestjs/typeorm';
-import { RequestedTrack } from './entities/requested-track.entity';
-import { Repository } from 'typeorm';
+import { MailService } from 'src/mail/mail.service';
+import { StorageService } from 'src/storage/storage.service';
 import { Track } from 'src/tracks/entities/track.entity';
 import { User } from 'src/users/entities/user.entity';
-import { StorageService } from 'src/storage/storage.service';
-import { MailService } from 'src/mail/mail.service';
+import { Repository } from 'typeorm';
+import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
+import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
+import { RequestedTrack } from './entities/requested-track.entity';
 
 const requestedTracksRelations: string[] = [
   'requester',
@@ -60,7 +60,7 @@ export class RequestedTracksService {
         { key: `${requesterId}-${Date.now()}-${file.originalname}` },
         file
       )
-      documentUrl = uploadResult.url
+      documentUrl = uploadResult.location
     }
 
     const newRequestedTrack = this.requestedTracksRepository.create({
@@ -76,6 +76,8 @@ export class RequestedTracksService {
     const authorsNames = authors.map(author => author.name).join(', ')
     const isMultipleAuthors = authors.length > 1;
 
+    {/* TODO: configurar servidor para envío de email      
+     
     for (const author of authors) {
       await this.mailService.sendAuthorRequestNotificationService(
         author.email,
@@ -95,6 +97,7 @@ export class RequestedTracksService {
       savedNewRequestedTrack.status,
       isMultipleAuthors
     )
+    */}
 
     return savedNewRequestedTrack
   }

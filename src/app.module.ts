@@ -11,7 +11,6 @@ import { MusicalGenreModule } from './musical-genre/musical-genre.module';
 import { PlaylistsModule } from './playlists/playlists.module';
 import { RequestedTracksModule } from './requested-tracks/requested-tracks.module';
 import { SearchModule } from './search/search.module';
-import { SeedsModule } from './seeds/seeds.module';
 import { StorageModule } from './storage/storage.module';
 import { TracksModule } from './tracks/tracks.module';
 import { UsersModule } from './users/users.module';
@@ -28,8 +27,7 @@ import { UsersModule } from './users/users.module';
     GuestsModule,
     RequestedTracksModule,
     MusicalGenreModule,
-    IntellectualPropertyModule,
-    SeedsModule,
+    IntellectualPropertyModule,  
     StorageModule.forRootAsync(),
     SearchModule,
     MailModule,

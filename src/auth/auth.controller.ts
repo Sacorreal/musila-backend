@@ -1,10 +1,10 @@
 import { BadRequestException, Body, Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { ForgotPasswordDto } from './dto/forgotPassword.dto';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { ForgotPasswordDto } from './dto/forgotPassword.dto';
 import { ResetPasswordDto } from './dto/resetPassword.dto';
 
 @ApiTags('Autenticación')
@@ -47,9 +47,7 @@ export class AuthController {
     schema: {
       type: 'object',
       properties: {
-        id: { type: 'string', format: 'uuid' },
-        email: { type: 'string', example: 'usuario@example.com' },
-        name: { type: 'string', example: 'Juan' },
+        token: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
       },
     },
   })

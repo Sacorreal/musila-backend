@@ -1,119 +1,128 @@
-import { BadRequestException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
-import * as fs from 'fs';
-import { FileUpload, WriteStream } from 'graphql-upload-ts';
-import path from 'path';
-import { Readable } from 'stream';
-import { PutObjectDto } from './dto/put-object.dto';
+import { BadRequestException } from '@nestjs/common';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { StorageService } from './storage.service';
+import { STORAGE_OPTIONS } from './constants/storage-options.constants';
 
-// ✅ Mock de @aws-sdk/client-s3 dentro del mismo archivo
-jest.mock('@aws-sdk/client-s3', () => {
-  return {
-    S3Client: jest.fn().mockImplementation(() => ({
-      send: jest.fn(),
-    })),
-    PutObjectCommand: jest.fn().mockImplementation((params) => params),
-  };
-});
-
-import { S3Client } from '@aws-sdk/client-s3';
-
-describe('StorageService - uploadObject', () => {
+describe('StorageService', () => {
   let service: StorageService;
-  let s3ClientMock: jest.Mocked<S3Client>;
+
+  // 1. Mock de las opciones de configuración inyectadas
+  const mockStorageOptions = {
+    endpoint: 'nyc3.digitaloceanspaces.com',
+    region: 'nyc3',
+    accessKeyId: 'fake-access-key',
+    secretAccessKey: 'fake-secret-key',
+    bucket: 'mi-bucket-test',
+    environment: 'development',
+  };
+
+  // 2. Mock del archivo (Multer)
+  const mockAudioFile: Express.Multer.File = {
+    fieldname: 'audio',
+    originalname: 'cancion-test.mp3',
+    encoding: '7bit',
+    mimetype: 'audio/mpeg',
+    size: 1024,
+    buffer: Buffer.from('archivo-falso-de-audio'),
+    stream: null as any,
+    destination: '',
+    filename: '',
+    path: '',
+  };
 
   beforeEach(async () => {
+    // Restaurar mocks antes de cada test para no contaminar
+    jest.restoreAllMocks();
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StorageService,
         {
-          provide: 'STORAGE_OPTIONS',
-          useValue: {
-            region: 'nyc3',
-            bucket: 'test-bucket',
-            endpoint: 'nyc3.digitaloceanspaces.com',
-            enviroment: 'local',
-            key: 'fake-key',
-            secret: 'fake-secret',
-            cdn: 'https://cdn.test-bucket.com',
-          },
+          provide: STORAGE_OPTIONS,
+          useValue: mockStorageOptions,
         },
       ],
     }).compile();
 
     service = module.get<StorageService>(StorageService);
-    s3ClientMock = (service as any).s3 as jest.Mocked<S3Client>;
   });
 
-  it('should be defined', () => {
+  it('debería estar definido', () => {
     expect(service).toBeDefined();
   });
 
-  it('✅ should upload an image and return UploadResultDto with stringified result', async () => {
-    const fakeFile: FileUpload = {
-      filename: 'test.png',
-      mimetype: 'image/png',
-      encoding: '7bit',
-      fieldName: 'file',
-      capacitor: fs.createWriteStream(
-        path.join(__dirname, 'tmp.txt'),
-      ) as unknown as WriteStream,
-      createReadStream: () => Readable.from(['fake content']) as any,
-    };
+  describe('uploadObject', () => {
+    it('debería subir un archivo correctamente y retornar el UploadResultDto', async () => {
+      // Arrange (Preparar)
+      const putObjectDto = { key: 'track-123' };
+      
+      // Espiamos y mockeamos la función 'send' de S3Client para que no haga peticiones reales
+      const s3SendMock = jest.spyOn(
+        S3Client.prototype,
+        'send',
+      ) as any;
 
-    const putObjectDto: PutObjectDto = {
-      file: Promise.resolve(fakeFile),
-      key: 'test.png',
-    };
+      s3SendMock.mockResolvedValueOnce({
+        $metadata: { httpStatusCode: 200 },
+      } as any);
 
-    // Mock de la respuesta de S3
-    (s3ClientMock.send as jest.Mock).mockResolvedValueOnce({
-      ETag: '"12345"',
-      $metadata: { httpStatusCode: 200 },
+      // Act (Ejecutar)
+      const result = await service.uploadObject(putObjectDto, mockAudioFile);
+
+      // Assert (Comprobar)
+      expect(s3SendMock).toHaveBeenCalledTimes(1);
+      
+      // Comprobamos que el comando enviado a S3 sea correcto
+      const commandArg = s3SendMock.mock.calls[0][0] as PutObjectCommand;
+      expect(commandArg.input.Bucket).toBe(mockStorageOptions.bucket);
+      expect(commandArg.input.ContentType).toBe(mockAudioFile.mimetype);
+      
+      // Comprobamos la ruta generada (asumiendo que aplicaste la corrección de extname)
+      expect(commandArg.input.Key).toBe('develop/audios/track-123.mp3'); 
+
+      // Comprobamos el resultado retornado por tu servicio
+      expect(result.success).toBe(true);
+      expect(result.filename).toBe(mockAudioFile.originalname);
+      expect(result.mimetype).toBe(mockAudioFile.mimetype);
+      expect(result.location).toContain('https://mi-bucket-test.nyc3.digitaloceanspaces.com/develop/audios/track-123.mp3');
     });
 
-    const result = await service.uploadObject(putObjectDto);
+    it('debería lanzar BadRequestException si el archivo es inválido (faltan datos)', async () => {
+      // Arrange
+      const putObjectDto = { key: 'track-123' };
+      const invalidFile: any = { ...mockAudioFile, buffer: undefined }; // Simulamos un archivo sin buffer
 
-    // 🔎 Validaciones principales
-    expect(result.success).toBe(true);
-    expect(result.url).toContain(
-      'https://test-bucket.nyc3.digitaloceanspaces.com/develop/images/test.png',
-    );
-    expect(result.filename).toBe('test.png');
-    expect(result.mimetype).toBe('image/png');
-    expect(result.year).toBe(new Date().getFullYear());
+      // Act & Assert
+      await expect(
+        service.uploadObject(putObjectDto, invalidFile as any)
+      ).rejects.toThrow(BadRequestException);
+      
+      await expect(
+        service.uploadObject(putObjectDto, invalidFile as any)
+      ).rejects.toThrow('Archivo inválido'); // El mensaje exacto de tu servicio
+    });
 
-    // 🔎 Parseamos el string `result` para validar los campos del S3
-    const parsed = JSON.parse(result.result);
-    expect(parsed.ETag).toBe('"12345"');
-    expect(parsed.$metadata.httpStatusCode).toBe(200);
-  });
+    it('debería lanzar BadRequestException si AWS S3 falla', async () => {
+      // Arrange
+      const putObjectDto = { key: 'track-123' };
+      
+      // Simulamos que S3 arroja un error (ej. credenciales inválidas o bucket no existe)
+      const s3SendMock = jest.spyOn(
+        S3Client.prototype,
+        'send',
+      ) as any;
 
-  it('❌ should throw BadRequestException on error', async () => {
-    const fakeFile: FileUpload = {
-      filename: 'test.png',
-      mimetype: 'image/png',
-      encoding: '7bit',
-      fieldName: 'file',
-      capacitor: fs.createWriteStream(
-        path.join(__dirname, 'tmp.txt'),
-      ) as unknown as WriteStream,
-      createReadStream: () => Readable.from(['fake content']) as any,
-    };
+      s3SendMock.mockRejectedValueOnce(new Error('S3 Upload Failed'));
 
-    const putObjectDto: PutObjectDto = {
-      file: Promise.resolve(fakeFile),
-      key: 'test.png',
-    };
+      // Act & Assert
+      await expect(
+        service.uploadObject(putObjectDto, mockAudioFile)
+      ).rejects.toThrow(BadRequestException);
 
-    // Simulamos error en la subida
-    (s3ClientMock.send as jest.Mock).mockRejectedValueOnce(
-      new Error('Upload failed'),
-    );
-
-    await expect(service.uploadObject(putObjectDto)).rejects.toThrow(
-      BadRequestException,
-    );
+      await expect(
+        service.uploadObject(putObjectDto, mockAudioFile)
+      ).rejects.toThrow('S3 Upload Failed');
+    });
   });
 });
