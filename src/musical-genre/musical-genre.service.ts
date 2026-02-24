@@ -57,6 +57,7 @@ export class MusicalGenreService {
   }
 
   async findAllMusicalGenreService() {
+    
     return await this.musicalGenreRepository.find();
   }
 
