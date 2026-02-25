@@ -8,10 +8,11 @@ import {
   IsString,
   IsUrl,
   IsUUID,
+  ValidateNested,
 } from 'class-validator';
 import { ExternalIdInput } from './external-id.input';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Transform } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 
 
 
@@ -63,20 +64,7 @@ export class CreateTrackInput {
     description: 'Letra completa de la canción.'
   })
   @IsString({ message: 'La letra debe ser un texto válido' }) 
-  lyric: string;
-
-  @ApiPropertyOptional({
-    example: [
-      { type: 'ISRC', value: 'USRC17607839' },
-      { type: 'IPI', value: '00012345678' }
-    ],
-    description:
-      `Identificadores externos del track en distintas plataformas o registros oficiales. 
-      Cada objeto debe incluir un "type" (ej: ISRC, IPI) y un "value" con el código correspondiente.`
-  })
-  @IsOptional()
-  @IsArray({ message: 'externalsIds debe ser un arreglo de objetos ExternalIdInput' })
-  externalsIds?: ExternalIdInput[];
+  lyric: string; 
 
   @ApiProperty({
     type: [String],
@@ -113,4 +101,28 @@ export class CreateTrackInput {
   })
   @IsBoolean({ message: 'isGospel debe ser un valor booleano' })
   isGospel: boolean;
+
+@IsNotEmpty({ message: 'audioKey no puede estar vacío' })
+  audioKey: string
+
+@IsNotEmpty({ message: 'audioUrl no puede estar vacío' })  
+audioUrl: string
+
+@IsOptional()
+coverKey?: string
+
+@IsOptional()
+coverUrl?: string
+
+  @ApiPropertyOptional({
+    type: [ExternalIdInput],
+    description:
+      'Identificadores externos del track (por ejemplo, IDs de Spotify, Apple Music, etc.).',
+  })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => ExternalIdInput)
+  externalsIds?: ExternalIdInput[];
+
+
 }

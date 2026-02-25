@@ -23,8 +23,7 @@ const userRelations: string[] = [
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(User) private readonly usersRepository: Repository<User>,
-    private readonly storageService: StorageService,
+    @InjectRepository(User) private readonly usersRepository: Repository<User>,   
     @InjectRepository(MusicalGenre)
     private readonly musicalGenreRepository: Repository<MusicalGenre>,
   ) {}
@@ -48,29 +47,10 @@ export class UsersService {
     return this.findUserWithRelations(savedUser.id);
   }
 
-  private async handleAvatar(
-    file?: Express.Multer.File,
-    currentAvatar?: string,
-  ): Promise<string> {
-    if (!file) {
-      return (
-        currentAvatar ??
-        'https://mi-bucket.s3.region.amazonaws.com/defaults/avatar.png'
-      );
-    }
-
-    const putObjectDto = { key: `avatars/${Date.now()}-${file.originalname}` };
-    const uploadResult = await this.storageService.uploadObject(
-      putObjectDto,
-      file,
-    );
-
-    return uploadResult.location;
-  }
+ 
 
   async createUserService(
-    createUserInput: CreateUserInput,
-    file?: Express.Multer.File,
+    createUserInput: CreateUserInput   
   ) {
     const { preferredGenres, ...rest } = createUserInput;
 
@@ -90,7 +70,7 @@ export class UsersService {
       newUser.preferredGenres = genres;
     }
 
-    newUser.avatar = await this.handleAvatar(file);
+    
 
     return this.saveAndReturnWithRelations(newUser);
   }
@@ -113,8 +93,7 @@ export class UsersService {
 
   async updateUserService(
     id: string,
-    updateUserInput: UpdateUserInput,
-    file?: Express.Multer.File,
+    updateUserInput: UpdateUserInput
   ) {
     const existingUser = await this.findUserWithRelations(id);
 
@@ -134,9 +113,7 @@ export class UsersService {
       });
 
       existingUser.preferredGenres = genres;
-    }
-
-    existingUser.avatar = await this.handleAvatar(file, existingUser.avatar);
+    }    
 
     return this.saveAndReturnWithRelations(existingUser);
   }

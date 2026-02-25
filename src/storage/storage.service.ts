@@ -1,18 +1,22 @@
 import {
+  DeleteObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
-  PutObjectCommandOutput,
   S3Client,
 } from '@aws-sdk/client-s3';
-import { BadRequestException, Inject, Injectable } from '@nestjs/common';
-import { plainToInstance } from 'class-transformer';
-import { validateSync } from 'class-validator';
-import { ACL } from './constants/acl.constants';
-import { STORAGE_OPTIONS } from './constants/storage-options.constants';
-import { PutObjectDto } from './dto/put-object.dto';
-import { UploadResultDto } from './dto/upload-result.dto';
-import type { StorageOptions } from './interface/storage-options.interface';
-import { extname } from 'path';
+import {
+  BadRequestException,
+  Inject,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { v4 as uuid } from 'uuid';
 
+import { STORAGE_OPTIONS } from './constants/storage-options.constants';
+import { ACL } from './constants/acl.constants';
+import type { StorageOptions } from './interface/storage-options.interface';
+import { StorageFolder } from './dto/storage-folder.enum';
 
 @Injectable()
 export class StorageService {
@@ -32,65 +36,155 @@ export class StorageService {
     });
   }
 
-  async uploadObject(putObjectDto: PutObjectDto, file: Express.Multer.File): Promise<UploadResultDto> {
+  // =====================================================
+  // ✅ GENERATE PRESIGNED UPLOAD URL
+  // =====================================================
+
+  async generateUploadUrl(params: {
+    folder: StorageFolder;
+    fileType: string;
+  }) {
+    this.validateMimeType(params.fileType);
+
+    const extension = this.extractExtension(params.fileType);
+
+    const stage = this.resolveStage();
+
+    const key = `${stage}/${params.folder}/${uuid()}.${extension}`;
+
+    const command = new PutObjectCommand({
+      Bucket: this.options.bucket,
+      Key: key,
+      ContentType: params.fileType,
+      ACL: ACL.PUBLIC_READ,
+    });
+
     try {
-      if (!file || !file.mimetype || !file.originalname || !file.buffer) {
-        throw new BadRequestException('Archivo inválido');
-      }
+      const uploadUrl = await getSignedUrl(this.s3, command, {
+        expiresIn: 60,
+      });
 
-      const { key } = putObjectDto;
-      const mimetype: string = file.mimetype
-      const originalname: string = file.originalname
-      const buffer: Buffer = file.buffer
-
-      const fileExtension = extname(originalname);     
-    
-    const keyWithExtension = `${key}${fileExtension}`;
-
-      let folder: string = 'others';
-      if (mimetype.startsWith('image/')) folder = 'images'
-      if (mimetype.startsWith('audio/')) folder = 'audios'
-
-
-      const envMap: Record<string, string> = {
-        local: 'develop',
-        development: 'develop',
-        production: 'production',
+      return {
+        uploadUrl,
+        key,
+        publicUrl: this.buildPublicUrl(key),
       };
-
-      const stage = envMap[this.options.environment] ?? 'develop';
-
-      const bucketParams = {
-        Bucket: this.options.bucket,
-        Key: `${stage}/${folder}/${keyWithExtension}`,
-        Body: buffer,
-        ContentType: mimetype,
-        ACL: ACL.PUBLIC_READ,
-      };
-
-      const result: PutObjectCommandOutput = await this.s3.send(
-        new PutObjectCommand(bucketParams),
-      );
-
-      const rawResponse = {
-        success: true,
-        location: `https://${this.options.bucket}.${this.options.endpoint}/${stage}/${folder}/${keyWithExtension}`,
-        filename: originalname,
-        mimetype,
-        result: JSON.stringify(result),
-        year: new Date().getFullYear(),
-      };
-
-      const response = plainToInstance(UploadResultDto, rawResponse);
-      const errors = validateSync(response);
-
-      if (errors.length > 0) {
-        throw new BadRequestException(errors);
-      }
-
-      return response;
     } catch (error) {
-      throw new BadRequestException(error?.message || 'Error uploading file');
+      throw new InternalServerErrorException(
+        'Error generating upload URL',
+      );
     }
   }
+
+  // =====================================================
+  // ✅ DELETE FILE (REPLACE / UPDATE)
+  // =====================================================
+
+  async deleteObject(key: string): Promise<void> {
+    if (!key) return;
+
+    try {
+      await this.s3.send(
+        new DeleteObjectCommand({
+          Bucket: this.options.bucket,
+          Key: key,
+        }),
+      );
+    } catch (error) {
+      console.error('Storage delete error:', error);
+    }
+  }
+
+  // =====================================================
+  // ✅ CHECK FILE EXISTS
+  // =====================================================
+
+  async fileExists(key: string): Promise<boolean> {
+    try {
+      await this.s3.send(
+        new HeadObjectCommand({
+          Bucket: this.options.bucket,
+          Key: key,
+        }),
+      );
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // =====================================================
+  // ✅ HELPERS
+  // =====================================================
+
+  buildPublicUrl(key: string): string {
+    return `https://${this.options.bucket}.${this.options.endpoint}/${key}`;
+  }
+
+  private resolveStage(): string {
+    const envMap: Record<string, string> = {
+      local: 'develop',
+      development: 'develop',
+      production: 'production',
+    };
+
+    return envMap[this.options.environment] ?? 'develop';
+  }
+
+  private validateMimeType(fileType: string) {
+    if (!fileType.includes('/')) {
+      throw new BadRequestException('Invalid MIME type');
+    }
+  
+    const allowedMimeTypes = [
+      // AUDIO
+      'audio/mpeg',
+      'audio/wav',
+      'audio/mp3',
+      'audio/x-wav',
+  
+      // IMAGES
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+  
+      // DOCUMENTS
+      'application/pdf',
+      'application/x-pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+  
+    if (!allowedMimeTypes.includes(fileType)) {
+      throw new BadRequestException(
+        `Unsupported file type: ${fileType}`,
+      );
+    }
+  }
+
+  private extractExtension(fileType: string): string {
+    const mimeMap: Record<string, string> = {
+      // AUDIO
+      'audio/mpeg': 'mp3',
+      'audio/mp3': 'mp3',
+      'audio/wav': 'wav',
+      'audio/x-wav': 'wav',
+  
+      // IMAGES
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/webp': 'webp',
+  
+      // DOCUMENTS
+      'application/pdf': 'pdf',
+      'application/x-pdf': 'pdf',
+      'application/msword': 'doc',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+        'docx',
+    };
+  
+    return mimeMap[fileType] || fileType.split('/')[1];
+  }
+
+ 
 }

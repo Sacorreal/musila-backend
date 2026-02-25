@@ -139,9 +139,8 @@ export class UsersController {
   async updateUserController(
     @Body() updateUserInput: UpdateUserInput,
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
-    @UploadedFile() file?: Express.Multer.File,
   ) {
-    return await this.usersService.updateUserService(id, updateUserInput, file);
+    return await this.usersService.updateUserService(id, updateUserInput);
   }
 
   @Delete(':id')

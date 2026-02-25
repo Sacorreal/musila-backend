@@ -3,6 +3,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { STORAGE_OPTIONS } from './constants/storage-options.constants';
 import { StorageOptions } from './interface/storage-options.interface';
 import { StorageService } from './storage.service';
+import { StorageController} from './storage.controller'
 
 @Global()
 @Module({})
@@ -26,6 +27,7 @@ export class StorageModule {
         },
         StorageService,
       ],
+      controllers: [StorageController],
       exports: [StorageService],
     };
   }

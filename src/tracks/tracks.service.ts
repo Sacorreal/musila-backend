@@ -54,78 +54,95 @@ export class TracksService {
 
   async createTrackService(
     createTrackInput: CreateTrackInput,
-    files: {
-      audio?: Express.Multer.File[];
-      coverImage?: Express.Multer.File[];
-    },
-  ) {
-    const { genreId, subGenre, authorsIds, cover, ...rest } = createTrackInput;
-
+  ): Promise<Track> {
+    const {
+      genreId,
+      subGenre,
+      authorsIds,
+      audioKey,
+      audioUrl,
+      coverKey,
+      coverUrl,
+      externalsIds,
+      ...rest
+    } = createTrackInput;
+  
+    // =============================
+    // 1️⃣ Validar género
+    // =============================
+  
     const genre = await this.genreRepository.findOne({
       where: { id: genreId },
     });
-
-    if (!genre) throw new NotFoundException('El género musical no existe');
-
-    if (genre.subGenre && genre.subGenre.length > 0) {
-      const isValidSubGenre = genre.subGenre.some(
-        (sg) => sg.toLowerCase() === subGenre?.toLowerCase(),
+  
+    if (!genre)
+      throw new NotFoundException(
+        'El género musical no existe',
       );
 
-      if (!isValidSubGenre) {
+    // Si el cliente envía un subgénero, lo validamos contra la lista del género.
+    // Si no envía subgénero, no forzamos validación ni bloqueamos la creación.
+    if (subGenre) {
+      if (genre.subGenre && genre.subGenre.length > 0) {
+        const isValidSubGenre = genre.subGenre.some(
+          (sg) => sg.toLowerCase() === subGenre.toLowerCase(),
+        );
+
+        if (!isValidSubGenre) {
+          throw new BadRequestException(
+            `El subgénero "${subGenre}" no pertenece al género "${genre.genre}". ` +
+              `Los subgéneros válidos son: ${genre.subGenre.join(', ')}.`,
+          );
+        }
+      } else {
         throw new BadRequestException(
-          `El subgénero "${subGenre}" no pertenece al género "${genre.genre}".` +
-            ` Los subgéneros válidos son: ${genre.subGenre.join(', ')}.`,
+          `El género "${genre.genre}" no tiene subgéneros definidos para asociar un subgénero.`,
         );
       }
-    } else {
-      throw new BadRequestException(
-        `El género "${genre.genre}" no tiene subgéneros definidos.`,
-      );
     }
-
+  
+    // =============================
+    // 2️⃣ Validar autores
+    // =============================
+  
     const authors = await this.usersRepository.find({
       where: { id: In(authorsIds) },
     });
-
-    if (authors.length !== authorsIds.length)
-      throw new NotFoundException('Uno o más autores no existen');
-
-    const audioFile = files?.audio?.[0];
-  const coverFile = files?.coverImage?.[0];
-
-  if (!audioFile)
-    throw new BadRequestException('El archivo de audio es obligatorio');
-
+  
+    if (authors.length !== authorsIds.length) {
+      throw new NotFoundException(
+        'Uno o más autores no existen',
+      );
+    }
+  
+    // =============================
+    // 3️⃣ Validar que venga audio
+    // =============================
+  
+    if (!audioKey || !audioUrl) {
+      throw new BadRequestException(
+        'El archivo de audio es obligatorio',
+      );
+    }
+  
+    // =============================
+    // 4️⃣ Crear entidad
+    // =============================
+  
     const newTrack = this.tracksRepository.create({
       ...rest,
       genre,
       subGenre,
       authors,
-    });
-    
-    const [audioUpload, coverUpload] = await Promise.all([
-      this.storageService.uploadObject(
-        { key: newTrack.id },
-        audioFile,
-      ),
+      audioKey,
+      audioUrl,
+      externalsIds,
+      coverKey: coverKey ?? null,
+      year: new Date().getFullYear(),
+      coverUrl: coverUrl ?? null,
+    } as any);
   
-      coverFile
-        ? this.storageService.uploadObject(
-            { key: newTrack.id },
-            coverFile,
-          )
-        : Promise.resolve(null),
-    ]);    
-
-    newTrack.url = audioUpload.location;
-    newTrack.year = audioUpload.year;
-
-    if(coverUpload){
-      newTrack.cover = coverUpload.location
-    }
-
-    return await this.saveAndReturnWithRelations(newTrack);
+    return await this.saveAndReturnWithRelations(newTrack as unknown as Track);
   }
 
   async findAllTracksService(

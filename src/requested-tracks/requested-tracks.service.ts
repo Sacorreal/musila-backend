@@ -41,7 +41,7 @@ export class RequestedTracksService {
     return await this.findRequestedTrackWithRelations(savedRequestedTrack.id)
   }
 
-  async createRequestedTracksService(createRequestedTrackInput: CreateRequestedTrackInput, file?: Express.Multer.File) {
+  async createRequestedTracksService(createRequestedTrackInput: CreateRequestedTrackInput) {
     const { requesterId, trackId, licenseType } = createRequestedTrackInput
 
     const requester = await this.usersRepository.findOne({ where: { id: requesterId } })
@@ -53,15 +53,7 @@ export class RequestedTracksService {
     })
     if (!track) throw new NotFoundException('La pista no existe')
 
-    let documentUrl: string | null = null
-
-    if (file) {
-      const uploadResult = await this.storageService.uploadObject(
-        { key: `${requesterId}-${Date.now()}-${file.originalname}` },
-        file
-      )
-      documentUrl = uploadResult.location
-    }
+    let documentUrl: string | null = null    
 
     const newRequestedTrack = this.requestedTracksRepository.create({
       requester,

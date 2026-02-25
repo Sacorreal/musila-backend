@@ -43,13 +43,7 @@ export class TracksController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: CreateTrackInput })
   @Post()
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'audio', maxCount: 1 },
-      { name: 'coverImage', maxCount: 1 },
-    ]),
-  )
-  @ApiOperation({
+    @ApiOperation({
     summary: 'Crear nuevo track',
     description:
       'Crea un nuevo track en el sistema. Requiere subir el archivo de audio del track.',
@@ -60,16 +54,12 @@ export class TracksController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Datos inválidos o archivo no proporcionado',
+    description: 'Datos inválidos',
   })
   async createTrackController(
-    @Body() createTrackInput: CreateTrackInput,
-    @UploadedFiles() files: {
-      audio?: Express.Multer.File[];
-      coverImage?: Express.Multer.File[];
-    },
+    @Body() createTrackInput: CreateTrackInput,    
   ) {
-    return await this.tracksService.createTrackService(createTrackInput, files);
+    return await this.tracksService.createTrackService(createTrackInput);
   }
 
   @Get()
