@@ -17,4 +17,19 @@ async generateUploadUrl(
     fileType: body.fileType,
   });
 }  
+
+@Post('delete-batch') // Usamos POST porque DELETE a veces da problemas recibiendo arrays en el Body
+  async deleteFilesBatch(@Body() body: { keys: string[] }) {
+    if (!body.keys || !body.keys.length) {
+      return { success: true, message: 'No keys provided' };
+    }
+
+    const deletePromises = body.keys.map((key) => 
+      this.storageService.deleteObject(key)
+    );
+
+    await Promise.all(deletePromises);
+
+    return { success: true, message: 'Files deleted successfully' };
+  }
 }

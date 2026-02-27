@@ -27,12 +27,13 @@ export class StorageService {
     private readonly options: StorageOptions,
   ) {
     this.s3 = new S3Client({
-      endpoint: `https://${this.options.endpoint}`,
+      endpoint: this.options.endpoint,
       region: this.options.region,
       credentials: {
         accessKeyId: this.options.accessKeyId,
         secretAccessKey: this.options.secretAccessKey,
       },
+      forcePathStyle:false,
     });
   }
 

@@ -25,7 +25,7 @@ import {
 import { FilterTrackDto } from './dto/filter-track.dto';
 
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { AuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { UsersService } from 'src/users/users.service';
 import { CreateTrackInput } from './dto/create-track.input';
@@ -80,7 +80,7 @@ export class TracksController {
   }
 
   @Get('my-tracks')
-  @UseGuards(AuthGuard)
+  @UseGuards(JWTAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Obtener mis tracks',
@@ -96,7 +96,7 @@ export class TracksController {
     return this.tracksService.findAllTracksService({ user });
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(JWTAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @Get('by-preferred-genres')
   @ApiOperation({

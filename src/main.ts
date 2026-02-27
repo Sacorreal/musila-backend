@@ -1,9 +1,16 @@
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import 'dotenv/config';
+import * as dotenv from 'dotenv';
+
+if (process.env.NODE_ENV === 'local') {
+  dotenv.config({ path: '.env.local' });
+} else {
+  dotenv.config();
+}
 import { AppModule } from './app.module';
 import { RequestsStatusDto } from './requested-tracks/dto/requests-status.dto';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -17,7 +24,11 @@ async function bootstrap() {
       },
     }),
   );
-  app.enableCors();
+  app.use(cookieParser.default());
+  app.enableCors({
+    origin: [process.env.WEB_APP_PRODUCTION, process.env.WEB_APP_DEVELOPMENT], 
+    credentials:true
+  });
 
   const swaggerConfig = new DocumentBuilder()
     .setTitle('API Musila Backend')
