@@ -1,7 +1,6 @@
 import { BadRequestException, Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { MailService } from './mail.service';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { AuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { UserRole } from 'src/users/entities/user-role.enum';
@@ -12,7 +11,7 @@ export class MailController {
   constructor(private readonly mailService: MailService) { }
 
   @ApiBearerAuth('JWT-auth')
-  @UseGuards(AuthGuard)
+ 
   @Get('test-invite')
   @ApiOperation({
     summary: 'Enviar invitación de colaboración',
