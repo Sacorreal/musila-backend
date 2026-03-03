@@ -25,7 +25,7 @@ import {
 import { FilterTrackDto } from './dto/filter-track.dto';
 
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { AuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { UsersService } from 'src/users/users.service';
 import { CreateTrackInput } from './dto/create-track.input';
@@ -43,13 +43,7 @@ export class TracksController {
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: CreateTrackInput })
   @Post()
-  @UseInterceptors(
-    FileFieldsInterceptor([
-      { name: 'audio', maxCount: 1 },
-      { name: 'coverImage', maxCount: 1 },
-    ]),
-  )
-  @ApiOperation({
+    @ApiOperation({
     summary: 'Crear nuevo track',
     description:
       'Crea un nuevo track en el sistema. Requiere subir el archivo de audio del track.',
@@ -60,16 +54,12 @@ export class TracksController {
   })
   @ApiResponse({
     status: 400,
-    description: 'Datos inválidos o archivo no proporcionado',
+    description: 'Datos inválidos',
   })
   async createTrackController(
-    @Body() createTrackInput: CreateTrackInput,
-    @UploadedFiles() files: {
-      audio?: Express.Multer.File[];
-      coverImage?: Express.Multer.File[];
-    },
+    @Body() createTrackInput: CreateTrackInput,    
   ) {
-    return await this.tracksService.createTrackService(createTrackInput, files);
+    return await this.tracksService.createTrackService(createTrackInput);
   }
 
   @Get()
@@ -90,7 +80,7 @@ export class TracksController {
   }
 
   @Get('my-tracks')
-  @UseGuards(AuthGuard)
+  @UseGuards(JWTAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Obtener mis tracks',
@@ -106,7 +96,7 @@ export class TracksController {
     return this.tracksService.findAllTracksService({ user });
   }
 
-  @UseGuards(AuthGuard)
+  @UseGuards(JWTAuthGuard)
   @ApiBearerAuth('JWT-auth')
   @Get('by-preferred-genres')
   @ApiOperation({

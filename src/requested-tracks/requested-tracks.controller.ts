@@ -47,9 +47,8 @@ export class RequestedTracksController {
   })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   @ApiResponse({ status: 404, description: 'Usuario o pista no encontrados' })
-  @UseInterceptors(FileInterceptor('file'))
-  async createRequestedTrackController(@Body() createRequestedTrackInput: CreateRequestedTrackInput, @UploadedFile() file?: Express.Multer.File) {
-    return await this.requestedTracksService.createRequestedTracksService(createRequestedTrackInput, file);
+   async createRequestedTrackController(@Body() createRequestedTrackInput: CreateRequestedTrackInput) {
+    return await this.requestedTracksService.createRequestedTracksService(createRequestedTrackInput);
   }
 
   @Get()

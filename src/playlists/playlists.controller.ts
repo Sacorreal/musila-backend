@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { AuthGuard } from 'src/auth/guards/jwt-auth.guard';
+
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { CreatePlaylistInput } from './dto/create-playlist.input';
 import { UpdatePlaylistInput } from './dto/update-playlist.input';
@@ -22,7 +22,7 @@ export class PlaylistsController {
   constructor(private readonly playlistsService: PlaylistsService) {}
 
   @Post()
-  @UseGuards(AuthGuard)
+  
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Crear nueva lista de reproducción',
@@ -43,7 +43,7 @@ export class PlaylistsController {
   }
 
   @Get()
-  @UseGuards(AuthGuard)
+ 
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Obtener todas las listas de reproducción',
@@ -74,7 +74,7 @@ export class PlaylistsController {
   }
 
   @Put(':id')
-  @UseGuards(AuthGuard)
+  
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Actualizar lista de reproducción',
@@ -99,7 +99,7 @@ export class PlaylistsController {
   }
 
   @Delete(':id')
-  @UseGuards(AuthGuard)
+  
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Eliminar lista de reproducción',

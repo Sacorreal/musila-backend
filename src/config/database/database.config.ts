@@ -3,7 +3,9 @@ import * as dotenv from 'dotenv';
 
 const nodeEnv = process.env.NODE_ENV;
 
-if (nodeEnv === 'production') {
+if (nodeEnv === 'local') {
+  dotenv.config({ path: '.env.local' });
+} else if (nodeEnv === 'production') {
   dotenv.config({ path: '.env.production' });
 }
 

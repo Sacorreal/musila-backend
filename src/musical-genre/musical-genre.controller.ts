@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Roles } from 'src/auth/decorators/roles.decorator';
-import { JwtAuthRolesGuard } from 'src/auth/guards/jwt-auth-roles.guard';
+
 import { UserRole } from 'src/users/entities/user-role.enum';
 import { CreateMusicalGenreInput } from './dto/create-musical-genre.input';
 import { UpdateMusicalGenreInput } from './dto/update-musical-genre.input';
@@ -21,8 +21,9 @@ import { MusicalGenreService } from './musical-genre.service';
 export class MusicalGenreController {
   constructor(private readonly musicalGenreService: MusicalGenreService) {}
 
-  @UseGuards(JwtAuthRolesGuard)
-  @Roles(UserRole.ADMIN)
+
+
+
   @ApiBearerAuth('JWT-auth')
   @Post()
   @ApiOperation({
@@ -72,8 +73,7 @@ export class MusicalGenreController {
     return await this.musicalGenreService.findOneMusicalGenreService(id);
   }
 
-  @UseGuards(JwtAuthRolesGuard)
-  @Roles(UserRole.ADMIN)
+
   @ApiBearerAuth('JWT-auth')
   @Put(':id')
   @ApiOperation({
@@ -99,8 +99,8 @@ export class MusicalGenreController {
     );
   }
 
-  @UseGuards(JwtAuthRolesGuard)
-  @Roles(UserRole.ADMIN)
+ 
+ 
   @ApiBearerAuth('JWT-auth')
   @Delete(':id')
   @ApiOperation({

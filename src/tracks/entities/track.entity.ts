@@ -34,17 +34,20 @@ export class Track {
   })
   genre: MusicalGenre;
 
-  @Column('varchar', { name: 'sub_genre' })
-  subGenre: string;
+  @Column('varchar', { name: 'sub_genre', nullable: true })
+  subGenre?: string;
 
   @Column({ type: 'varchar', default: 'https://musila.sfo3.cdn.digitaloceanspaces.com/musila-logo.jpeg', nullable: true })
-  cover?: string;
+  coverUrl?: string;
 
-  @Column('varchar', { nullable: true })
-  url?: string;
+  @Column('varchar', { nullable: true, name: 'audio_url'})
+  audioUrl?: string;
 
   @Column('int', { nullable: true })
   year?: number;
+  
+  @Column('varchar', { name: 'audio_key', default: 'sin-audio-key' })
+  audioKey: string;
 
   @Column('varchar', { nullable: false })
   language: string;
@@ -56,7 +59,7 @@ export class Track {
   externalsIds?: ExternalId[]
 
   @OneToMany(() => IntellectualProperty, (it) => it.track)
-  intellectualProperties: IntellectualProperty[];
+  intellectualProperties?: IntellectualProperty[];
 
   @Column('boolean', { default: true, name: 'is_available' })
   isAvailable: boolean;
@@ -79,6 +82,9 @@ export class Track {
     lazy: true,
   })
   requestedTrack?: RequestedTrack[];
+
+  @Column('varchar', { nullable: true, name: 'cover_key' })
+  coverKey?: string
 
   @CreateDateColumn({
     name: 'created_at',

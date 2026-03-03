@@ -33,7 +33,7 @@ export class AuthService {
     return { token };
   }
 
-  async registerService(user: RegisterAuthDto, file?: Express.Multer.File) {
+  async registerService(user: RegisterAuthDto) {
     const userExists = await this.usersService.findUserByEmailService(
       user.email,
     );
@@ -46,7 +46,7 @@ export class AuthService {
       ...user,
       password: hashedPassword
     },
-      file
+    
     );
     {/* TODO: configurar servidor para envío de email
     

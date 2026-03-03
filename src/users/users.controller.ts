@@ -14,8 +14,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
 import { Roles } from 'src/auth/decorators/roles.decorator';
-import { JwtAuthRolesGuard } from 'src/auth/guards/jwt-auth-roles.guard';
-import { AuthGuard } from 'src/auth/guards/jwt-auth.guard';
+
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { UpdateUserInput } from './dto/update-user.input';
 import { UserRole } from './entities/user-role.enum';
@@ -27,8 +26,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @UseGuards(JwtAuthRolesGuard)
-  @Roles(UserRole.ADMIN)
+
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Obtener todos los usuarios',
@@ -87,7 +85,7 @@ export class UsersController {
   }
 
   // Rutas con parámetros genéricos deben ir AL FINAL
-  @UseGuards(AuthGuard)
+  
   @ApiBearerAuth('JWT-auth')
   @Get(':id/featured-authors')
   @ApiOperation({
@@ -139,9 +137,8 @@ export class UsersController {
   async updateUserController(
     @Body() updateUserInput: UpdateUserInput,
     @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
-    @UploadedFile() file?: Express.Multer.File,
   ) {
-    return await this.usersService.updateUserService(id, updateUserInput, file);
+    return await this.usersService.updateUserService(id, updateUserInput);
   }
 
   @Delete(':id')

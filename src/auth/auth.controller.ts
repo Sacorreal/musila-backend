@@ -53,12 +53,12 @@ export class AuthController {
   })
   @ApiResponse({ status: 400, description: 'Datos inválidos o contraseñas no coinciden' })
   @ApiResponse({ status: 409, description: 'El correo electrónico ya está registrado' })
-  async registerController(@Body() user: RegisterAuthDto, @UploadedFile() file?: Express.Multer.File) {
+  async registerController(@Body() user: RegisterAuthDto) {
     if (user.password !== user.repeatPassword)
       throw new BadRequestException('Las contraseñas no coinciden');
 
 
-    return this.authService.registerService(user, file);
+    return this.authService.registerService(user);
   }
 
   @Post('forgot-password')
