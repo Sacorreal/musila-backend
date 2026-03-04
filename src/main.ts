@@ -24,10 +24,20 @@ async function bootstrap() {
       },
     }),
   );
+
+  const allowedOrigins = [
+    process.env.WEB_APP_PRODUCTION,
+    process.env.WEB_APP_DEVELOPMENT, 
+    process.env.WEB_APP_LOCAL,
+  ].filter(Boolean); 
+
+
   app.use(cookieParser.default());
+
   app.enableCors({
-    origin: [process.env.WEB_APP_PRODUCTION, process.env.WEB_APP_DEVELOPMENT, process.env.WEB_APP_LOCAL ], 
-    credentials:true
+    origin: allowedOrigins,
+    credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   });
 
   const swaggerConfig = new DocumentBuilder()
