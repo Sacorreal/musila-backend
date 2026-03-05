@@ -62,7 +62,8 @@ export class StorageService {
 
     try {
       const uploadUrl = await getSignedUrl(this.s3, command, {
-        expiresIn: 60,
+        expiresIn: 900,
+        signableHeaders: new Set(['host', 'content-type', 'x-amz-acl']),
       });
 
       return {
