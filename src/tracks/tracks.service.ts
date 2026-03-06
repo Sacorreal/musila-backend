@@ -20,7 +20,6 @@ const tracksRelations: string[] = [
   'genre',
   'intellectualProperties',
   'authors',
-  'tracks.authors',
   'playlists',
   'requestedTrack',
 ];

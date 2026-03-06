@@ -122,7 +122,7 @@ export class StorageService {
   // =====================================================
 
   buildPublicUrl(key: string): string {
-    return `https://${this.options.bucket}.${this.options.endpoint}/${key}`;
+    return `https://${this.options.bucket}.${this.options.region}.digitaloceanspaces.com/${key}`;
   }
 
   private resolveStage(): string {
