@@ -5,8 +5,6 @@ import { UserRole } from "src/users/entities/user-role.enum";
 
 
 export class RegisterAuthDto {
-
-
     @ApiProperty({
         example: 'Sofía',
         description: 'Nombre del usuario.'
@@ -86,17 +84,17 @@ export class RegisterAuthDto {
         example: 'DNI',
         description: 'Tipo de documento de identidad (opcional).'
     })
-    @IsOptional()
     @IsString({ message: 'El tipo de documento debe ser un texto válido' })
-    typeCitizenID?: string;
+    @IsNotEmpty({ message: 'tipo de documento obligatorio' })
+    typeCitizenID: string;
 
     @ApiPropertyOptional({
         example: '40123456',
         description: 'Número de documento de identidad del usuario (opcional).'
     })
-    @IsOptional()
+    @IsNotEmpty({ message: 'El número de documento es obligatorio' })
     @IsString({ message: 'El número de documento debe ser un texto válido' })
-    citizenID?: string;
+    citizenID: string;
 
     @ApiProperty({
         example: UserRole.ADMIN,
@@ -145,10 +143,4 @@ export class RegisterAuthDto {
     @ArrayMaxSize(3, { message: 'El array de preferredGenres debe tener un máximo de 3 elementos' })
     preferredGenres?: string[]
 
-    @ApiPropertyOptional({
-        format: 'binary',
-        description: 'Archivo de imagen para el avatar del usuario (opcional).',
-    })
-    @IsOptional()
-    file_avatar?: Express.Multer.File
 }

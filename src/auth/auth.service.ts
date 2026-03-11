@@ -19,8 +19,8 @@ export class AuthService {
     private readonly mailService: MailService
   ) { }
 
-  async loginService({ email, password }: LoginAuthDto) {
-    const user = await this.usersService['findUserByEmailForAuthService'](email);
+  async loginService({ citizenID, password }: LoginAuthDto) {
+    const user = await this.usersService.findUserBycitizenIDService(citizenID)
 
     if (!user) throw new UnauthorizedException('Credenciales incorrectas');
 
@@ -34,9 +34,7 @@ export class AuthService {
   }
 
   async registerService(user: RegisterAuthDto) {
-    const userExists = await this.usersService.findUserByEmailService(
-      user.email,
-    );
+    const userExists = await this.usersService.findUserBycitizenIDService(user.citizenID);
 
     if (userExists) throw new UnauthorizedException('El usuario ya existe');
 

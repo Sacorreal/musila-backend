@@ -34,7 +34,6 @@ export class AuthController {
   }
 
   @Post('register')
-  @UseInterceptors(FileInterceptor('avatar'))
   @ApiOperation({
     summary: 'Registrar nuevo usuario',
     description: 'Crea una nueva cuenta de usuario en el sistema. Permite subir un avatar opcional.',
@@ -56,8 +55,6 @@ export class AuthController {
   async registerController(@Body() user: RegisterAuthDto) {
     if (user.password !== user.repeatPassword)
       throw new BadRequestException('Las contraseñas no coinciden');
-
-
     return this.authService.registerService(user);
   }
 

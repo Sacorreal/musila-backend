@@ -1,5 +1,3 @@
-
-
 export enum UserRole {
   ADMIN = 'admin',
   AUTOR = 'autor',
