@@ -7,12 +7,11 @@ import {
   Post,
   Put,
   Query,
-  UploadedFile,
-  UploadedFiles,
+
   UseGuards,
-  UseInterceptors,
+  
 } from '@nestjs/common';
-import { FileFieldsInterceptor } from '@nestjs/platform-express';
+
 import {
   ApiBearerAuth,
   ApiBody,
@@ -24,15 +23,21 @@ import {
 } from '@nestjs/swagger';
 import { FilterTrackDto } from './dto/filter-track.dto';
 
-import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { CurrentUser } from '../users/decorators/current-user.decorator';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { UsersService } from 'src/users/users.service';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { TracksService } from './tracks.service';
+import { UserRole } from '../users/entities/user-role.enum';
+
+import {PaginatedTracksResponseDto } from './dto/track-response.dto'
+import { RolesGuard } from 'src/users/guards/roles.guard';
+import { Roles } from 'src/users/decorators/roles.decorator';
 
 @ApiTags('Tracks')
+@UseGuards(JWTAuthGuard, RolesGuard)
 @Controller('tracks')
 export class TracksController {
   constructor(
@@ -40,9 +45,10 @@ export class TracksController {
     private readonly usersService: UsersService,
   ) {}
 
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: CreateTrackInput })
   @Post()
+  @Roles(UserRole.ADMIN, UserRole.AUTOR, UserRole.CANTAUTOR)
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({ type: CreateTrackInput })  
     @ApiOperation({
     summary: 'Crear nuevo track',
     description:
@@ -56,7 +62,7 @@ export class TracksController {
     status: 400,
     description: 'Datos inválidos',
   })
-  async createTrackController(
+  async createTrackController(   
     @Body() createTrackInput: CreateTrackInput,    
   ) {
     return await this.tracksService.createTrackService(createTrackInput);
@@ -65,56 +71,34 @@ export class TracksController {
   @Get()
   @ApiOperation({
     summary: 'Obtener todos los tracks',
-    description:
-      'Obtiene la lista de tracks con opciones de filtrado por género, autor, etc.',
+    description: 'Obtiene la lista de tracks con opciones de filtrado por género, autor, etc.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Lista de tracks obtenida exitosamente',
+    description: 'Objeto con la lista de tracks y el total de registros',
+    type: PaginatedTracksResponseDto, 
   })
   async findAllTracksController(
-    //@CurrentUser() user: JwtPayload,
+    @CurrentUser() user: JwtPayload,
     @Query() params: FilterTrackDto,
-  ) {
-    return await this.tracksService.findAllTracksService({ params });
-  }
-
+  ): Promise<PaginatedTracksResponseDto> { 
+    return await this.tracksService.findAllTracksService({ params }, user);
+  } 
+  
   @Get('my-tracks')
-  @UseGuards(JWTAuthGuard)
-  @ApiBearerAuth('JWT-auth')
+  @Roles(UserRole.AUTOR, UserRole.CANTAUTOR)
   @ApiOperation({
-    summary: 'Obtener mis tracks',
-    description:
-      'Obtiene todas los tracks creados por el usuario autenticado.',
+    summary: 'Obtener todos los tracks autoría del usuario logeado'
   })
   @ApiResponse({
     status: 200,
-    description: 'Lista de tracks del usuario obtenida exitosamente',
+    description: 'Objeto con la lista de tracks y el total de registros',
+    type: PaginatedTracksResponseDto, 
   })
-  @ApiResponse({ status: 401, description: 'No autorizado' })
-  async findMyTracksController(@CurrentUser() user: JwtPayload) {
-    return this.tracksService.findAllTracksService({ user });
-  }
-
-  @UseGuards(JWTAuthGuard)
-  @ApiBearerAuth('JWT-auth')
-  @Get('by-preferred-genres')
-  @ApiOperation({
-    summary: 'Obtener tracks por géneros preferidos',
-    description:
-      'Obtiene tracks basados en los géneros musicales preferidos del usuario autenticado.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de tracks por géneros preferidos obtenida exitosamente',
-  })
-  @ApiResponse({ status: 401, description: 'No autorizado' })
-  async getTracksByPreferredGenresController(
-    @CurrentUser() payload: JwtPayload,
-  ) {
-    const user = await this.usersService.findOneUserService(payload.id);
-
-    return this.tracksService.findTracksByUserPreferredGenresService(user);
+  async findMytracks(
+    @CurrentUser() user: JwtPayload
+  ){
+    return await this.tracksService.findMyTracksService(user)
   }
 
   @Get(':id')
@@ -136,6 +120,7 @@ export class TracksController {
   async findOneTrackController(@Param('id') id: string) {
     return await this.tracksService.findOneTrackService(id);
   }
+  
 
   @Put(':id')
   @ApiOperation({

@@ -1,35 +1,27 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsNumber, IsOptional } from 'class-validator';
-export class FilterTrackDto {
-  @IsNumber()
-  @IsOptional()
-  @ApiProperty({
-    description: 'The number of items to return',
-    example: 10,
-  })
-  limit: number;
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { PaginationDto } from 'src/common/dto/pagination.dto'; 
 
-  @IsNumber()
+export class FilterTrackDto extends PaginationDto {
+  @IsBoolean()
   @IsOptional()
-  @ApiProperty({
-    description: 'The number of items to skip',
-    example: 0,
-  })
-  offset: number;
+  @Transform(({ value }) => value === 'true' || value === true)
+  isGospel?: boolean;
+
+  @IsString()
+  @IsOptional()
+  genreId?: string;
+
+  @IsString()
+  @IsOptional()
+  subGenre?: string;
+
+  @IsString()
+  @IsOptional()
+  language?: string;
 
   @IsBoolean()
   @IsOptional()
-  isGospel: boolean;
-
-  @IsOptional()
-  genreId: string;
-
-  @IsOptional()
-  subGenre: string;
-
-  @IsOptional()
-  language: string;
-
-  @IsOptional()
-  isAvailable: boolean;
+  @Transform(({ value }) => value === 'true' || value === true)
+  isAvailable?: boolean;
 }

@@ -6,27 +6,33 @@ import {
   Param,
   ParseUUIDPipe,
   Put,
-  UploadedFile,
   UseGuards,
   UseInterceptors,
+  Query
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
-import { Roles } from 'src/auth/decorators/roles.decorator';
+import { PaginationDto} from '../common/dto/pagination.dto'
+import { CurrentUser } from './decorators/current-user.decorator';
+import { Roles } from 'src/users/decorators/roles.decorator';
 
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { UpdateUserInput } from './dto/update-user.input';
+
 import { UserRole } from './entities/user-role.enum';
 import { UsersService } from './users.service';
+import { JWTAuthGuard} from '../auth/guards/jwt-auth.guard'
+import { RolesGuard } from './guards/roles.guard';
 
 @ApiTags('Usuarios')
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  
+  
   @Get()
-
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JWTAuthGuard, RolesGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Obtener todos los usuarios',
@@ -38,8 +44,10 @@ export class UsersController {
   })
   @ApiResponse({ status: 401, description: 'No autorizado' })
   @ApiResponse({ status: 403, description: 'No tiene permisos de administrador' })
-  async findAllUserController() {
-    return await this.usersService.findAllUsersService();
+  async findAllUserController(    
+    @Query() paginationDto: PaginationDto
+  ) {
+    return await this.usersService.findAllUsersService(paginationDto);
   }
 
   // Rutas específicas deben ir ANTES de las rutas con parámetros genéricos
@@ -56,6 +64,7 @@ export class UsersController {
     return this.usersService.getUserRolesService();
   }
 
+  @UseGuards(JWTAuthGuard)
   @Get('authors')
   @ApiOperation({
     summary: 'Obtener todos los autores',
@@ -69,7 +78,10 @@ export class UsersController {
     return this.usersService.findAllAuthorsService(UserRole.AUTOR);
   }
 
+  
   @Get('author/:id')
+  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.INTERPRETE, UserRole.INVITADO)
+  @UseGuards(JWTAuthGuard, RolesGuard)
   @ApiOperation({
     summary: 'Obtener un autor por ID',
     description: 'Obtiene la información detallada de un autor específico por su ID.',
@@ -85,74 +97,37 @@ export class UsersController {
   }
 
   // Rutas con parámetros genéricos deben ir AL FINAL
-  
-  @ApiBearerAuth('JWT-auth')
-  @Get(':id/featured-authors')
-  @ApiOperation({
-    summary: 'Obtener autores destacados por géneros preferidos',
-    description: 'Obtiene una lista de autores destacados basados en los géneros musicales preferidos del usuario autenticado.',
-  })
-  @ApiParam({ name: 'id', description: 'ID del usuario (UUID)', example: '123e4567-e89b-12d3-a456-426614174000' })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de autores destacados obtenida exitosamente',
-  })
-  @ApiResponse({ status: 401, description: 'No autorizado' })
-  async findFeaturedAuthorsController(@CurrentUser() payload: JwtPayload) {
-    return await this.usersService.getFeaturedAuthorsByPreferredGenresService(
-      payload.id,
-    );
-  }
 
-  @Get(':id')
+  @UseGuards(JWTAuthGuard)
+  @Get('me')
   @ApiOperation({
-    summary: 'Obtener un usuario por ID',
-    description: 'Obtiene la información detallada de un usuario específico por su ID.',
-  })
-  @ApiParam({ name: 'id', description: 'ID del usuario (UUID)', example: '123e4567-e89b-12d3-a456-426614174000' })
+    summary: 'Obtener el usuario autenticado'
+  })  
   @ApiResponse({
     status: 200,
     description: 'Información del usuario obtenida exitosamente',
   })
   @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
-  async findOneUserController(@Param('id') id: string) {
-    return await this.usersService.findOneUserService(id);
-  }
-
-  @Put(':id')
-  @UseInterceptors(FileInterceptor('file'))
-  @ApiOperation({
-    summary: 'Actualizar usuario',
-    description: 'Actualiza la información de un usuario existente. Permite subir un archivo de imagen opcional.',
-  })
-  @ApiConsumes('multipart/form-data')
-  @ApiBody({ type: UpdateUserInput })
-  @ApiParam({ name: 'id', description: 'ID del usuario a actualizar (UUID)', example: '123e4567-e89b-12d3-a456-426614174000' })
-  @ApiResponse({
-    status: 200,
-    description: 'Usuario actualizado exitosamente',
-  })
-  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
-  @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  async updateUserController(
-    @Body() updateUserInput: UpdateUserInput,
-    @Param('id', new ParseUUIDPipe({ version: '4' })) id: string,
+  async findOneUserController(
+    @CurrentUser() user: JwtPayload,
   ) {
-    return await this.usersService.updateUserService(id, updateUserInput);
+    return await this.usersService.findOneUserService(user.id);
   }
 
-  @Delete(':id')
+  //TODO: crear ruta Update usuario llamar servicio storage si quiere cambiar avatar
+
+  @UseGuards(JWTAuthGuard)
+  @Delete('me/:id')
   @ApiOperation({
     summary: 'Eliminar usuario',
     description: 'Elimina un usuario del sistema por su ID.',
   })
-  @ApiParam({ name: 'id', description: 'ID del usuario a eliminar (UUID)', example: '123e4567-e89b-12d3-a456-426614174000' })
   @ApiResponse({
     status: 200,
     description: 'Usuario eliminado exitosamente',
   })
   @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
-  async removeUserController(@Param('id') id: string) {
-    return await this.usersService.removeUserService(id);
+  async removeUserController(@CurrentUser() user: JwtPayload,) {
+    return await this.usersService.removeUserService(user.id);
   }
 }

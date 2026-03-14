@@ -1,13 +1,16 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MailService } from 'src/mail/mail.service';
-import { StorageService } from 'src/storage/storage.service';
+
 import { Track } from 'src/tracks/entities/track.entity';
-import { User } from 'src/users/entities/user.entity';
-import { Repository } from 'typeorm';
+
+import { Repository, FindOptionsWhere } from 'typeorm';
 import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
 import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
 import { RequestedTrack } from './entities/requested-track.entity';
+import  type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+
+import {UserRole } from '../users/entities/user-role.enum'; 
+import { PaginationDto} from '../common/dto/pagination.dto'
 
 const requestedTracksRelations: string[] = [
   'requester',
@@ -19,9 +22,8 @@ export class RequestedTracksService {
   constructor(
     @InjectRepository(RequestedTrack) private readonly requestedTracksRepository: Repository<RequestedTrack>,
     @InjectRepository(Track) private readonly tracksRepository: Repository<Track>,
-    @InjectRepository(User) private readonly usersRepository: Repository<User>,
-    private readonly storageService: StorageService,
-    private readonly mailService: MailService
+   
+   
 
   ) { }
 
@@ -41,61 +43,56 @@ export class RequestedTracksService {
     return await this.findRequestedTrackWithRelations(savedRequestedTrack.id)
   }
 
-  async createRequestedTracksService(createRequestedTrackInput: CreateRequestedTrackInput) {
-    const { requesterId, trackId, licenseType } = createRequestedTrackInput
-
-    const requester = await this.usersRepository.findOne({ where: { id: requesterId } })
-    if (!requester) throw new NotFoundException('El usuario solicitante no existe')
-
+  async createRequestedTracksService(
+    { trackId, licenseType }: CreateRequestedTrackInput, 
+    userRequester: JwtPayload 
+  ) {
+    // Cargamos solo el ID de los autores para no saturar memoria
     const track = await this.tracksRepository.findOne({
       where: { id: trackId },
+      select: ['id'], 
       relations: ['authors']
-    })
-    if (!track) throw new NotFoundException('La pista no existe')
+    });
 
-    let documentUrl: string | null = null    
+    if (!track) throw new NotFoundException('La pista no existe');
+
+    // Validamos que el solicitante no sea autor de la canción
+    const isAuthor = track.authors.some(author => author.id === userRequester.id);
+    if (isAuthor) throw new BadRequestException('No puedes solicitar una licencia de tu propia canción');
 
     const newRequestedTrack = this.requestedTracksRepository.create({
-      requester,
-      track,
+      requester: { id: userRequester.id },
+      track: { id: trackId },
       licenseType,
-      documentUrl,
-    })
+    });
 
-    const savedNewRequestedTrack = await this.saveAndReturnWithRelations(newRequestedTrack)
-
-    const authors = track.authors
-    const authorsNames = authors.map(author => author.name).join(', ')
-    const isMultipleAuthors = authors.length > 1;
-
-    {/* TODO: configurar servidor para envío de email      
-     
-    for (const author of authors) {
-      await this.mailService.sendAuthorRequestNotificationService(
-        author.email,
-        author.name,
-        track.title,
-        requester.name,
-        licenseType,
-
-      )
-    }
-
-    await this.mailService.sendRequestTrackService(
-      requester.email,
-      requester.name,
-      track.title,
-      authorsNames,
-      savedNewRequestedTrack.status,
-      isMultipleAuthors
-    )
-    */}
-
-    return savedNewRequestedTrack
+    return await this.saveAndReturnWithRelations(newRequestedTrack);
   }
 
-  async findAllRequestedTracksService() {
-    return await this.requestedTracksRepository.find()
+  async findAllRequestedTracksService(
+    user: JwtPayload,
+    paginationDto: PaginationDto,
+  ) {
+    const { limit, offset } = paginationDto;    
+
+    const isAdmin = user?.role === UserRole.ADMIN;
+
+    // Si no es Admin, filtramos para que solo vea las solicitudes hacia sus propias canciones
+    const where: FindOptionsWhere<RequestedTrack> = {
+      ...(!isAdmin && user && { track: { authors: { id: user.id } } })
+    };
+
+    const [data, total] = await this.requestedTracksRepository.findAndCount({
+      where,
+      take: limit,
+      skip: offset,
+      relations: ['track']
+    });
+
+    return {
+      data,
+      total
+    };
   }
 
   async findOneRequestedTracksService(id: string) {

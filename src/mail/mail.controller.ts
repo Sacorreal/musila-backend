@@ -1,7 +1,7 @@
 import { BadRequestException, Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { MailService } from './mail.service';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CurrentUser } from 'src/auth/decorators/current-user.decorator';
+import { CurrentUser } from '../users/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { UserRole } from 'src/users/entities/user-role.enum';
 
@@ -39,7 +39,7 @@ export class MailController {
   @ApiResponse({ status: 403, description: 'No tiene el rol necesario (cantautor o intérprete)' })
   async testInvite(
     @Query('email') email: string,
-    @CurrentUser([UserRole.CANTAUTOR, UserRole.INTERPRETE]) user: JwtPayload
+    @CurrentUser() user: JwtPayload
   ) {
 
     if (!email) {

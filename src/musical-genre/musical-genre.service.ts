@@ -5,6 +5,7 @@ import { ILike, Repository } from 'typeorm';
 import { CreateMusicalGenreInput } from './dto/create-musical-genre.input';
 import { UpdateMusicalGenreInput } from './dto/update-musical-genre.input';
 import { MusicalGenre } from './entities/musical-genre.entity';
+import { PaginationDto} from '../common/dto/pagination.dto'
 
 const musicalGenreRelations: string[] = ['tracks'];
 
@@ -56,9 +57,16 @@ export class MusicalGenreService {
     return await this.saveAndReturnGenreWithRelations(newMusicalGenre);
   }
 
-  async findAllMusicalGenreService() {
+  async findAllMusicalGenreService(
+    paginationDto: PaginationDto
+  ) {
+
+    const  {limit, offset } = paginationDto
     
-    return await this.musicalGenreRepository.find();
+    return await this.musicalGenreRepository.find({
+      take: limit,
+      skip: offset,
+    });
   }
 
   async findOneMusicalGenreService(id: string) {

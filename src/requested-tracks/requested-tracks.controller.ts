@@ -2,12 +2,21 @@
 import { RequestedTracksService } from './requested-tracks.service';
 import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
 import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
-import { Body, Controller, Delete, Get, Param, Post, Put, UploadedFile, UseInterceptors } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards, Query } from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { FileInterceptor } from '@nestjs/platform-express';
+
 import { LicenseType } from './entities/license-type.enum';
+import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/users/guards/roles.guard';
+import { CurrentUser } from 'src/users/decorators/current-user.decorator';
+import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+import { PaginationDto} from '../common/dto/pagination.dto'
+import { Roles } from 'src/users/decorators/roles.decorator';
+import { UserRole } from 'src/users/entities/user-role.enum';
+import { User } from 'src/users/entities/user.entity';
 
 @ApiTags('Pistas Solicitadas')
+@UseGuards(JWTAuthGuard, RolesGuard)
 @Controller('requested-tracks')
 export class RequestedTracksController {
   constructor(
@@ -16,6 +25,7 @@ export class RequestedTracksController {
 
 
   @Post()
+  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.INTERPRETE, UserRole.INVITADO)
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Crear solicitud de pista',
@@ -47,11 +57,12 @@ export class RequestedTracksController {
   })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   @ApiResponse({ status: 404, description: 'Usuario o pista no encontrados' })
-   async createRequestedTrackController(@Body() createRequestedTrackInput: CreateRequestedTrackInput) {
-    return await this.requestedTracksService.createRequestedTracksService(createRequestedTrackInput);
+   async createRequestedTrackController(@Body() createRequestedTrackInput: CreateRequestedTrackInput, @CurrentUser() userRequester: JwtPayload) {
+    return await this.requestedTracksService.createRequestedTracksService(createRequestedTrackInput, userRequester);
   }
 
   @Get()
+  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.AUTOR)
   @ApiOperation({
     summary: 'Obtener todas las solicitudes de pistas',
     description: 'Obtiene la lista completa de solicitudes de pistas musicales en el sistema.',
@@ -60,11 +71,15 @@ export class RequestedTracksController {
     status: 200,
     description: 'Lista de solicitudes obtenida exitosamente',
   })
-  async findAllRequestedTrackController() {
-    return await this.requestedTracksService.findAllRequestedTracksService();
+  async findAllRequestedTrackController(
+    @CurrentUser() user: JwtPayload,
+    @Query() paginationDto: PaginationDto
+  ) {
+    return await this.requestedTracksService.findAllRequestedTracksService(user, paginationDto);
   }
 
   @Get(':id')
+  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.AUTOR)
   @ApiOperation({
     summary: 'Obtener una solicitud de pista por ID',
     description: 'Obtiene la información detallada de una solicitud de pista específica por su ID.',
@@ -80,6 +95,7 @@ export class RequestedTracksController {
   }
 
   @Put(':id')
+  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.AUTOR)
   @ApiOperation({
     summary: 'Actualizar solicitud de pista',
     description: 'Actualiza la información de una solicitud de pista existente, como el estado o el tipo de licencia.',
@@ -97,6 +113,7 @@ export class RequestedTracksController {
 
 
   @Delete(':id')
+  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.AUTOR)
   @ApiOperation({
     summary: 'Eliminar solicitud de pista',
     description: 'Elimina una solicitud de pista del sistema por su ID.',

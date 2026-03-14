@@ -31,7 +31,7 @@ export class GuestsService {
   }
 
 
-  async createGuestsService(createGuestInput: CreateGuestInput) {
+  async createGuestsService(createGuestInput: CreateGuestInput):Promise<Guest> {
     const inviter = await this.usersRepository.findOne({
       where: { id: createGuestInput.invitedById }
     })
