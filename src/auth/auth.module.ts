@@ -3,10 +3,10 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from 'src/users/users.module';
 import { SharedModule } from 'src/shared-module-jwt/shared-module.module';
-import { MailModule } from 'src/mail/mail.module';
+
 
 @Module({
-  imports: [UsersModule, SharedModule, MailModule],
+  imports: [UsersModule, SharedModule],
   controllers: [AuthController],
   providers: [AuthService],
 })

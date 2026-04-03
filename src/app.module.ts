@@ -6,7 +6,7 @@ import { DatabaseModule } from './config/database/database.module';
 import { GuestsModule } from './guests/guests.module';
 import { IntellectualPropertyModule } from './intellectual-property/intellectual-property.module';
 import { LanguagesModule } from './language/languages.module';
-import { MailModule } from './mail/mail.module';
+
 import { MusicalGenreModule } from './musical-genre/musical-genre.module';
 import { PlaylistsModule } from './playlists/playlists.module';
 import { RequestedTracksModule } from './requested-tracks/requested-tracks.module';
@@ -29,8 +29,7 @@ import { UsersModule } from './users/users.module';
     MusicalGenreModule,
     IntellectualPropertyModule,  
     StorageModule.forRootAsync(),
-    SearchModule,
-    MailModule,
+    SearchModule,   
   ],
   controllers: [AppController],
   providers: [],

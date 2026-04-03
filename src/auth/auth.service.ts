@@ -1,14 +1,12 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import bcrypt from 'bcrypt';
-import { MailService } from 'src/mail/mail.service';
-import { UserRole } from 'src/users/entities/user-role.enum';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
-import { ForgotPasswordDto } from './dto/forgotPassword.dto';
+
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
-import { ResetPasswordDto } from './dto/resetPassword.dto';
+
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
@@ -16,7 +14,7 @@ export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
-    private readonly mailService: MailService
+   
   ) { }
 
   async loginService({ citizenID, password }: LoginAuthDto) {
@@ -45,24 +43,7 @@ export class AuthService {
       password: hashedPassword
     },
     
-    );
-    {/* TODO: configurar servidor para envío de email
-    
-    switch (newUser.role) {
-      case UserRole.INTERPRETE:
-      case UserRole.INVITADO:
-        await this.mailService.sendWelcomeEmailService(newUser.email, newUser.name)
-        break
-
-      case UserRole.AUTOR:
-        await this.mailService.sendWelcomeAutorEmailService(newUser.email, newUser.name)
-        break
-
-      case UserRole.CANTAUTOR:
-        await this.mailService.sendWelcomeCantautorEmailService(newUser.email, newUser.name)
-        break
-    }
-    */}
+    );  
 
 
     const token = await this.createToken(newUser);
@@ -74,7 +55,7 @@ export class AuthService {
     const payload: JwtPayload = {
       id: user.id,
       email: user.email,
-      role: user.role as UserRole,
+      role: user.role,
       name: user.name
     };
 
@@ -83,41 +64,7 @@ export class AuthService {
     return token;
   }
 
-  async sendResetPasswordEmailService(forgotPassword: ForgotPasswordDto) {
 
-    const { email } = forgotPassword
 
-    const user = await this.usersService.findUserByEmailService(email)
-    if (!user) throw new NotFoundException('No existe un usuario con ese email')
-
-    const token = await this.jwtService.signAsync(
-      { id: user.id },
-      { expiresIn: '15m' }
-    )
-
-    const resetLink = `https://musila.co/reset-password?token=${token}`
-
-    await this.mailService.sendPasswordResetEmailService(user.email, user.name, resetLink)
-
-    return { message: 'Correo de recuperación enviado' }
-  }
-
-  async resetPasswordService(resetPassword: ResetPasswordDto) {
-
-    const { token, newPassword } = resetPassword
-    try {
-      const decoded = await this.jwtService.verifyAsync(token)
-      const user = await this.usersService.findOneUserByIdService(decoded.id)
-      if (!user) throw new NotFoundException('Usuario no encontrado')
-
-      const hashedPassword = await bcrypt.hash(newPassword, 10)
-      await this.usersService.updateUserService(user.id, { password: hashedPassword })
-
-      return { message: 'Contraseña actualizada correctamente' }
-
-    } catch {
-      throw new UnauthorizedException('Token inválido o expirado')
-    }
-  }
-
+ 
 }
