@@ -1,12 +1,12 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
-import { In, Not, Repository } from 'typeorm';
+import { In,Repository } from 'typeorm';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { UserRole } from './entities/user-role.enum';
 import { User } from './entities/user.entity';
-import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+
 import { PaginationDto} from '../common/dto/pagination.dto'
 
 
@@ -77,15 +77,12 @@ export class UsersService {
     return { id, message: 'Usuario eliminado' };
   }
 
-  async findOneUserByIdService(id: string) {
-    const user = await this.usersRepository.findOneBy({ id });
-    if (!user) throw new NotFoundException('El usuario no existe');
-    return user;
+  async findOneUserByIdService(id: string): Promise<User> {
+    return this.findUserWithRelations(id);
   }
 
-  async findAllUsersService( paginationDto: PaginationDto,
-  ) {    
-    const { limit, offset } = paginationDto;  
+  async findAllUsersService(paginationDto: PaginationDto) {
+    const { limit, offset } = paginationDto;
     return await this.usersRepository.find({
       take: limit,
       skip: offset,
@@ -94,10 +91,6 @@ export class UsersService {
 
   async findOneUserService(id: string) {
     return this.findUserWithRelations(id);
-  }
-
-  async findOneAuthorService(id: string) {
-    return this.findUserWithRelations(id, UserRole.AUTOR);
   }
 
   async findUserBycitizenIDService(citizenID: string) {

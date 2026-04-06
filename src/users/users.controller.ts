@@ -1,17 +1,15 @@
 import {
-  Body,
   Controller,
   Delete,
   Get,
   Param,
   ParseUUIDPipe,
-  Put,
   UseGuards,
-  UseInterceptors,
   Query
 } from '@nestjs/common';
 
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PaginationDto} from '../common/dto/pagination.dto'
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Roles } from 'src/users/decorators/roles.decorator';
@@ -64,39 +62,9 @@ export class UsersController {
     return this.usersService.getUserRolesService();
   }
 
-  @UseGuards(JWTAuthGuard)
-  @Get('authors')
-  @ApiOperation({
-    summary: 'Obtener todos los autores',
-    description: 'Obtiene la lista de todos los usuarios con rol de autor registrados en el sistema.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Lista de autores obtenida exitosamente',
-  })
-  getAuthorsController() {
-    return this.usersService.findAllAuthorsService(UserRole.AUTOR);
-  }
-
-  
-  @Get('author/:id')
-  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.INTERPRETE, UserRole.INVITADO)
-  @UseGuards(JWTAuthGuard, RolesGuard)
-  @ApiOperation({
-    summary: 'Obtener un autor por ID',
-    description: 'Obtiene la información detallada de un autor específico por su ID.',
-  })
-  @ApiParam({ name: 'id', description: 'ID del autor (UUID)', example: '123e4567-e89b-12d3-a456-426614174000' })
-  @ApiResponse({
-    status: 200,
-    description: 'Información del autor obtenida exitosamente',
-  })
-  @ApiResponse({ status: 404, description: 'Autor no encontrado' })
-  async findOneAuthorController(@Param('id') id: string) {
-    return await this.usersService.findOneAuthorService(id);
-  }
 
   // Rutas con parámetros genéricos deben ir AL FINAL
+
 
   @UseGuards(JWTAuthGuard)
   @Get('me')
@@ -115,6 +83,23 @@ export class UsersController {
   }
 
   //TODO: crear ruta Update usuario llamar servicio storage si quiere cambiar avatar
+
+  @UseGuards(JWTAuthGuard)
+  @Get(':id')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Obtener un usuario por ID',
+    description: 'Obtiene la información detallada de un usuario específico por su ID, incluyendo sus relaciones.',
+  })
+  @ApiParam({ name: 'id', description: 'ID del usuario (UUID)', example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiResponse({
+    status: 200,
+    description: 'Información del usuario obtenida exitosamente',
+  })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  async findUserByIdController(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.usersService.findOneUserByIdService(id);
+  }
 
   @UseGuards(JWTAuthGuard)
   @Delete('me/:id')
