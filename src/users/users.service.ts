@@ -113,10 +113,12 @@ export class UsersService {
 
   
 
-  async findAllAuthorsService(userRole: UserRole) {
+  async findAllAuthorsService(roles: UserRole[], paginationDto: PaginationDto) {
+    const { limit, offset} = paginationDto
     return await this.usersRepository.find({
-      where: { role: userRole },
-      take: 10,
+      where: { role: In(roles) },
+      take: limit,
+      skip: offset,
       order: { createdAt: 'DESC' },
     });
   }

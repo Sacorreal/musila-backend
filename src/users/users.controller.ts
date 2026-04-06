@@ -62,6 +62,22 @@ export class UsersController {
     return this.usersService.getUserRolesService();
   }
 
+   @UseGuards(JWTAuthGuard)
+  @Get('authors')
+  @ApiOperation({
+    summary: 'Obtener todos los autores y cantautores',
+    description: 'Obtiene la lista de todos los usuarios con rol de autor o cantautor registrados en el sistema.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de autores y cantautores obtenida exitosamente',
+  })
+  getAuthorsController(
+    @Query() paginationDto: PaginationDto
+  ) {
+    return this.usersService.findAllAuthorsService([UserRole.AUTOR, UserRole.CANTAUTOR],paginationDto);
+  }
+
 
   // Rutas con parámetros genéricos deben ir AL FINAL
 
