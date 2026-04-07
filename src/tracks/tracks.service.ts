@@ -12,7 +12,7 @@ import { FindOptionsWhere, In, Repository } from 'typeorm';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { Track } from './entities/track.entity';
-import type { PaginatedTracks } from './interface/paginated-tracks.interface';
+import { TrackResponseDto, PaginatedTracksResponseDto } from './dto/track-response.dto';
 import { FindAllTracksOptions } from './interface/tracks-options.interface';
 
 const tracksRelations: string[] = [
@@ -52,7 +52,7 @@ export class TracksService {
 
   async createTrackService(
     createTrackInput: CreateTrackInput,
-  ): Promise<Track> {
+  ): Promise<TrackResponseDto> {
     const {
       genreId,
       subGenre,
@@ -140,17 +140,18 @@ export class TracksService {
       coverUrl: coverUrl ?? null,
     } as any);
 
-    return await this.saveAndReturnWithRelations(newTrack as unknown as Track);
+    const saved = await this.saveAndReturnWithRelations(newTrack as unknown as Track);
+    return TrackResponseDto.fromEntity(saved);
   }
 
-  async findMyTracksService(user: JwtPayload) {
-     const [tracks, total] = await this.tracksRepository.findAndCount({
+  async findMyTracksService(user: JwtPayload): Promise<{ tracks: TrackResponseDto[]; total: number }> {
+    const [tracks, total] = await this.tracksRepository.findAndCount({
       where: {
         authors: { id: user.id },
       },
     });
     return {
-      tracks,
+      tracks: tracks.map((t) => TrackResponseDto.fromEntity(t)),
       total,
     };
   }
@@ -162,7 +163,7 @@ export class TracksService {
   async findAllTracksService(
     options: FindAllTracksOptions = {},
     user: JwtPayload
-  ): Promise<PaginatedTracks> {
+  ): Promise<PaginatedTracksResponseDto> {
     const { 
       limit, 
       offset, 
@@ -200,13 +201,14 @@ export class TracksService {
     });
 
     return {
-      data: tracks,
+      data: tracks.map((t) => TrackResponseDto.fromEntity(t)),
       total,
     };
   }
 
-  async findOneTrackService(id: string) {
-    return await this.findTrackWithRelations(id);
+  async findOneTrackService(id: string): Promise<TrackResponseDto> {
+    const track = await this.findTrackWithRelations(id);
+    return TrackResponseDto.fromEntity(track);
   }
 
   async updateTrackService(id: string, updateTrackInput: UpdateTrackInput) {
@@ -234,7 +236,8 @@ export class TracksService {
       existingTrack.authors = authors;
     }
 
-    return await this.saveAndReturnWithRelations(existingTrack);
+    const updated = await this.saveAndReturnWithRelations(existingTrack);
+    return TrackResponseDto.fromEntity(updated);
   }
 
   async removeTrackService(id: string) {

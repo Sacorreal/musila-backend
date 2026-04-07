@@ -31,6 +31,7 @@ export class Track {
   @ManyToOne(() => MusicalGenre, (musicalGenre) => musicalGenre.tracks, {
     onDelete: 'CASCADE',
     nullable: false,
+    eager: true,
   })
   genre: MusicalGenre;
 

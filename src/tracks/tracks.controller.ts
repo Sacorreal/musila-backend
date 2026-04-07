@@ -13,7 +13,6 @@ import {
 } from '@nestjs/common';
 
 import {
-  ApiBearerAuth,
   ApiBody,
   ApiConsumes,
   ApiOperation,
@@ -32,7 +31,7 @@ import { UpdateTrackInput } from './dto/update-track.input';
 import { TracksService } from './tracks.service';
 import { UserRole } from '../users/entities/user-role.enum';
 
-import {PaginatedTracksResponseDto } from './dto/track-response.dto'
+import { PaginatedTracksResponseDto, TrackResponseDto } from './dto/track-response.dto'
 import { RolesGuard } from 'src/users/guards/roles.guard';
 import { Roles } from 'src/users/decorators/roles.decorator';
 
@@ -117,7 +116,7 @@ export class TracksController {
     description: 'Información del track obtenida exitosamente',
   })
   @ApiResponse({ status: 404, description: 'Pista musical no encontrada' })
-  async findOneTrackController(@Param('id') id: string) {
+  async findOneTrackController(@Param('id') id: string): Promise<TrackResponseDto> {
     return await this.tracksService.findOneTrackService(id);
   }
   
