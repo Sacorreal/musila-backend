@@ -29,6 +29,20 @@ export class UsersService {
       relations: userRelations,
     });
     if (!user) throw new NotFoundException('El usuario no existe');
+
+    // Limpiar el subGenre del genre dentro de cada track
+    // para evitar confusión con el subGenre propio del track
+    if (user.tracks) {
+      user.tracks = user.tracks.map((track) => {
+        if (track.genre) {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+          const { subGenre: _, ...genreRest } = track.genre;
+          track.genre = genreRest as MusicalGenre;
+        }
+        return track;
+      });
+    }
+
     return user;
   }
 
