@@ -14,6 +14,7 @@ import { UpdateTrackInput } from './dto/update-track.input';
 import { Track } from './entities/track.entity';
 import { TrackResponseDto, PaginatedTracksResponseDto } from './dto/track-response.dto';
 import { FindAllTracksOptions } from './interface/tracks-options.interface';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 const tracksRelations: string[] = [
   'genre',
@@ -144,14 +145,18 @@ export class TracksService {
     return TrackResponseDto.fromEntity(saved);
   }
 
-  async findMyTracksService(user: JwtPayload): Promise<{ tracks: TrackResponseDto[]; total: number }> {
+  async findMyTracksService(user: JwtPayload, paginationDto: PaginationDto): Promise<PaginatedTracksResponseDto> {
+    const { limit, offset } = paginationDto;
     const [tracks, total] = await this.tracksRepository.findAndCount({
       where: {
         authors: { id: user.id },
       },
+      take: limit,
+      skip: offset,
+      order: { createdAt: 'DESC' },
     });
     return {
-      tracks: tracks.map((t) => TrackResponseDto.fromEntity(t)),
+      data: tracks.map((t) => TrackResponseDto.fromEntity(t)),
       total,
     };
   }

@@ -7,16 +7,13 @@ import {
   Post,
   Query,
   Put,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { Roles } from 'src/users/decorators/roles.decorator';
-
-import { UserRole } from 'src/users/entities/user-role.enum';
 import { CreateMusicalGenreInput } from './dto/create-musical-genre.input';
 import { UpdateMusicalGenreInput } from './dto/update-musical-genre.input';
 import { MusicalGenreService } from './musical-genre.service';
-import { PaginationDto} from '../common/dto/pagination.dto'
+import { PaginationDto} from '../common/dto/pagination.dto';
+import { PaginatedMusicalGenreResponseDto } from './dto/musical-genre-pagination.dto';
 
 @ApiTags('Géneros Musicales')
 @Controller('musical-genre')
@@ -55,6 +52,7 @@ export class MusicalGenreController {
   @ApiResponse({
     status: 200,
     description: 'Lista de géneros musicales obtenida exitosamente',
+    type: PaginatedMusicalGenreResponseDto
   })
   async findAllMusicalGenreController(
     @Query() paginationDto:PaginationDto

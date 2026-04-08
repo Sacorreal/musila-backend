@@ -9,6 +9,7 @@ import { In, Repository } from 'typeorm';
 import { CreatePlaylistInput } from './dto/create-playlist.input';
 import { UpdatePlaylistInput } from './dto/update-playlist.input';
 import { Playlist } from './entities/playlist.entity';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 
 
@@ -59,7 +60,9 @@ export class PlaylistsService {
     return await this.saveAndReturnWithRelations(newPlaylist);
   }
 
-  async findAllPlaylistsService(user: JwtPayload) {
+  async findAllPlaylistsService(user: JwtPayload, paginationDto: PaginationDto) {
+    const { limit, offset } = paginationDto;
+    
     // 1. Construimos la condición de búsqueda dinámicamente según el rol
     const whereCondition =
       user.role === UserRole.INVITADO
@@ -67,10 +70,15 @@ export class PlaylistsService {
         : { owner: { id: user.id } }; // Para el resto, busca por propietario
 
     // 2. Ejecutamos una sola consulta directa a la base de datos
-    return await this.playlistRepository.find({
+    const [data, total] = await this.playlistRepository.findAndCount({
       where: whereCondition,
       relations: playlistsRelations,
+      take: limit,
+      skip: offset,
+      order: { createdAt: 'DESC' },
     });
+    
+    return { data, total };
   }
 
   async findOnePlaylistsService(id: string) {

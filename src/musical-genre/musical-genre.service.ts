@@ -60,13 +60,15 @@ export class MusicalGenreService {
   async findAllMusicalGenreService(
     paginationDto: PaginationDto
   ) {
-
     const  {limit, offset } = paginationDto
     
-    return await this.musicalGenreRepository.find({
+    const [data, total] = await this.musicalGenreRepository.findAndCount({
       take: limit,
       skip: offset,
+      order: { createdAt: 'DESC' },
     });
+    
+    return { data, total };
   }
 
   async findOneMusicalGenreService(id: string) {

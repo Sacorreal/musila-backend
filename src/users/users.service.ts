@@ -97,10 +97,12 @@ export class UsersService {
 
   async findAllUsersService(paginationDto: PaginationDto) {
     const { limit, offset } = paginationDto;
-    return await this.usersRepository.find({
+    const [data, total] = await this.usersRepository.findAndCount({
       take: limit,
       skip: offset,
+      order: { createdAt: 'DESC' },
     });
+    return { data, total };
   }
 
   async findOneUserService(id: string) {
@@ -128,12 +130,13 @@ export class UsersService {
   
 
   async findAllAuthorsService(roles: UserRole[], paginationDto: PaginationDto) {
-    const { limit, offset} = paginationDto
-    return await this.usersRepository.find({
+    const { limit, offset} = paginationDto;
+    const [data, total] = await this.usersRepository.findAndCount({
       where: { role: In(roles) },
       take: limit,
       skip: offset,
       order: { createdAt: 'DESC' },
     });
+    return { data, total };
   }
 }

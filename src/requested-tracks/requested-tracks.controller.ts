@@ -11,9 +11,9 @@ import { RolesGuard } from 'src/users/guards/roles.guard';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { PaginationDto} from '../common/dto/pagination.dto'
+import { PaginatedRequestedTracksResponseDto } from './dto/requested-track-pagination.dto';
 import { Roles } from 'src/users/decorators/roles.decorator';
 import { UserRole } from 'src/users/entities/user-role.enum';
-import { User } from 'src/users/entities/user.entity';
 
 @ApiTags('Pistas Solicitadas')
 @UseGuards(JWTAuthGuard, RolesGuard)
@@ -70,6 +70,7 @@ export class RequestedTracksController {
   @ApiResponse({
     status: 200,
     description: 'Lista de solicitudes obtenida exitosamente',
+    type: PaginatedRequestedTracksResponseDto
   })
   async findAllRequestedTrackController(
     @CurrentUser() user: JwtPayload,

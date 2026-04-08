@@ -2,7 +2,9 @@ import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateIntellectualPropertyInput } from './dto/create-intellectual-property.input';
 import { UpdateIntellectualPropertyInput } from './dto/update-intellectual-property.input';
 import { IntellectualPropertyService } from './intellectual-property.service';
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { PaginationDto} from '../common/dto/pagination.dto';
+import { PaginatedIntellectualPropertyResponseDto } from './dto/intellectual-property-pagination.dto';
 
 @ApiTags('Propiedad Intelectual')
 @Controller('intellectual-property')
@@ -33,9 +35,12 @@ export class IntellectualPropertyController {
   @ApiResponse({
     status: 200,
     description: 'Lista de registros obtenida exitosamente',
+    type: PaginatedIntellectualPropertyResponseDto
   })
-  findAllIntellectualProperty() {
-    return this.intellectualPropertyService.findAll();
+  findAllIntellectualProperty(
+    @Query() paginationDto: PaginationDto
+  ) {
+    return this.intellectualPropertyService.findAll(paginationDto);
   }
 
   @Get(':id')

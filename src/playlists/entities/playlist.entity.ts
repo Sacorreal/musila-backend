@@ -35,6 +35,7 @@ export class Playlist {
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP'
   })
+  createdAt: Date
 
   @UpdateDateColumn({
     name: 'update_at',

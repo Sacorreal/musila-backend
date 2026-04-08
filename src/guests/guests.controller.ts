@@ -1,8 +1,10 @@
 import { GuestsService } from './guests.service';
 import { CreateGuestInput } from './dto/create-guest.input';
 import { UpdateGuestInput } from './dto/update-guest.input';
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { PaginatedGuestsResponseDto } from './dto/guest-pagination.dto';
 
 @ApiTags('Invitados')
 @Controller('guests')
@@ -32,9 +34,10 @@ export class GuestsController {
   @ApiResponse({
     status: 200,
     description: 'Lista de invitados obtenida exitosamente',
+    type: PaginatedGuestsResponseDto
   })
-  async findAllGuestsController() {
-    return await this.guestsService.findAllGuestsService();
+  async findAllGuestsController(@Query() paginationDto: PaginationDto) {
+    return await this.guestsService.findAllGuestsService(paginationDto);
   }
 
   @Get(':id')

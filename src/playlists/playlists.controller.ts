@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
@@ -19,6 +20,8 @@ import { Roles } from 'src/users/decorators/roles.decorator';
 import { UserRole } from 'src/users/entities/user-role.enum';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/users/guards/roles.guard';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { PaginatedPlaylistsResponseDto } from './dto/playlist-pagination.dto';
 
 @ApiTags('Listas de Reproducción')
 @UseGuards(JWTAuthGuard, RolesGuard)
@@ -58,10 +61,14 @@ export class PlaylistsController {
   @ApiResponse({
     status: 200,
     description: 'Lista de reproducciones obtenida exitosamente',
+    type: PaginatedPlaylistsResponseDto
   })
   @ApiResponse({ status: 401, description: 'No autorizado' })
-  async findAllPlaylistsController(@CurrentUser() user: JwtPayload) {
-    return await this.playlistsService.findAllPlaylistsService(user);
+  async findAllPlaylistsController(
+    @CurrentUser() user: JwtPayload,
+    @Query() paginationDto: PaginationDto
+  ) {
+    return await this.playlistsService.findAllPlaylistsService(user, paginationDto);
   }
 
   @Get(':id')

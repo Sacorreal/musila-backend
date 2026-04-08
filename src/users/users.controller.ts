@@ -11,6 +11,7 @@ import {
 
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PaginationDto} from '../common/dto/pagination.dto'
+import { PaginatedUsersResponseDto } from './dto/user-pagination.dto';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Roles } from 'src/users/decorators/roles.decorator';
 
@@ -39,6 +40,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'Lista de usuarios obtenida exitosamente',
+    type: PaginatedUsersResponseDto
   })
   @ApiResponse({ status: 401, description: 'No autorizado' })
   @ApiResponse({ status: 403, description: 'No tiene permisos de administrador' })
@@ -71,6 +73,7 @@ export class UsersController {
   @ApiResponse({
     status: 200,
     description: 'Lista de autores y cantautores obtenida exitosamente',
+    type: PaginatedUsersResponseDto
   })
   getAuthorsController(
     @Query() paginationDto: PaginationDto

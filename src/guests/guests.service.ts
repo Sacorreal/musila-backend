@@ -5,6 +5,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Guest } from './entities/guest.entity';
 import { Repository } from 'typeorm';
 import { User } from 'src/users/entities/user.entity';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 const guestRelations: string[] = ['invited_by', 'playlists']
 
@@ -46,8 +47,14 @@ export class GuestsService {
 
   }
 
-  async findAllGuestsService() {
-    return await this.guestsRepository.find()
+  async findAllGuestsService(paginationDto: PaginationDto) {
+    const { limit, offset } = paginationDto;
+    const [data, total] = await this.guestsRepository.findAndCount({
+      take: limit,
+      skip: offset,
+      order: { createdAt: 'DESC' },
+    });
+    return { data, total };
   }
 
   async findOneGuestsService(id: string) {

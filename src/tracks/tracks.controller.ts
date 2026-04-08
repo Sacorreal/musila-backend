@@ -21,6 +21,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FilterTrackDto } from './dto/filter-track.dto';
+import { PaginationDto } from 'src/common/dto/pagination.dto';
 
 import { CurrentUser } from '../users/decorators/current-user.decorator';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
@@ -95,9 +96,10 @@ export class TracksController {
     type: PaginatedTracksResponseDto, 
   })
   async findMytracks(
-    @CurrentUser() user: JwtPayload
+    @CurrentUser() user: JwtPayload,
+    @Query() paginationDto: PaginationDto
   ){
-    return await this.tracksService.findMyTracksService(user)
+    return await this.tracksService.findMyTracksService(user, paginationDto)
   }
 
   @Get(':id')
