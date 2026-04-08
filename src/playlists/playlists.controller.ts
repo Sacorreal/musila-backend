@@ -86,8 +86,7 @@ export class PlaylistsController {
     return await this.playlistsService.findOnePlaylistsService(id);
   }
 
-  @Put(':id')
-  
+  @Put(':id')  
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Actualizar lista de reproducción',
@@ -103,16 +102,17 @@ export class PlaylistsController {
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   async updatePlaylistsController(
     @Body() updatePlaylistInput: UpdatePlaylistInput,
-    @CurrentUser() owner: JwtPayload
+    @CurrentUser() owner: JwtPayload,
+    @Param('id') id: string,
   ) {
     return await this.playlistsService.updatePlaylistsService(
       updatePlaylistInput,
+      id,
       owner
     );
   }
 
-  @Delete(':id')
-  
+  @Delete(':id')  
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Eliminar lista de reproducción',

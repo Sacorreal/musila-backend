@@ -5,7 +5,9 @@ import {
   Param,
   ParseUUIDPipe,
   UseGuards,
-  Query
+  Query, 
+  Put,
+  Body
 } from '@nestjs/common';
 
 
@@ -14,6 +16,8 @@ import { PaginationDto} from '../common/dto/pagination.dto'
 import { PaginatedUsersResponseDto } from './dto/user-pagination.dto';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Roles } from 'src/users/decorators/roles.decorator';
+
+import { UpdateUserInput } from './dto/update-user.input';
 
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
@@ -64,7 +68,7 @@ export class UsersController {
     return this.usersService.getUserRolesService();
   }
 
-   @UseGuards(JWTAuthGuard)
+  @UseGuards(JWTAuthGuard)
   @Get('authors')
   @ApiOperation({
     summary: 'Obtener todos los autores y cantautores',
@@ -120,6 +124,28 @@ export class UsersController {
     return await this.usersService.findOneUserByIdService(id);
   }
 
+  @Put(':id')  
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Actualizar usuario',
+    description: 'Actualiza la información del usuario existente.',
+  })
+  @ApiParam({ name: 'id', description: 'ID del usuario', example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiResponse({
+    status: 200,
+    description: 'usuario actualizado exitosamente',
+  })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  @ApiResponse({ status: 401, description: 'No autorizado' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos' })
+  async updatePlaylistsController(
+    @Body() updateUserInput: UpdateUserInput,   
+    @Param('id') id: string,
+  ) {
+    return await this.usersService.updateUserService(id,updateUserInput )
+    
+  }
+
   @UseGuards(JWTAuthGuard)
   @Delete('me/:id')
   @ApiOperation({
@@ -134,4 +160,7 @@ export class UsersController {
   async removeUserController(@CurrentUser() user: JwtPayload,) {
     return await this.usersService.removeUserService(user.id);
   }
+
+
+
 }

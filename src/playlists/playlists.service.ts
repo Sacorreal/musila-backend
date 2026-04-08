@@ -54,7 +54,8 @@ export class PlaylistsService {
       throw new NotFoundException('Usuario propietario no encontrado');  
 
     const newPlaylist = this.playlistRepository.create({
-      title: createPlaylistInput.title
+      title: createPlaylistInput.title,
+      owner: user
     });
 
     return await this.saveAndReturnWithRelations(newPlaylist);
@@ -87,9 +88,10 @@ export class PlaylistsService {
 
   async updatePlaylistsService(    
     updatePlaylistInput: UpdatePlaylistInput,
+    id: string,     
     owner: JwtPayload
   ) {
-    const existingPlaylist = await this.findPlaylistWithRelations(updatePlaylistInput.id);
+    const existingPlaylist = await this.findPlaylistWithRelations(id);
 
     // 1. Autorización: Evitar que un usuario modifique playlists de otros
     if (existingPlaylist.owner.id !== owner.id && owner.role !== UserRole.ADMIN) {
