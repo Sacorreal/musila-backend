@@ -3,7 +3,6 @@ import {
   IsArray,
   IsBoolean,
   IsNotEmpty,
-  IsNumber,
   IsOptional,
   IsString,
   IsUrl,
@@ -80,9 +79,9 @@ export class CreateTrackInput {
     message: 'Cada authorId debe ser un UUID v4 válido',
   })
   @IsNotEmpty({ message: 'authorsIds no puede estar vacío' })
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: string | string[] }): string[] => {
     if (Array.isArray(value)) return value;
-    if (typeof value === 'string') return value.split(',').map(v => v.trim()).filter(Boolean);
+    if (typeof value === 'string') return value.split(',').map((v: string) => v.trim()).filter(Boolean);
     return [];
   })
   authorsIds: string[];
@@ -102,17 +101,21 @@ export class CreateTrackInput {
   @IsBoolean({ message: 'isGospel debe ser un valor booleano' })
   isGospel: boolean;
 
-@IsNotEmpty({ message: 'audioKey no puede estar vacío' })
+  @ApiProperty({ description: 'Llave de almacenamiento para el audio' })
+  @IsNotEmpty({ message: 'audioKey no puede estar vacío' })
   audioKey: string
 
-@IsNotEmpty({ message: 'audioUrl no puede estar vacío' })  
-audioUrl: string
+  @ApiProperty({ description: 'URL pública del archivo de audio' })
+  @IsNotEmpty({ message: 'audioUrl no puede estar vacío' })  
+  audioUrl: string
 
-@IsOptional()
-coverKey?: string
+  @ApiPropertyOptional({ description: 'Llave de almacenamiento para la portada (opcional)' })
+  @IsOptional()
+  coverKey?: string
 
-@IsOptional()
-coverUrl?: string
+  @ApiPropertyOptional({ description: 'URL pública de la portada (opcional)' })
+  @IsOptional()
+  coverUrl?: string
 
   @ApiPropertyOptional({
     type: [ExternalIdInput],
