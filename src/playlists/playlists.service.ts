@@ -79,7 +79,18 @@ export class PlaylistsService {
       order: { createdAt: 'DESC' },
     });
     
-    return { data, total };
+    // 3. Formateamos la respuesta para omitir campos no deseados en genre
+    const sanitizedData = data.map((playlist) => ({
+      ...playlist,
+      tracks: playlist.tracks?.map((track) => {
+        if (!track.genre) return track;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { subGenre, createdAt, updatedAt, deletedAt, ...genreWithoutSensitiveFields } = track.genre;
+        return { ...track, genre: genreWithoutSensitiveFields };
+      }),
+    }));
+
+    return { data: sanitizedData, total };
   }
 
   async findOnePlaylistsService(id: string) {

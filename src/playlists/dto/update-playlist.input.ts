@@ -8,7 +8,8 @@ export class UpdatePlaylistInput {
         description: 'Título o nombre de la playlist.'
       })
       @IsString()
-      title: string
+      @IsOptional()
+      title?: string
      
       @ApiPropertyOptional({
         example: 'https://ejemplo.com/imagenes/playlist-verano.jpg',
