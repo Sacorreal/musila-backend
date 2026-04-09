@@ -9,6 +9,7 @@ import { LanguagesModule } from './language/languages.module';
 
 import { InvitesModule } from './invites/invites.module';
 import { MusicalGenreModule } from './musical-genre/musical-genre.module';
+import { PlaylistCollaboratorsModule } from './playlist-collaborators/playlist-collaborators.module';
 import { PlaylistsModule } from './playlists/playlists.module';
 import { RequestedTracksModule } from './requested-tracks/requested-tracks.module';
 import { SearchModule } from './search/search.module';
@@ -30,6 +31,7 @@ import { UsersModule } from './users/users.module';
     MusicalGenreModule,
     IntellectualPropertyModule,
     InvitesModule,
+    PlaylistCollaboratorsModule,
     StorageModule.forRootAsync(),
     SearchModule,   
   ],
