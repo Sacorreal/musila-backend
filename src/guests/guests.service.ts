@@ -8,6 +8,7 @@ import { Repository } from 'typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { InvitesService } from 'src/invites/invites.service';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 import bcrypt from 'bcrypt';
 
 const guestRelations: string[] = ['invited_by', 'playlists']
@@ -18,6 +19,7 @@ export class GuestsService {
     @InjectRepository(Guest) private readonly guestsRepository: Repository<Guest>,
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
     private readonly invitesService: InvitesService,
+    private readonly notificationsGateway: NotificationsGateway,
   ) { }
 
   private async findGuestWithRelations(id: string): Promise<Guest> {
@@ -87,6 +89,15 @@ export class GuestsService {
 
     // 6. Marcar invitación como usada (después de crear guest exitosamente)
     await this.invitesService.markAsUsed(dto.token);
+
+    // 7. Notificar en tiempo real al usuario invitante (si está conectado por WS)
+    this.notificationsGateway.emitInviteAccepted({
+      inviteToken: dto.token,
+      guestId: savedGuest.id,
+      guestName: `${savedGuest.name} ${savedGuest.lastName}`,
+      guestEmail: savedGuest.email,
+      invitedById: inviter.id,
+    });
 
     return savedGuest;
   }
