@@ -7,6 +7,7 @@ import { GuestsModule } from './guests/guests.module';
 import { IntellectualPropertyModule } from './intellectual-property/intellectual-property.module';
 import { LanguagesModule } from './language/languages.module';
 
+import { InvitesModule } from './invites/invites.module';
 import { MusicalGenreModule } from './musical-genre/musical-genre.module';
 import { PlaylistsModule } from './playlists/playlists.module';
 import { RequestedTracksModule } from './requested-tracks/requested-tracks.module';
@@ -27,7 +28,8 @@ import { UsersModule } from './users/users.module';
     GuestsModule,
     RequestedTracksModule,
     MusicalGenreModule,
-    IntellectualPropertyModule,  
+    IntellectualPropertyModule,
+    InvitesModule,
     StorageModule.forRootAsync(),
     SearchModule,   
   ],
