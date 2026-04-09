@@ -47,10 +47,10 @@ export class RegisterFromInviteDto {
   @ApiPropertyOptional({ example: 'DNI', description: 'Tipo de documento de identidad' })
   @IsOptional()
   @IsString()
-  typeCitizenID?: string;
+  typeCitizenID: string;
 
   @ApiPropertyOptional({ example: '40123456', description: 'Número de documento' })
   @IsOptional()
   @IsString()
-  citizenID?: string;
+  citizenID: string;
 }

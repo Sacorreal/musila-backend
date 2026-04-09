@@ -55,12 +55,12 @@ export class GuestsService {
     // 1. Validar token — lanza excepciones si es inválido/expirado/usado
     const invite = await this.invitesService.validateAndGetInvite(dto.token);
 
-    // 2. Verificar que el email no esté ya registrado
+    // 2. Verificar que el número de documento no esté ya registrado
     const existingGuest = await this.guestsRepository.findOne({
-      where: { email: dto.email },
+      where: { citizenID: dto.citizenID },
     });
     if (existingGuest) {
-      throw new ConflictException('Ya existe un invitado con este correo electrónico');
+      throw new ConflictException('Ya existe un invitado con este número de documento');
     }
 
     // 3. Obtener el usuario que invitó (invitedBy viene cargado en la relación)
@@ -146,4 +146,20 @@ export class GuestsService {
 
     return guestToRemove
   }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Método de autenticación (usado exclusivamente por AuthService)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Busca un guest por citizenID incluyendo el campo password (select: false en la entidad).
+   * Solo debe usarse durante el flujo de login — nunca exponer el resultado directamente.
+   */
+  async findGuestByCitizenIDForAuth(citizenID: string): Promise<Guest | null> {
+    return this.guestsRepository.findOne({
+      where: { citizenID },
+      select: ['id', 'email', 'password', 'role', 'name', 'lastName', 'citizenID'],
+    });
+  }
 }
+
