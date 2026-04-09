@@ -7,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { Guest } from 'src/guests/entities/guest.entity';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 import { Playlist } from 'src/playlists/entities/playlist.entity';
 import { UserRole } from 'src/users/entities/user-role.enum';
 import { Repository } from 'typeorm';
@@ -23,6 +24,7 @@ export class PlaylistCollaboratorsService {
     private readonly playlistRepository: Repository<Playlist>,
     @InjectRepository(Guest)
     private readonly guestRepository: Repository<Guest>,
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -66,8 +68,20 @@ export class PlaylistCollaboratorsService {
     });
 
     const saved = await this.collaboratorRepository.save(collaborator);
+    const result = await this.findCollaboratorWithRelations(saved.id);
 
-    return this.findCollaboratorWithRelations(saved.id);
+    // Emitir notificación en tiempo real a todos los miembros del room de la playlist
+    this.notificationsGateway.emitUserAddedToPlaylist({
+      playlistId: playlist.id,
+      playlistTitle: playlist.title,
+      guestId: guest.id,
+      guestName: `${guest.name} ${guest.lastName}`,
+      guestEmail: guest.email,
+      permission: dto.permission ?? CollaboratorPermission.READ,
+      addedBy: user.name,
+    });
+
+    return result;
   }
 
   /**
@@ -111,6 +125,33 @@ export class PlaylistCollaboratorsService {
       relations: ['guest'],
       order: { createdAt: 'ASC' },
     });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Métodos públicos auxiliares (usados por PlaylistPermissionGuard)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Busca la playlist con su owner cargado. Lanza NotFoundException si no existe.
+   */
+  async findPlaylistWithOwner(playlistId: string): Promise<Playlist> {
+    return this.findPlaylistOrFail(playlistId);
+  }
+
+  /**
+   * Retorna el permiso del colaborador en la playlist, o null si no es colaborador.
+   */
+  async getCollaboratorPermission(
+    playlistId: string,
+    guestId: string,
+  ): Promise<CollaboratorPermission | null> {
+    const collaborator = await this.collaboratorRepository.findOne({
+      where: {
+        playlist: { id: playlistId },
+        guest: { id: guestId },
+      },
+    });
+    return collaborator?.permission ?? null;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

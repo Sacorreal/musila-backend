@@ -22,10 +22,13 @@ import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/users/guards/roles.guard';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
 import { PaginatedPlaylistsResponseDto } from './dto/playlist-pagination.dto';
+import { PlaylistPermissionGuard } from 'src/playlist-collaborators/guards/playlist-permission.guard';
+import { RequirePlaylistPermission } from 'src/playlist-collaborators/decorators/require-permission.decorator';
+import { CollaboratorPermission } from 'src/playlist-collaborators/entities/collaborator-permission.enum';
 
 @ApiTags('Listas de Reproducción')
 @UseGuards(JWTAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.INTERPRETE)
+@Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.INTERPRETE, UserRole.INVITADO)
 @Controller('playlists')
 export class PlaylistsController {
   constructor(private readonly playlistsService: PlaylistsService) {}
@@ -72,6 +75,9 @@ export class PlaylistsController {
   }
 
   @Get(':id')
+  @UseGuards(PlaylistPermissionGuard)
+  @RequirePlaylistPermission(CollaboratorPermission.READ)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Obtener una lista de reproducción por ID',
     description: 'Obtiene la información detallada de una lista de reproducción específica por su ID.',
@@ -87,6 +93,8 @@ export class PlaylistsController {
   }
 
   @Put(':id')  
+  @UseGuards(PlaylistPermissionGuard)
+  @RequirePlaylistPermission(CollaboratorPermission.WRITE)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Actualizar lista de reproducción',
@@ -113,6 +121,11 @@ export class PlaylistsController {
   }
 
   @Delete(':id')  
+  @UseGuards(PlaylistPermissionGuard)
+  // Quien elimina una playlist entera requerimos que sea ADMIN/dueño. Podríamos usar ADMIN.
+  // Como nuestro Guard ya deja pasar al owner y al ADMIN del sistema,
+  // con pedir ADMIN de colaborador alcanza para limitar fuertemente esta acción.
+  @RequirePlaylistPermission(CollaboratorPermission.ADMIN)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Eliminar lista de reproducción',
