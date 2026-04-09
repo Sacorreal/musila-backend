@@ -92,6 +92,19 @@ export class InvitesService {
     return { message: 'Invitación utilizada exitosamente' };
   }
 
+  /**
+   * Valida el token y retorna la entidad Invite completa (con invitedBy).
+   * Uso interno entre servicios — NO exponer al controller.
+   */
+  async validateAndGetInvite(token: string): Promise<Invite> {
+    const invite = await this.findInviteByTokenOrFail(token);
+
+    this.assertNotUsed(invite);
+    this.assertNotExpired(invite);
+
+    return invite;
+  }
+
   // ─────────────────────────────────────────────────────────────────────────────
   // Métodos privados auxiliares
   // ─────────────────────────────────────────────────────────────────────────────
