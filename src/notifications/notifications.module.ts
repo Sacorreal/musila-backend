@@ -1,8 +1,21 @@
 import { Module } from '@nestjs/common';
-import { NotificationsGateway } from './socket/websocket.gateway';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+
+import { InviteListener } from './listeners/invite.listener';
+import { NotificationDispatcher } from './services/notification.dispatcher';
+import { EmailChannel } from './channels/email.channel';
+import { EmailService } from './services/email.service';
+import { ResendProvider } from './providers/resend.provider';
 
 @Module({
-  providers: [NotificationsGateway],
-  exports: [NotificationsGateway], // Exportado para que los Services puedan inyectarlo
+  imports: [EventEmitterModule.forRoot()],
+  providers: [
+    InviteListener,
+    NotificationDispatcher,
+    EmailChannel,
+    EmailService,
+    ResendProvider,
+  ],
+  exports: [NotificationDispatcher],
 })
 export class NotificationsModule {}
