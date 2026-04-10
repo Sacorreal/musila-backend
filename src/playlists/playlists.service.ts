@@ -10,7 +10,7 @@ import { CreatePlaylistInput } from './dto/create-playlist.input';
 import { UpdatePlaylistInput } from './dto/update-playlist.input';
 import { Playlist } from './entities/playlist.entity';
 import { PaginationDto } from 'src/common/dto/pagination.dto';
-import { NotificationsGateway } from 'src/notifications/notifications.gateway';
+import { NotificationsGateway } from 'src/notifications/socket/websocket.gateway';
 
 
 

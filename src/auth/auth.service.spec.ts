@@ -47,7 +47,7 @@ describe('AuthService', () => {
     })
 
     it('Debe lanzar UnatorizedException si la contraseña es incorrecta', async () => {
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+       
       usersService.findUserByEmailService.mockResolvedValue({
         id: '1',
         email: 'test@test.com',
