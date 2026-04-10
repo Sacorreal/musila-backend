@@ -17,6 +17,7 @@ import { SearchModule } from './search/search.module';
 import { StorageModule } from './storage/storage.module';
 import { TracksModule } from './tracks/tracks.module';
 import { UsersModule } from './users/users.module';
+import { EmailModule} from './mail/email.module'
 
 @Module({
   imports: [
@@ -36,6 +37,7 @@ import { UsersModule } from './users/users.module';
     NotificationsModule,
     StorageModule.forRootAsync(),
     SearchModule,   
+    EmailModule.forRootAsync(),
   ],
   controllers: [AppController],
   providers: [],
