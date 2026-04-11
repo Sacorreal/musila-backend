@@ -1,5 +1,5 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { EmailService } from 'src/mail/services/email.service';
+import { EmailService } from 'src/shared/mail/services/email.service';
 import { EventBusService } from 'src/shared/event-bus/event-bus.service';
 
 @Injectable()

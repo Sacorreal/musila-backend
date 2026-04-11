@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-misused-promises */
+
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { NotificationEventMap } from '../../notifications/contracts/notification-event-map';
+import { NotificationEventMap } from './contracts/notification-event-map';
 
 @Injectable()
 export class EventBusService {
