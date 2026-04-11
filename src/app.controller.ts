@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { EventBusService} from './shared/event-bus/event-bus.service'
+import { EventBusService} from './shared/events/event-bus.service'
 
 @ApiTags('Health')
 @Controller()
@@ -30,7 +30,7 @@ export class AppController {
   getHealth() {
 
     this.eventBus.emit('event-test',{
-      message:'probando si funciona evento'
+      message:'hola estoy emitiendo un evento 🎉'
     })
     
     return {

@@ -1,6 +1,6 @@
 import {UserRole } from 'src/users/entities/user-role.enum'
 
-export interface NotificationEventMap {
+export interface AppEventMap {
   'notification.invite.created': {
     email: string;
     token: string;

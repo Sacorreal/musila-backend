@@ -20,7 +20,7 @@ import {
   NotificationEvent,
   PlaylistUpdatedPayload,
   UserAddedToPlaylistPayload,
-} from './realtime.types';
+} from '../types/realtime.types';
 
 /**
  * WebSocket Gateway para notificaciones en tiempo real.

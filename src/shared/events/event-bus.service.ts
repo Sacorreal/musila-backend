@@ -1,24 +1,25 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
-
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { NotificationEventMap } from './contracts/notification-event-map';
+import { AppEventMap} from './contracts/app-event-map'
+
 
 @Injectable()
 export class EventBusService {
   constructor(private readonly emitter: EventEmitter2) {}
 
-  emit<T extends keyof NotificationEventMap>(
+  emit<T extends keyof AppEventMap >(
     event: T,
-    payload: NotificationEventMap[T],
+    payload: AppEventMap[T],
   ): void {
     this.emitter.emit(event, payload);
   }
 
-  on<T extends keyof NotificationEventMap>(
+  on<T extends keyof AppEventMap>(
     event: T,
-    handler: (payload: NotificationEventMap[T]) => void | Promise<void>,
+    handler: (payload: AppEventMap[T]) => void | Promise<void>,
   ): void {
     this.emitter.on(event, handler);
   }
+
 }
