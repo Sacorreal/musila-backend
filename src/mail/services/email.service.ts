@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+ 
+ 
+ 
 import { EMAIL_CONFIG } from '../constants/email.constants';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Resend } from 'resend';

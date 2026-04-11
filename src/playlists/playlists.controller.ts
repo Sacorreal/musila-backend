@@ -20,7 +20,7 @@ import { Roles } from 'src/users/decorators/roles.decorator';
 import { UserRole } from 'src/users/entities/user-role.enum';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/users/guards/roles.guard';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { PaginationDto } from 'src/shared/dto/pagination.dto';
 import { PaginatedPlaylistsResponseDto } from './dto/playlist-pagination.dto';
 import { PlaylistPermissionGuard } from 'src/playlist-collaborators/guards/playlist-permission.guard';
 import { RequirePlaylistPermission } from 'src/playlist-collaborators/decorators/require-permission.decorator';

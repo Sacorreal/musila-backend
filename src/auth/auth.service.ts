@@ -1,3 +1,4 @@
+
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -10,12 +11,16 @@ import { RegisterAuthDto } from './dto/register-auth.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { Guest } from 'src/guests/entities/guest.entity';
 
+import {EventBusService } from 'src/shared/event-bus/event-bus.service'
+
+
 @Injectable()
 export class AuthService {
   constructor(
     private readonly usersService: UsersService,
     private readonly guestsService: GuestsService,
     private readonly jwtService: JwtService,
+   private readonly eventBus: EventBusService,
   ) {}
 
   /**
@@ -75,7 +80,13 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    const token = await this.createToken(newUser);
+    const token = await this.createToken(newUser);    
+
+   
+
+
+
+  
 
     return { token };
   }

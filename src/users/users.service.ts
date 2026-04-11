@@ -7,7 +7,7 @@ import { UpdateUserInput } from './dto/update-user.input';
 import { UserRole } from './entities/user-role.enum';
 import { User } from './entities/user.entity';
 
-import { PaginationDto} from '../common/dto/pagination.dto'
+import { PaginationDto} from '../shared/dto/pagination.dto'
 
 
 const userRelations: string[] = ['tracks', 'guests', 'playlists', 'requestSent', 'preferredGenres'];

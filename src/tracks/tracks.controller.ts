@@ -21,7 +21,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { FilterTrackDto } from './dto/filter-track.dto';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { PaginationDto } from 'src/shared/dto/pagination.dto';
 
 import { CurrentUser } from '../users/decorators/current-user.decorator';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';

@@ -14,7 +14,7 @@ import { UpdateTrackInput } from './dto/update-track.input';
 import { Track } from './entities/track.entity';
 import { TrackResponseDto, PaginatedTracksResponseDto } from './dto/track-response.dto';
 import { FindAllTracksOptions } from './interface/tracks-options.interface';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { PaginationDto } from 'src/shared/dto/pagination.dto';
 
 const tracksRelations: string[] = [
   'genre',

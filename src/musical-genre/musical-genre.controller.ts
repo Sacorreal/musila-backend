@@ -12,7 +12,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@ne
 import { CreateMusicalGenreInput } from './dto/create-musical-genre.input';
 import { UpdateMusicalGenreInput } from './dto/update-musical-genre.input';
 import { MusicalGenreService } from './musical-genre.service';
-import { PaginationDto} from '../common/dto/pagination.dto';
+import { PaginationDto} from '../shared/dto/pagination.dto';
 import { PaginatedMusicalGenreResponseDto } from './dto/musical-genre-pagination.dto';
 
 @ApiTags('Géneros Musicales')

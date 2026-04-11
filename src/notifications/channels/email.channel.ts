@@ -1,29 +1,27 @@
-import { Injectable, Logger } from '@nestjs/common';
-import { EmailService } from '../services/email.service';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { EmailService } from 'src/mail/services/email.service';
+import { EventBusService } from 'src/shared/event-bus/event-bus.service';
 
 @Injectable()
-export class EmailChannel {
+export class EmailChannel implements OnModuleInit {
   private readonly logger = new Logger(EmailChannel.name);
 
-  constructor(private readonly emailService: EmailService) {}
+  constructor(
+    private readonly emailService: EmailService,
+    private readonly eventBus: EventBusService,
+  ) {}
+  onModuleInit() {
+    this.eventBus.on('notification.user.created', async (payload) => {
+      this.logger.log('evento user created disparado 🥳');
+      await this.emailService.sendInviteEmail(payload.email, {
+        invitedByName: payload.name,
+        inviteUrl: payload.role,
+      });
+    });
 
-  async send(event: any): Promise<void> {
-    try {
-      switch (event.type) {
-        case 'INVITE_CREATED':
-          await this.emailService.sendInviteEmail(
-            event.payload.email,
-            event.payload.token,
-            event.payload.invitedByName,
-          );
-          break;
-
-        default:
-          this.logger.warn(`Unhandled email event: ${event.type}`);
-      }
-    } catch (error) {
-      this.logger.error('Email channel failed', error);
-      throw error;
-    }
+    this.eventBus.on('event-test', (payload) =>{
+       const mensaje = payload.message
+      console.log(mensaje)
+    })
   }
 }

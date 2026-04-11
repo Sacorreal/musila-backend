@@ -6,9 +6,9 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Guest } from './entities/guest.entity';
 import { Repository } from 'typeorm';
 import { User } from 'src/users/entities/user.entity';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { PaginationDto } from 'src/shared/dto/pagination.dto';
 import { InvitesService } from 'src/invites/invites.service';
-import { NotificationsGateway } from 'src/notifications/socket/websocket.gateway';
+import { NotificationsGateway } from 'src/realtime/socket/websocket.gateway';
 import bcrypt from 'bcrypt';
 
 const guestRelations: string[] = ['invited_by', 'playlists']

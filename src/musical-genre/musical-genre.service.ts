@@ -5,7 +5,7 @@ import { ILike, Repository } from 'typeorm';
 import { CreateMusicalGenreInput } from './dto/create-musical-genre.input';
 import { UpdateMusicalGenreInput } from './dto/update-musical-genre.input';
 import { MusicalGenre } from './entities/musical-genre.entity';
-import { PaginationDto} from '../common/dto/pagination.dto'
+import { PaginationDto} from '../shared/dto/pagination.dto'
 
 const musicalGenreRelations: string[] = ['tracks'];
 

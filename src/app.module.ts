@@ -18,9 +18,13 @@ import { StorageModule } from './storage/storage.module';
 import { TracksModule } from './tracks/tracks.module';
 import { UsersModule } from './users/users.module';
 import { EmailModule} from './mail/email.module'
+import { EventBusModule } from './shared/event-bus/event-bus.module';
+
 
 @Module({
   imports: [
+    EventBusModule,
+    NotificationsModule,
     LanguagesModule,
     ConfigModule,
     DatabaseModule,

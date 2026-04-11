@@ -10,7 +10,7 @@ import { RequestedTrack } from './entities/requested-track.entity';
 import  type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
 import {UserRole } from '../users/entities/user-role.enum'; 
-import { PaginationDto} from '../common/dto/pagination.dto'
+import { PaginationDto} from '../shared/dto/pagination.dto'
 
 const requestedTracksRelations: string[] = [
   'requester',

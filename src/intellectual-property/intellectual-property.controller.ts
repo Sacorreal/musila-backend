@@ -3,7 +3,7 @@ import { CreateIntellectualPropertyInput } from './dto/create-intellectual-prope
 import { UpdateIntellectualPropertyInput } from './dto/update-intellectual-property.input';
 import { IntellectualPropertyService } from './intellectual-property.service';
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
-import { PaginationDto} from '../common/dto/pagination.dto';
+import { PaginationDto} from '../shared/dto/pagination.dto';
 import { PaginatedIntellectualPropertyResponseDto } from './dto/intellectual-property-pagination.dto';
 
 @ApiTags('Propiedad Intelectual')

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CreateIntellectualPropertyInput } from './dto/create-intellectual-property.input';
 import { UpdateIntellectualPropertyInput } from './dto/update-intellectual-property.input';
-import { PaginationDto} from '../common/dto/pagination.dto';
+import { PaginationDto} from '../shared/dto/pagination.dto';
 
 @Injectable()
 export class IntellectualPropertyService {

@@ -12,7 +12,7 @@ import {
 
 
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { PaginationDto} from '../common/dto/pagination.dto'
+import { PaginationDto} from '../shared/dto/pagination.dto'
 import { PaginatedUsersResponseDto } from './dto/user-pagination.dto';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { Roles } from 'src/users/decorators/roles.decorator';

@@ -1,6 +1,6 @@
 import { IsBoolean, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { PaginationDto } from 'src/common/dto/pagination.dto'; 
+import { PaginationDto } from 'src/shared/dto/pagination.dto'; 
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class FilterTrackDto extends PaginationDto {

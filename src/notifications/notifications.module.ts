@@ -1,21 +1,12 @@
 import { Module } from '@nestjs/common';
-import { EventEmitterModule } from '@nestjs/event-emitter';
-
-import { InviteListener } from './listeners/invite.listener';
-import { NotificationDispatcher } from './services/notification.dispatcher';
 import { EmailChannel } from './channels/email.channel';
-import { EmailService } from './services/email.service';
-import { ResendProvider } from './providers/resend.provider';
+import { EmailService } from 'src/mail/services/email.service'
+
 
 @Module({
-  imports: [EventEmitterModule.forRoot()],
-  providers: [
-    InviteListener,
-    NotificationDispatcher,
+   providers: [   
     EmailChannel,
-    EmailService,
-    ResendProvider,
+    EmailService,   
   ],
-  exports: [NotificationDispatcher],
 })
 export class NotificationsModule {}

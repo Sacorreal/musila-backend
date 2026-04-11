@@ -4,7 +4,7 @@ import { RegisterFromInviteDto } from './dto/register-from-invite.dto';
 import { UpdateGuestInput } from './dto/update-guest.input';
 import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { PaginationDto } from 'src/common/dto/pagination.dto';
+import { PaginationDto } from 'src/shared/dto/pagination.dto';
 import { PaginatedGuestsResponseDto } from './dto/guest-pagination.dto';
 
 @ApiTags('Invitados')
