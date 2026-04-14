@@ -1,26 +1,41 @@
-import {UserRole } from 'src/users/entities/user-role.enum'
-
 export interface AppEventMap {
-  'notification.invite.created': {
+  // 👥 INVITES
+  'invite.created': {
     email: string;
     token: string;
     invitedByName: string;
   };
 
-  'notification.invite.accepted': {
-    email: string;
-    name: string;
+  'invite.accepted': {
+    inviteToken: string;
+    guestId: string;
+    guestName: string;
+    guestEmail: string;
+    invitedById: string;
   };
 
-  'notification.playlist.updated': {
+  // 🎵 PLAYLIST
+  'playlist.updated': {
     playlistId: string;
-    action: 'SONG_ADDED' | 'SONG_REMOVED';
-    songId?: string;
+    playlistTitle: string;
+    updatedBy: string;
+    changes: string[];
   };
 
-  'notification.user.created':{
-    name: string; 
-    role: UserRole, 
+  'playlist.user.added': {
+    playlistId: string;
+    playlistTitle: string;
+    guestId: string;
+    guestName: string;
+    guestEmail: string;
+    permission: string;
+    addedBy: string;
+  };
+
+
+   // 👤 USER
+  'user.invite.created':{
+    name: string;     
     email: string
   }; 
 

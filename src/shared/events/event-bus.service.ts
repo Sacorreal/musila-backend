@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
 import { Injectable } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AppEventMap} from './contracts/app-event-map'
+
 
 
 @Injectable()
@@ -17,9 +17,8 @@ export class EventBusService {
 
   on<T extends keyof AppEventMap>(
     event: T,
-    handler: (payload: AppEventMap[T]) => void | Promise<void>,
-  ): void {
+    handler: (payload: AppEventMap[T]) => void,
+  ) {
     this.emitter.on(event, handler);
   }
-
 }

@@ -18,12 +18,14 @@ import { StorageModule } from './shared/storage/storage.module';
 import { TracksModule } from './tracks/tracks.module';
 import { UsersModule } from './users/users.module';
 import { EmailModule} from './shared/mail/email.module'
-import { EventBusModule } from './shared/event-bus/event-bus.module';
+import { EventBusModule } from './shared/events/event-bus.module';
+import { RealtimeModule} from './shared/realtime/realtime.module'
 
 
 @Module({
   imports: [
     EventBusModule,
+    RealtimeModule,
     NotificationsModule,
     LanguagesModule,
     ConfigModule,
@@ -38,7 +40,6 @@ import { EventBusModule } from './shared/event-bus/event-bus.module';
     IntellectualPropertyModule,
     InvitesModule,
     PlaylistCollaboratorsModule,
-    NotificationsModule,
     StorageModule.forRootAsync(),
     SearchModule,   
     EmailModule.forRootAsync(),

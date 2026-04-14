@@ -6,7 +6,7 @@ import { RealtimeListener } from './listeners/realtime.listener';
 
 @Module({
   imports: [
-    JwtModule.register({}), // usa tu config real
+    JwtModule
   ],
   providers: [
     NotificationsGateway,

@@ -12,15 +12,9 @@ import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import {
-  AuthenticatedSocket,
-  ClientEvent,
-  CollaboratorJoinedPayload,
-  InviteAcceptedPayload,
-  NotificationEvent,
-  PlaylistUpdatedPayload,
-  UserAddedToPlaylistPayload,
-} from '../types/realtime.types';
+import { AppEventMap} from '../../events/contracts/app-event-map';
+import { ClientEvent, AuthenticatedSocket} from '../types/realtime.types'
+import { RealtimeUIEventMap} from '../types/realtime-ui-event-map'
 
 /**
  * WebSocket Gateway para notificaciones en tiempo real.
@@ -41,15 +35,15 @@ import {
     ].filter(Boolean) as string[],
     credentials: true,
   },
-  namespace: '/notifications',
+  namespace: '/realtime',
 })
-export class NotificationsGateway
+export class RealtimeGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
   private readonly server: Server;
 
-  private readonly logger = new Logger(NotificationsGateway.name);
+  private readonly logger = new Logger(RealtimeGateway.name);
 
   constructor(private readonly jwtService: JwtService) {}
 
@@ -57,8 +51,9 @@ export class NotificationsGateway
   // Lifecycle hooks
   // ─────────────────────────────────────────────────────────────────────────────
 
+  
   afterInit() {
-    this.logger.log('🔌 NotificationsGateway inicializado — namespace: /notifications');
+    this.logger.log('🔌 NotificationsGateway inicializado — namespace: /realtime');
   }
 
   /**
@@ -98,6 +93,14 @@ export class NotificationsGateway
   // Eventos cliente → servidor
   // ─────────────────────────────────────────────────────────────────────────────
 
+  emitUI<T extends keyof RealtimeUIEventMap>(
+  client: Socket,
+  event: T,
+  payload: RealtimeUIEventMap[T],
+) {
+  client.emit(event, payload);
+}
+
   /**
    * El cliente solicita unirse al room de notificaciones de una playlist.
    * Client payload: { playlistId: string }
@@ -109,7 +112,7 @@ export class NotificationsGateway
   ) {
     const user = this.getUserFromSocket(client);
     if (!user) {
-      client.emit(NotificationEvent.AUTH_ERROR, { message: 'No autenticado' });
+      this.emitUI(client,'auth.error',{ message: 'usuario no auth'});
       return;
     }
 
@@ -118,10 +121,7 @@ export class NotificationsGateway
 
     this.logger.log(`🏠 ${user.name} se unió al room: ${room}`);
 
-    client.emit(NotificationEvent.ROOM_JOINED, {
-      room,
-      playlistId: data.playlistId,
-    });
+    this.emitUI(client,'room.joined', {playlistId: data.playlistId, room })
   }
 
   /**
@@ -140,35 +140,53 @@ export class NotificationsGateway
     await client.leave(room);
 
     this.logger.log(`🚪 ${user.name} salió del room: ${room}`);
+    this.emitUI(client,'room.left',{room, playlistId: data.playlistId})
 
-    client.emit(NotificationEvent.ROOM_LEFT, {
-      room,
-      playlistId: data.playlistId,
-    });
+   ;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Métodos de emisión — llamados desde Services
   // ─────────────────────────────────────────────────────────────────────────────
 
+   /**
+   * Método base tipado para emitir eventos
+   */
+  emitToRoom<T extends keyof AppEventMap>(
+    room: string,
+    event: T,
+    payload: AppEventMap[T],
+  ) {
+    this.server.to(room).emit(event, payload);
+  }
+
+  emitToUser<T extends keyof AppEventMap>(
+    userId: string,
+    event: T,
+    payload: AppEventMap[T],
+  ) {
+    const room = this.userRoom(userId);
+    this.server.to(room).emit(event, payload);
+  }
+
   /**
    * Notifica a todos los miembros de una playlist que se agregó un nuevo colaborador.
    * Llamado desde: PlaylistCollaboratorsService.addCollaborator()
    */
-  emitUserAddedToPlaylist(payload: UserAddedToPlaylistPayload): void {
+  emitUserAddedToPlaylist(payload: AppEventMap['playlist.user.added']): void {
     const room = this.playlistRoom(payload.playlistId);
-    this.server.to(room).emit(NotificationEvent.USER_ADDED_TO_PLAYLIST, payload);
-    this.logger.log(`📢 [${NotificationEvent.USER_ADDED_TO_PLAYLIST}] → room: ${room}`);
+    this.emitToRoom(room,'playlist.user.added',payload); 
+    this.logger.log(`📢 'USER_ADDED_TO_PLAYLIST' → room: ${room}`);
   }
 
   /**
    * Notifica a todos los miembros de una playlist que fue actualizada.
    * Llamado desde: PlaylistsService.updatePlaylistsService()
    */
-  emitPlaylistUpdated(payload: PlaylistUpdatedPayload): void {
+  emitPlaylistUpdated(payload: AppEventMap['playlist.updated']): void {
     const room = this.playlistRoom(payload.playlistId);
-    this.server.to(room).emit(NotificationEvent.PLAYLIST_UPDATED, payload);
-    this.logger.log(`📢 [${NotificationEvent.PLAYLIST_UPDATED}] → room: ${room}`);
+    this.emitToRoom(room,'playlist.updated',payload)
+    this.logger.log(`📢 playlist.updated → room: ${room}`);
   }
 
   /**
@@ -176,21 +194,21 @@ export class NotificationsGateway
    * Llamado desde: GuestsService.registerFromInvite()
    * Se emite al socket personal del usuario invitante, si está conectado.
    */
-  emitInviteAccepted(payload: InviteAcceptedPayload): void {
+  emitInviteAccepted(payload: AppEventMap['invite.accepted']): void {
     // Emite al room del usuario invitante (que también puede ser user:{id})
     const room = this.userRoom(payload.invitedById);
-    this.server.to(room).emit(NotificationEvent.INVITE_ACCEPTED, payload);
-    this.logger.log(`📢 [${NotificationEvent.INVITE_ACCEPTED}] → room: ${room}`);
+    this.emitToRoom(room,'invite.accepted',payload)
+    this.logger.log(`📢 invite.accepted → room: ${room}`);
   }
 
   /**
    * Notifica a todos los miembros de la playlist que un colaborador se unió al room.
    * Llamado desde: handleJoinPlaylistRoom o al registrarse como colaborador.
    */
-  emitCollaboratorJoined(payload: CollaboratorJoinedPayload): void {
+  emitCollaboratorJoined(payload: AppEventMap['playlist.user.added']): void {
     const room = this.playlistRoom(payload.playlistId);
-    this.server.to(room).emit(NotificationEvent.COLLABORATOR_JOINED, payload);
-    this.logger.log(`📢 [${NotificationEvent.COLLABORATOR_JOINED}] → room: ${room}`);
+    this.emitToRoom(room,'playlist.user.added', payload)
+    this.logger.log(`📢  playlist.user.added → room: ${room}`);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -231,7 +249,7 @@ export class NotificationsGateway
   /** Rechaza la conexión emitiendo el error y desconectando al cliente */
   private rejectConnection(client: Socket, message: string): void {
     this.logger.warn(`🚫 Conexión rechazada [${client.id}]: ${message}`);
-    client.emit(NotificationEvent.AUTH_ERROR, { message });
+    this.emitUI(client,'auth.error',{message})
     client.disconnect(true);
   }
 }
