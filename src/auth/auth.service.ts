@@ -16,7 +16,6 @@ import { Guest } from 'src/guests/entities/guest.entity';
 //Guest
 import { RegisterGuestDto } from '../guests/dto/register-guest.dto';
 
-import { EventBusService } from 'src/shared/event-bus/event-bus.service';
 
 @Injectable()
 export class AuthService {
@@ -24,7 +23,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly guestsService: GuestsService,
     private readonly jwtService: JwtService,
-    private readonly eventBus: EventBusService,
+    
   ) {}
 
   /**

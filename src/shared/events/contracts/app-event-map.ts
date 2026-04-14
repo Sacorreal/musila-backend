@@ -5,15 +5,7 @@ export interface AppEventMap {
     token: string;
     invitedByName: string;
   };
-
-  'invite.accepted': {
-    inviteToken: string;
-    guestId: string;
-    guestName: string;
-    guestEmail: string;
-    invitedById: string;
-  };
-
+  
   // 🎵 PLAYLIST
   'playlist.updated': {
     playlistId: string;
