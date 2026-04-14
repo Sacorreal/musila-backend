@@ -138,7 +138,7 @@ export class InvitesService {
 
   private buildInviteUrl(token: string): string {
     const baseUrl =
-      this.configService.get<string>('APP_BASE_URL') ?? 'http://localhost:3000';
+      this.configService.get<string>('WEB_APP_DEVELOPMENT') || this.configService.get<string>('WEB_APP_PRODUCTION');
     return `${baseUrl}/invite/${token}`;
   }
 

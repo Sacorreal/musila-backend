@@ -1,5 +1,8 @@
-
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { GuestsService } from 'src/guests/guests.service';
@@ -10,9 +13,10 @@ import { LoginAuthDto } from './dto/login-auth.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { Guest } from 'src/guests/entities/guest.entity';
+//Guest
+import { RegisterGuestDto } from '../guests/dto/register-guest.dto';
 
-import {EventBusService } from 'src/shared/event-bus/event-bus.service'
-
+import { EventBusService } from 'src/shared/event-bus/event-bus.service';
 
 @Injectable()
 export class AuthService {
@@ -20,7 +24,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly guestsService: GuestsService,
     private readonly jwtService: JwtService,
-   private readonly eventBus: EventBusService,
+    private readonly eventBus: EventBusService,
   ) {}
 
   /**
@@ -35,7 +39,8 @@ export class AuthService {
     const { citizenID, password } = dto;
 
     // 1. Intentar encontrar en la tabla de Usuarios regulares
-    let account: User | Guest | null = await this.usersService.findUserBycitizenIDService(citizenID);
+    let account: User | Guest | null =
+      await this.usersService.findUserBycitizenIDService(citizenID);
 
     // 2. Si no se encuentra, intentar encontrar en la tabla de Invitados
     if (!account) {
@@ -59,35 +64,29 @@ export class AuthService {
   }
 
   async registerService(user: RegisterAuthDto) {
-    // Verificar si el usuario ya existe por ID o Email en la tabla de usuarios regulares
-    const [idExists, emailExists] = await Promise.all([
-      this.usersService.findUserBycitizenIDService(user.citizenID),
-      this.usersService.findUserByEmailService(user.email),
-    ]);
+    const userExists = await this.usersService.findUserBycitizenIDService(
+      user.citizenID,
+    );
 
-    if (idExists || emailExists) {
-      throw new UnauthorizedException('El usuario o email ya se encuentra registrado');
-    }
+    if (userExists) throw new UnauthorizedException('El usuario ya existe');
 
     const hashedPassword = await bcrypt.hash(user.password, 10);
 
-    // Omitir repeatPassword para el payload de creación
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { repeatPassword, ...createData } = user;
-
     const newUser = await this.usersService.createUserService({
-      ...createData,
+      ...user,
       password: hashedPassword,
     });
 
-    const token = await this.createToken(newUser);    
+    const token = await this.createToken(newUser);
 
-   
+    return { token };
+  }
 
-
-
-  
-
+  async registerGuestService(guest: RegisterGuestDto) {
+    if (guest.password !== guest.repeatPassword)
+      throw new BadRequestException('Las contraseñas no coinciden');
+    const newGuest = await this.guestsService.registerFromInvite(guest);
+    const token = await this.createToken(newGuest);
     return { token };
   }
 

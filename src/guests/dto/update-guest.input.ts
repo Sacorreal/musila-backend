@@ -1,5 +1,5 @@
 import { PartialType } from '@nestjs/swagger';
-import { CreateGuestInput } from './create-guest.input';
+import { RegisterFromInviteDto} from './register-guest.dto'
 
 
-export class UpdateGuestInput extends PartialType(CreateGuestInput) {}
+export class UpdateGuestInput extends PartialType(RegisterFromInviteDto) {}

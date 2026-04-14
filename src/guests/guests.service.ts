@@ -1,14 +1,13 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import { CreateGuestInput } from './dto/create-guest.input';
-import { RegisterFromInviteDto } from './dto/register-from-invite.dto';
+
+import  {RegisterGuestDto } from './dto/register-guest.dto'
 import { UpdateGuestInput } from './dto/update-guest.input';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Guest } from './entities/guest.entity';
 import { Repository } from 'typeorm';
-import { User } from 'src/users/entities/user.entity';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
 import { InvitesService } from 'src/invites/invites.service';
-import { NotificationsGateway } from 'src/realtime/socket/websocket.gateway';
+
 import bcrypt from 'bcrypt';
 
 const guestRelations: string[] = ['invited_by', 'playlists']
@@ -16,10 +15,9 @@ const guestRelations: string[] = ['invited_by', 'playlists']
 @Injectable()
 export class GuestsService {
   constructor(
-    @InjectRepository(Guest) private readonly guestsRepository: Repository<Guest>,
-    @InjectRepository(User) private readonly usersRepository: Repository<User>,
+    @InjectRepository(Guest) private readonly guestsRepository: Repository<Guest>,  
     private readonly invitesService: InvitesService,
-    private readonly notificationsGateway: NotificationsGateway,
+    
   ) { }
 
   private async findGuestWithRelations(id: string): Promise<Guest> {
@@ -51,7 +49,7 @@ export class GuestsService {
    * 4. Crea el guest asociado al usuario que invitó (invitedBy)
    * 5. Marca el token como usado
    */
-  async registerFromInvite(dto: RegisterFromInviteDto): Promise<Guest> {
+  async registerFromInvite(dto: RegisterGuestDto): Promise<Guest> {
     // 1. Validar token — lanza excepciones si es inválido/expirado/usado
     const invite = await this.invitesService.validateAndGetInvite(dto.token);
 
@@ -91,31 +89,13 @@ export class GuestsService {
     await this.invitesService.markAsUsed(dto.token);
 
     // 7. Notificar en tiempo real al usuario invitante (si está conectado por WS)
-    this.notificationsGateway.emitInviteAccepted({
-      inviteToken: dto.token,
-      guestId: savedGuest.id,
-      guestName: `${savedGuest.name} ${savedGuest.lastName}`,
-      guestEmail: savedGuest.email,
-      invitedById: inviter.id,
-    });
+  
 
     return savedGuest;
   }
 
-  async createGuestsService(createGuestInput: CreateGuestInput):Promise<Guest> {
-    const inviter = await this.usersRepository.findOne({
-      where: { id: createGuestInput.invitedById }
-    })
 
-    if (!inviter) throw new NotFoundException('El usuario que invita no existe')
 
-    const newGuest = this.guestsRepository.create({
-      invited_by: inviter
-    })
-
-    return await this.saveAndReturnWithRelations(newGuest)
-
-  }
 
   async findAllGuestsService(paginationDto: PaginationDto) {
     const { limit, offset } = paginationDto;

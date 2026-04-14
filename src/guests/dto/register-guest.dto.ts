@@ -7,7 +7,7 @@ import {
   MinLength,
 } from 'class-validator';
 
-export class RegisterFromInviteDto {
+export class RegisterGuestDto {
   @ApiProperty({ example: 'a1b2c3d4e5f6...', description: 'Token de invitación recibido' })
   @IsNotEmpty()
   @IsString()
@@ -37,20 +37,21 @@ export class RegisterFromInviteDto {
   @ApiPropertyOptional({ example: '+54', description: 'Código de país' })
   @IsOptional()
   @IsString()
-  countryCode?: string;
+  countryCode: string;
 
   @ApiPropertyOptional({ example: '2615551234', description: 'Número de teléfono' })
-  @IsOptional()
   @IsString()
-  phone?: string;
+  phone: string;
 
-  @ApiPropertyOptional({ example: 'DNI', description: 'Tipo de documento de identidad' })
-  @IsOptional()
+  @ApiPropertyOptional({ example: 'DNI', description: 'Tipo de documento de identidad' })  
   @IsString()
   typeCitizenID: string;
 
   @ApiPropertyOptional({ example: '40123456', description: 'Número de documento' })
-  @IsOptional()
   @IsString()
   citizenID: string;
+
+   @IsString()
+    @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
+    repeatPassword: string
 }

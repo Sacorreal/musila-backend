@@ -5,6 +5,8 @@ import { AuthService } from './auth.service';
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 
+import {RegisterGuestDto } from '../guests/dto/register-guest.dto'
+
 
 @ApiTags('Autenticación')
 @Controller('auth')
@@ -56,5 +58,13 @@ export class AuthController {
       throw new BadRequestException('Las contraseñas no coinciden');
     return this.authService.registerService(user);
   }
+
+  @Post('register/guest')
+  async registerGuestController(
+    @Body() guest: RegisterGuestDto
+  ){
+    return this.authService.registerGuestService(guest)
+  }
+
 
 }

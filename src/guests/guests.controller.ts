@@ -1,8 +1,7 @@
 import { GuestsService } from './guests.service';
-import { CreateGuestInput } from './dto/create-guest.input';
-import { RegisterFromInviteDto } from './dto/register-from-invite.dto';
+
 import { UpdateGuestInput } from './dto/update-guest.input';
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Put, Query } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
 import { PaginatedGuestsResponseDto } from './dto/guest-pagination.dto';
@@ -11,38 +10,6 @@ import { PaginatedGuestsResponseDto } from './dto/guest-pagination.dto';
 @Controller('guests')
 export class GuestsController {
   constructor(private readonly guestsService: GuestsService) { }
-
-  // ─── POST /guests/register-from-invite ──────────────────────────────────────
-  @Post('register-from-invite')
-  @ApiOperation({
-    summary: 'Registrar invitado desde invitación',
-    description:
-      'Registra un nuevo invitado usando un token de invitación válido. No requiere autenticación — el token funciona como autorización.',
-  })
-  @ApiResponse({ status: 201, description: 'Invitado registrado exitosamente' })
-  @ApiResponse({ status: 400, description: 'Token ya utilizado o datos inválidos' })
-  @ApiResponse({ status: 404, description: 'Token no encontrado' })
-  @ApiResponse({ status: 409, description: 'Email ya registrado' })
-  @ApiResponse({ status: 410, description: 'Token expirado' })
-  async registerFromInviteController(
-    @Body() dto: RegisterFromInviteDto,
-  ) {
-    return await this.guestsService.registerFromInvite(dto);
-  }
-
-  @Post()
-  @ApiOperation({
-    summary: 'Crear nuevo invitado',
-    description: 'Crea un nuevo registro de invitado en el sistema.',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'Invitado creado exitosamente',
-  })
-  @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  async createGuestController(@Body() createGuestInput: CreateGuestInput) {
-    return await this.guestsService.createGuestsService(createGuestInput);
-  }
 
   @Get()
   @ApiOperation({
