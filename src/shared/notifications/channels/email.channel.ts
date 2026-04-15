@@ -34,7 +34,8 @@ export class EmailChannel {
     event: 'event-test',
     channel: 'email',
   })
-  handleTestEvent(payload: { message: string }) {
+  handleTestEvent(payload: { message: string }) {  
     this.logger.log(`🧪 Test event: ${payload.message}`);
+   
   }
 }

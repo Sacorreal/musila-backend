@@ -31,9 +31,19 @@ export class EventListenerLoader implements OnModuleInit {
       const prototype = Object.getPrototypeOf(instance);
 
       const methodNames = Object.getOwnPropertyNames(prototype).filter(
-        (method) =>
-          method !== 'constructor' &&
-          typeof prototype[method] === 'function',
+        (method) => {
+          if (method === 'constructor') return false;
+          // Use getOwnPropertyDescriptor to safely check whether the property is
+          // a plain method WITHOUT triggering getter side-effects (e.g. the
+          // HttpAdapterHost.listen$ getter throws when called on the prototype
+          // instead of an initialized instance).
+          const descriptor = Object.getOwnPropertyDescriptor(prototype, method);
+          return (
+            descriptor !== undefined &&
+            typeof descriptor.value === 'function' &&
+            descriptor.get === undefined
+          );
+        },
       );
 
       for (const methodName of methodNames) {
@@ -48,7 +58,7 @@ export class EventListenerLoader implements OnModuleInit {
         const methodRef = instance[methodName].bind(instance);
 
         this.logger.log(
-          `🔗 Registrando: ${metadata.event} → ${wrapper.name}.${methodName}`,
+          `🔗 Registrando evento: ${metadata.event} en → ${wrapper.name}.${methodName}`,
         );
 
         // 🔥 registrar en EventBus
