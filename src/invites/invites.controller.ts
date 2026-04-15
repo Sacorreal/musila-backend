@@ -32,11 +32,9 @@ export class InvitesController {
   @Post()
   @UseGuards(JWTAuthGuard, RolesGuard)
   @Roles(
-    UserRole.ADMIN,
-    UserRole.AUTOR,
+    UserRole.ADMIN,    
     UserRole.CANTAUTOR,
-    UserRole.INTERPRETE,
-    UserRole.EDITOR,
+    UserRole.INTERPRETE,   
   )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({

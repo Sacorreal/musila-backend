@@ -63,6 +63,7 @@ export class PlaylistsService {
     return await this.saveAndReturnWithRelations(newPlaylist);
   }
 
+  //TODO: retornar solo mis playlist ksi tengo rol de admin me retorna todas
   async findAllPlaylistsService(user: JwtPayload, paginationDto: PaginationDto) {
     const { limit, offset } = paginationDto;
     

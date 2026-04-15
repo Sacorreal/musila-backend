@@ -53,10 +53,7 @@ export class Guest {
   @ApiProperty({ enum: UserRole, example: UserRole.INVITADO, description: 'Rol de sistema' })
   @Column({ type: 'enum', enum: UserRole, default: UserRole.INVITADO })
   role: UserRole;
-
-  @Column('varchar', { nullable: false, select: false })
-  repeatPassword: string
-
+  
   @ManyToOne(() => User, (user) => user.guests, { nullable: false })
   invited_by: User;
 

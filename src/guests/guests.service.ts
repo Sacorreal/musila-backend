@@ -44,7 +44,7 @@ export class GuestsService {
    *
    * Flujo:
    * 1. Valida el token (existe, no expirado, no usado) vía InvitesService
-   * 2. Verifica que el email no esté registrado como guest
+   * 2. Verifica que el citizenID no esté registrado como guest
    * 3. Hashea la contraseña
    * 4. Crea el guest asociado al usuario que invitó (invitedBy)
    * 5. Marca el token como usado
@@ -96,7 +96,7 @@ export class GuestsService {
 
 
 
-
+//TODO:retornar solo los invitados del usuario logeado, si tengo un rol admin, retorno todos los invitados 
   async findAllGuestsService(paginationDto: PaginationDto) {
     const { limit, offset } = paginationDto;
     const [data, total] = await this.guestsRepository.findAndCount({

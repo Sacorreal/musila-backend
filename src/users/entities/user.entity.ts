@@ -37,9 +37,6 @@ export class User {
   email: string;
 
   @Column('varchar', { nullable: false, select: false })
-  repeatPassword: string
-
-  @Column('varchar', { nullable: false, select: false })
   password: string;
 
   @Column('varchar', { name: 'country_code', nullable: true })

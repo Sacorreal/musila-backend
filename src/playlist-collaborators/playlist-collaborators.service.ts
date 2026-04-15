@@ -7,7 +7,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { Guest } from 'src/guests/entities/guest.entity';
-import { NotificationsGateway } from 'src/realtime/socket/websocket.gateway';
 import { Playlist } from 'src/playlists/entities/playlist.entity';
 import { UserRole } from 'src/users/entities/user-role.enum';
 import { Repository } from 'typeorm';
@@ -24,7 +23,7 @@ export class PlaylistCollaboratorsService {
     private readonly playlistRepository: Repository<Playlist>,
     @InjectRepository(Guest)
     private readonly guestRepository: Repository<Guest>,
-    private readonly notificationsGateway: NotificationsGateway,
+   
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
