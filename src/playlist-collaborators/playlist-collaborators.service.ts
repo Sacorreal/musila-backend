@@ -70,15 +70,7 @@ export class PlaylistCollaboratorsService {
     const result = await this.findCollaboratorWithRelations(saved.id);
 
     // Emitir notificación en tiempo real a todos los miembros del room de la playlist
-    this.notificationsGateway.emitUserAddedToPlaylist({
-      playlistId: playlist.id,
-      playlistTitle: playlist.title,
-      guestId: guest.id,
-      guestName: `${guest.name} ${guest.lastName}`,
-      guestEmail: guest.email,
-      permission: dto.permission ?? CollaboratorPermission.READ,
-      addedBy: user.name,
-    });
+    
 
     return result;
   }

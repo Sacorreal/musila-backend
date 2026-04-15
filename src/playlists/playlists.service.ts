@@ -10,7 +10,6 @@ import { CreatePlaylistInput } from './dto/create-playlist.input';
 import { UpdatePlaylistInput } from './dto/update-playlist.input';
 import { Playlist } from './entities/playlist.entity';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
-import { NotificationsGateway } from 'src/realtime/socket/websocket.gateway';
 
 
 
@@ -26,7 +25,7 @@ export class PlaylistsService {
     private readonly guestsRepository: Repository<Guest>,
     @InjectRepository(Track)
     private readonly tracksRepository: Repository<Track>,
-    private readonly notificationsGateway: NotificationsGateway,
+    
   ) {}
 
   private async findPlaylistWithRelations(id: string): Promise<Playlist> {
@@ -134,15 +133,10 @@ export class PlaylistsService {
     const updated = await this.saveAndReturnWithRelations(existingPlaylist);
 
     // Emitir evento al room de la playlist con los campos que cambiaron
-    const changedFields = Object.keys(updatePlaylistInput).filter(
+    /*const changedFields = Object.keys(updatePlaylistInput).filter(
       (key) => updatePlaylistInput[key as keyof UpdatePlaylistInput] !== undefined,
-    );
-    this.notificationsGateway.emitPlaylistUpdated({
-      playlistId: updated.id,
-      playlistTitle: updated.title,
-      updatedBy: owner.name,
-      changes: changedFields,
-    });
+    );*/
+   
 
     return updated;
   }

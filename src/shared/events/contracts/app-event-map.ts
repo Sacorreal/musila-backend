@@ -5,6 +5,11 @@ export interface AppEventMap {
     token: string;
     invitedByName: string;
   };
+
+  'invite.accepted':{
+    invitedById: string; 
+    playlistID: string
+  };
   
   // 🎵 PLAYLIST
   'playlist.updated': {

@@ -5,7 +5,7 @@ export const EVENT_LISTENER_METADATA = 'EVENT_LISTENER_METADATA';
 
 export interface EventListenerMetadata {
   event: AppEventName;
-  channel: 'websocket' | 'email' | 'other';
+  channel: 'email' | 'realtime' | 'other'
 }
 
 export function EventListener(metadata: EventListenerMetadata) {

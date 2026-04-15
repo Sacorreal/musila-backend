@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Guest } from 'src/guests/entities/guest.entity';
-import { NotificationsModule } from 'src/notifications/notifications.module';
+
 import { Playlist } from 'src/playlists/entities/playlist.entity';
 import { PlaylistCollaborator } from './entities/playlist-collaborator.entity';
 import { PlaylistCollaboratorsController } from './playlist-collaborators.controller';
@@ -10,7 +10,7 @@ import { PlaylistCollaboratorsService } from './playlist-collaborators.service';
 @Module({
   imports: [
     TypeOrmModule.forFeature([PlaylistCollaborator, Playlist, Guest]),
-    NotificationsModule,
+  
   ],
   controllers: [PlaylistCollaboratorsController],
   providers: [PlaylistCollaboratorsService],

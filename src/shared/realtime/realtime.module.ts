@@ -1,16 +1,16 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 
-import { NotificationsGateway } from './gateway/websocket.gateway';
-import { RealtimeListener } from './listeners/realtime.listener';
+import { RealtimeGateway } from './gateway/realtime.gateway';
+import { PlaylistListener } from './listeners/playlist.listener';
 
 @Module({
   imports: [
     JwtModule
   ],
   providers: [
-    NotificationsGateway,
-    RealtimeListener,
+    RealtimeGateway,
+    PlaylistListener,
   ],
   exports: [],
 })

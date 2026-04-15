@@ -9,7 +9,7 @@ export class PlaylistListener {
 
   @EventListener({
     event: 'playlist.updated',
-    channel: 'websocket',
+    channel: 'realtime',
   })
   handlePlaylistUpdated(payload: AppEventMap['playlist.updated']) {
     this.gateway.emitPlaylistUpdated(payload);
@@ -17,7 +17,7 @@ export class PlaylistListener {
 
   @EventListener({
     event: 'playlist.user.added',
-    channel: 'websocket',
+    channel: 'realtime',
   })
   handleUserAdded(payload: AppEventMap['playlist.user.added']) {
     this.gateway.emitUserAddedToPlaylist(payload);
