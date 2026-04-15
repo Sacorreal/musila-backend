@@ -105,7 +105,6 @@ export class UsersController {
     return await this.usersService.findOneUserService(user.id);
   }
 
-  //TODO: crear ruta Update usuario llamar servicio storage si quiere cambiar avatar
 
   @UseGuards(JWTAuthGuard)
   @Get(':id')
@@ -159,6 +158,23 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
   async removeUserController(@CurrentUser() user: JwtPayload,) {
     return await this.usersService.removeUserService(user.id);
+  }
+
+  @UseGuards(JWTAuthGuard)
+  @Put('me')
+  @ApiOperation({
+    summary: 'actualizar usuario',
+    description: 'actualiza un usuario del sistema por su ID.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Usuario actualizado exitosamente',
+  })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  async updateUserController(
+  @CurrentUser() user: JwtPayload,
+  @Body() updateUserInput: UpdateUserInput) {
+    return await this.usersService.updateUserService(user.id,updateUserInput );
   }
 
 

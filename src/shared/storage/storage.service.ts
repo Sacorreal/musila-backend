@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   DeleteObjectCommand,
   HeadObjectCommand,
@@ -17,6 +18,7 @@ import { STORAGE_OPTIONS } from './constants/storage-options.constants';
 import { ACL } from './constants/acl.constants';
 import type { StorageOptions } from './interface/storage-options.interface';
 import { StorageFolder } from './dto/storage-folder.enum';
+
 
 @Injectable()
 export class StorageService {

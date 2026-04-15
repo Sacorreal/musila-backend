@@ -1,5 +1,3 @@
-//TODO: Agregar como atributos los metadatos que vienen como respuesta del servicio de alojamiento "Digital Ocean Spaces"
-
 import { IntellectualProperty } from 'src/intellectual-property/entities/intellectual-property.entity';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Playlist } from 'src/playlists/entities/playlist.entity';

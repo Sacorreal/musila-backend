@@ -59,7 +59,10 @@ export class User {
   role: UserRole;
 
   @Column('varchar', { name: 'avatar', nullable: true })
-  avatar?: string;
+  avatarUrl?: string;
+
+  @Column('varchar', { nullable: true, name: 'avatar_key' })
+  avatarKey?: string
 
   @Column('boolean', { default: false, name: 'is_verified' })
   isVerified: boolean;

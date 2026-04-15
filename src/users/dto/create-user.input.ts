@@ -116,7 +116,10 @@ export class CreateUserInput {
   })
   @IsOptional()
   @IsUrl({}, { message: 'El avatar debe ser una URL válida' })
-  avatar?: string;
+  avatarKey?: string;
+
+  @IsOptional()
+  avatarUrl?: string
 
   @ApiPropertyOptional({
     example: true,
