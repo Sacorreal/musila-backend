@@ -160,8 +160,8 @@ export class TracksService {
       total,
     };
   }
-  
-  
+
+
 
 
 
@@ -169,20 +169,20 @@ export class TracksService {
     options: FindAllTracksOptions = {},
     user: JwtPayload
   ): Promise<PaginatedTracksResponseDto> {
-    const { 
-      limit, 
-      offset, 
-      isGospel, 
-      language, 
-      subGenre, 
-      genreId, 
-      isAvailable = true 
+    const {
+      limit,
+      offset,
+      isGospel,
+      language,
+      subGenre,
+      genreId,
+      isAvailable = true
     } = options.params ?? {};
 
     // 1. Determinar si el usuario tiene acceso a todas las canciones (RBAC)
     const hasGlobalAccess = [
-      UserRole.ADMIN, 
-      UserRole.INTERPRETE, 
+      UserRole.ADMIN,
+      UserRole.INTERPRETE,
       UserRole.CANTAUTOR,
       UserRole.INVITADO
     ].includes(user?.role);
@@ -247,14 +247,15 @@ export class TracksService {
 
   async removeTrackService(id: string) {
     const result = await this.tracksRepository.softDelete(id);
-    if (result.affected === 0){
-      throw new NotFoundException('El track no existe')   }
+    if (result.affected === 0) {
+      throw new NotFoundException('El track no existe')
+    }
 
     return {
-      id, 
-      message:'Track eliminado correctamente'
+      id,
+      message: 'Track eliminado correctamente'
     }
   }
 
- 
+
 }

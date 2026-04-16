@@ -69,7 +69,6 @@ export class Track {
 
   @ManyToMany(() => Playlist, (playlist) => playlist.tracks, {
     nullable: true,
-    lazy: true,
   })
   playlists?: Playlist[];
 
@@ -78,7 +77,6 @@ export class Track {
 
   @OneToMany(() => RequestedTrack, (requestedTrack) => requestedTrack.track, {
     nullable: true,
-    lazy: true,
   })
   requestedTrack?: RequestedTrack[];
 
