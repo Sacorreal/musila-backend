@@ -1,9 +1,57 @@
-import { SubscribeMessage, WebSocketGateway } from '@nestjs/websockets';
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  SubscribeMessage,
+  ConnectedSocket,
+  MessageBody,
+} from '@nestjs/websockets';
 
-@WebSocketGateway()
+import { Server, Socket } from 'socket.io';
+import { ChatService } from './chat.service';
+
+@WebSocketGateway({
+  namespace: '/chat',
+  cors: {
+    origin: '*',
+  },
+})
 export class ChatGateway {
-  @SubscribeMessage('message')
-  handleMessage(client: any, payload: any): string {
-    return 'Hello world!';
+  @WebSocketServer()
+  server: Server;
+
+  constructor(private readonly chatService: ChatService) { }
+
+  // =====================================================
+  // 🔌 JOIN ROOM
+  // =====================================================
+
+  @SubscribeMessage('joinChat')
+  handleJoin(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { chatId: string },
+  ) {
+    const room = `chat:${data.chatId}`;
+    client.join(room);
+  }
+
+  // =====================================================
+  // 💬 SEND MESSAGE
+  // =====================================================
+
+  @SubscribeMessage('sendMessage')
+  async handleMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody()
+    data: {
+      chatId: string;
+      senderId: string;
+      content: string;
+    },
+  ) {
+    const message = await this.chatService.saveMessage(data);
+
+    const room = `chat:${data.chatId}`;
+
+    this.server.to(room).emit('chat.message', message);
   }
 }

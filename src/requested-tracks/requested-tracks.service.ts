@@ -12,6 +12,7 @@ import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
 import { UserRole } from '../users/entities/user-role.enum';
 import { PaginationDto } from '../shared/dto/pagination.dto'
+import { Chat } from 'src/chat/entities/chat.entity';
 
 const requestedTracksRelations: string[] = [
   'requester',
@@ -23,9 +24,7 @@ export class RequestedTracksService {
   constructor(
     @InjectRepository(RequestedTrack) private readonly requestedTracksRepository: Repository<RequestedTrack>,
     @InjectRepository(Track) private readonly tracksRepository: Repository<Track>,
-
-
-
+    @InjectRepository(Track) private readonly chatRepository: Repository<Chat>,
   ) { }
 
   private async findRequestedTrackWithRelations(id: string): Promise<RequestedTrack> {
@@ -79,6 +78,14 @@ export class RequestedTracksService {
       track: { id: trackId },
       licenseType,
     });
+
+    const chat = await this.chatRepository.save({ request: newRequestedTrack })
+
+    //TODO:crear el evento 
+    /*this.eventBus.emit('chat.created', {
+  chatId: chat.id,
+  requestId: request.id,
+});*/
 
     return await this.saveAndReturnWithRelations(newRequestedTrack);
   }
