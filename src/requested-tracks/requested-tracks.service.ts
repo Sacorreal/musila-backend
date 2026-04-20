@@ -1,16 +1,17 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 
 import { Track } from 'src/tracks/entities/track.entity';
+import { RequestsStatus } from './entities/requests-status.enum';
 
 import { Repository, FindOptionsWhere } from 'typeorm';
 import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
 import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
 import { RequestedTrack } from './entities/requested-track.entity';
-import  type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
-import {UserRole } from '../users/entities/user-role.enum'; 
-import { PaginationDto} from '../shared/dto/pagination.dto'
+import { UserRole } from '../users/entities/user-role.enum';
+import { PaginationDto } from '../shared/dto/pagination.dto'
 
 const requestedTracksRelations: string[] = [
   'requester',
@@ -22,8 +23,8 @@ export class RequestedTracksService {
   constructor(
     @InjectRepository(RequestedTrack) private readonly requestedTracksRepository: Repository<RequestedTrack>,
     @InjectRepository(Track) private readonly tracksRepository: Repository<Track>,
-   
-   
+
+
 
   ) { }
 
@@ -44,13 +45,13 @@ export class RequestedTracksService {
   }
 
   async createRequestedTracksService(
-    { trackId, licenseType }: CreateRequestedTrackInput, 
-    userRequester: JwtPayload 
+    { trackId, licenseType }: CreateRequestedTrackInput,
+    userRequester: JwtPayload
   ) {
     // Cargamos solo el ID de los autores para no saturar memoria
     const track = await this.tracksRepository.findOne({
       where: { id: trackId },
-      select: ['id'], 
+      select: ['id'],
       relations: ['authors']
     });
 
@@ -59,6 +60,19 @@ export class RequestedTracksService {
     // Validamos que el solicitante no sea autor de la canción
     const isAuthor = track.authors.some(author => author.id === userRequester.id);
     if (isAuthor) throw new BadRequestException('No puedes solicitar una licencia de tu propia canción');
+
+    // ❌ evitar duplicados
+    const existing = await this.requestedTracksRepository.findOne({
+      where: {
+        requester: { id: userRequester.id },
+        track: { id: trackId },
+        status: RequestsStatus.PENDIENTE
+      }
+    })
+
+    if (existing) {
+      throw new ConflictException('Ya tienes una solicitud pendiente');
+    }
 
     const newRequestedTrack = this.requestedTracksRepository.create({
       requester: { id: userRequester.id },
@@ -73,7 +87,7 @@ export class RequestedTracksService {
     user: JwtPayload,
     paginationDto: PaginationDto,
   ) {
-    const { limit, offset } = paginationDto;    
+    const { limit, offset } = paginationDto;
 
     const isAdmin = user?.role === UserRole.ADMIN;
 

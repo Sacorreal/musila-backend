@@ -12,9 +12,9 @@ import { Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Server, Socket } from 'socket.io';
 import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { AppEventMap} from '../../events/contracts/app-event-map';
-import { ClientEvent, AuthenticatedSocket} from '../types/realtime.types'
-import { RealtimeUIEventMap} from '../types/realtime-ui-event-map'
+import { AppEventMap } from '../../events/contracts/app-event-map';
+import { ClientEvent, AuthenticatedSocket } from '../types/realtime.types'
+import { RealtimeUIEventMap } from '../types/realtime-ui-event-map'
 
 /**
  * WebSocket Gateway para notificaciones en tiempo real.
@@ -36,22 +36,22 @@ import { RealtimeUIEventMap} from '../types/realtime-ui-event-map'
     credentials: true,
   },
   namespace: '/realtime',
+
 })
 export class RealtimeGateway
-  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
-{
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   private readonly server: Server;
 
   private readonly logger = new Logger(RealtimeGateway.name);
 
-  constructor(private readonly jwtService: JwtService) {}
+  constructor(private readonly jwtService: JwtService) { }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Lifecycle hooks
   // ─────────────────────────────────────────────────────────────────────────────
 
-  
+
   afterInit() {
     this.logger.log('🔌 NotificationsGateway inicializado — namespace: /realtime');
   }
@@ -94,12 +94,12 @@ export class RealtimeGateway
   // ─────────────────────────────────────────────────────────────────────────────
 
   emitUI<T extends keyof RealtimeUIEventMap>(
-  client: Socket,
-  event: T,
-  payload: RealtimeUIEventMap[T],
-) {
-  client.emit(event, payload);
-}
+    client: Socket,
+    event: T,
+    payload: RealtimeUIEventMap[T],
+  ) {
+    client.emit(event, payload);
+  }
 
   /**
    * El cliente solicita unirse al room de notificaciones de una playlist.
@@ -112,7 +112,7 @@ export class RealtimeGateway
   ) {
     const user = this.getUserFromSocket(client);
     if (!user) {
-      this.emitUI(client,'auth.error',{ message: 'usuario no auth'});
+      this.emitUI(client, 'auth.error', { message: 'usuario no auth' });
       return;
     }
 
@@ -121,7 +121,7 @@ export class RealtimeGateway
 
     this.logger.log(`🏠 ${user.name} se unió al room: ${room}`);
 
-    this.emitUI(client,'room.joined', {playlistId: data.playlistId, room })
+    this.emitUI(client, 'room.joined', { playlistId: data.playlistId, room })
   }
 
   /**
@@ -140,18 +140,18 @@ export class RealtimeGateway
     await client.leave(room);
 
     this.logger.log(`🚪 ${user.name} salió del room: ${room}`);
-    this.emitUI(client,'room.left',{room, playlistId: data.playlistId})
+    this.emitUI(client, 'room.left', { room, playlistId: data.playlistId })
 
-   ;
+      ;
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
   // Métodos de emisión — llamados desde Services
   // ─────────────────────────────────────────────────────────────────────────────
 
-   /**
-   * Método base tipado para emitir eventos
-   */
+  /**
+  * Método base tipado para emitir eventos
+  */
   emitToRoom<T extends keyof AppEventMap>(
     room: string,
     event: T,
@@ -175,7 +175,7 @@ export class RealtimeGateway
    */
   emitUserAddedToPlaylist(payload: AppEventMap['playlist.user.added']): void {
     const room = this.playlistRoom(payload.playlistId);
-    this.emitToRoom(room,'playlist.user.added',payload); 
+    this.emitToRoom(room, 'playlist.user.added', payload);
     this.logger.log(`📢 'USER_ADDED_TO_PLAYLIST' → room: ${room}`);
   }
 
@@ -185,7 +185,7 @@ export class RealtimeGateway
    */
   emitPlaylistUpdated(payload: AppEventMap['playlist.updated']): void {
     const room = this.playlistRoom(payload.playlistId);
-    this.emitToRoom(room,'playlist.updated',payload)
+    this.emitToRoom(room, 'playlist.updated', payload)
     this.logger.log(`📢 playlist.updated → room: ${room}`);
   }
 
@@ -197,7 +197,7 @@ export class RealtimeGateway
   emitInviteAccepted(payload: AppEventMap['invite.accepted']): void {
     // Emite al room del usuario invitante (que también puede ser user:{id})
     const room = this.userRoom(payload.invitedById);
-    this.emitToRoom(room,'invite.accepted',payload)
+    this.emitToRoom(room, 'invite.accepted', payload)
     this.logger.log(`📢 invite.accepted → room: ${room}`);
   }
 
@@ -207,7 +207,7 @@ export class RealtimeGateway
    */
   emitCollaboratorJoined(payload: AppEventMap['playlist.user.added']): void {
     const room = this.playlistRoom(payload.playlistId);
-    this.emitToRoom(room,'playlist.user.added', payload)
+    this.emitToRoom(room, 'playlist.user.added', payload)
     this.logger.log(`📢  playlist.user.added → room: ${room}`);
   }
 
@@ -249,7 +249,7 @@ export class RealtimeGateway
   /** Rechaza la conexión emitiendo el error y desconectando al cliente */
   private rejectConnection(client: Socket, message: string): void {
     this.logger.warn(`🚫 Conexión rechazada [${client.id}]: ${message}`);
-    this.emitUI(client,'auth.error',{message})
+    this.emitUI(client, 'auth.error', { message })
     client.disconnect(true);
   }
 }

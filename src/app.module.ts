@@ -20,6 +20,7 @@ import { UsersModule } from './users/users.module';
 import { EmailModule} from './shared/mail/email.module'
 import { EventBusModule } from './shared/events/event-bus.module';
 import { RealtimeModule} from './shared/realtime/realtime.module'
+import { ChatModule } from './chat/chat.module';
 
 
 @Module({
@@ -42,7 +43,7 @@ import { RealtimeModule} from './shared/realtime/realtime.module'
     PlaylistCollaboratorsModule,
     StorageModule.forRootAsync(),
     SearchModule,   
-    EmailModule.forRootAsync(),
+    EmailModule.forRootAsync(), ChatModule,
   ],
   controllers: [AppController],
   providers: [],
