@@ -3,6 +3,8 @@ import { JwtModule } from '@nestjs/jwt';
 
 import { RealtimeGateway } from './gateway/realtime.gateway';
 import { PlaylistListener } from './listeners/playlist.listener';
+import { SocketAuthService } from './socket-auth.service';
+
 
 @Module({
   imports: [
@@ -11,7 +13,8 @@ import { PlaylistListener } from './listeners/playlist.listener';
   providers: [
     RealtimeGateway,
     PlaylistListener,
+    SocketAuthService
   ],
   exports: [],
 })
-export class RealtimeModule {}
+export class RealtimeModule { }

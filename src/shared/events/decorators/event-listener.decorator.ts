@@ -1,11 +1,11 @@
 import 'reflect-metadata';
-import { AppEventName} from '../contracts/app-event-name.type'
+import { AppEventName } from '../contracts/app-event-name.type'
 
 export const EVENT_LISTENER_METADATA = 'EVENT_LISTENER_METADATA';
 
 export interface EventListenerMetadata {
   event: AppEventName;
-  channel: 'email' | 'realtime' | 'other'
+  channel: 'email' | 'websocket' | 'other'
 }
 
 export function EventListener(metadata: EventListenerMetadata) {

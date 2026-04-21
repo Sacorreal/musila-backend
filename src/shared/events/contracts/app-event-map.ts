@@ -6,11 +6,11 @@ export interface AppEventMap {
     invitedByName: string;
   };
 
-  'invite.accepted':{
-    invitedById: string; 
-    playlistID: string
+  'invite.accepted': {
+    invitedById: string;
+    playlistID: string;
   };
-  
+
   // 🎵 PLAYLIST
   'playlist.updated': {
     playlistId: string;
@@ -29,14 +29,31 @@ export interface AppEventMap {
     addedBy: string;
   };
 
-
-   // 👤 USER
-  'user.invite.created':{
-    name: string;     
-    email: string
-  }; 
+  // 👤 USER
+  'user.invite.created': {
+    name: string;
+    email: string;
+  };
 
   'event-test': {
-    message: string
+    message: string;
+  };
+
+  //💬 CHAT 
+
+  'chat.message.sent': {
+    chatId: string;
+    messageId: string;
+    senderId?: string;
+    content: string;
+    titleTrack: string
+  };
+
+  'chat.guests.added': {
+    chatId: string;
+    guestIds: string[];
+    addedBy: string;
+    titleTrack: string;
+    emailGuest: string[];
   }
 }

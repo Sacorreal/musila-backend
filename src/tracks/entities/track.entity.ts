@@ -36,15 +36,15 @@ export class Track {
   @Column('varchar', { name: 'sub_genre', nullable: true })
   subGenre?: string;
 
-  @Column({ type: 'varchar', default: 'https://musila.sfo3.cdn.digitaloceanspaces.com/musila-logo.jpeg', nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   coverUrl?: string;
 
-  @Column('varchar', { nullable: true, name: 'audio_url'})
+  @Column('varchar', { nullable: true, name: 'audio_url' })
   audioUrl?: string;
 
   @Column('int', { nullable: true })
   year?: number;
-  
+
   @Column('varchar', { name: 'audio_key', default: 'sin-audio-key' })
   audioKey: string;
 

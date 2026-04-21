@@ -1,6 +1,7 @@
 import { Playlist } from 'src/playlists/entities/playlist.entity';
 import { UserRole } from 'src/users/entities/user-role.enum';
 import { User } from 'src/users/entities/user.entity';
+import { Chat } from 'src/chat/entities/chat.entity'
 import { Column, Entity, ManyToMany, ManyToOne, PrimaryGeneratedColumn, CreateDateColumn, DeleteDateColumn, UpdateDateColumn } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -14,6 +15,9 @@ export class Guest {
   @ApiProperty({ example: 'Juan', description: 'Nombre del invitado' })
   @Column('varchar', { length: 255 })
   name: string;
+
+  @ManyToMany(() => Chat, (chat) => chat.guests)
+  chats?: Chat[];
 
   @ApiProperty({ example: 'Pérez', description: 'Apellido del invitado' })
   @Column('varchar', { name: 'last_name' })
@@ -53,7 +57,7 @@ export class Guest {
   @ApiProperty({ enum: UserRole, example: UserRole.INVITADO, description: 'Rol de sistema' })
   @Column({ type: 'enum', enum: UserRole, default: UserRole.INVITADO })
   role: UserRole;
-  
+
   @ManyToOne(() => User, (user) => user.guests, { nullable: false })
   invited_by: User;
 

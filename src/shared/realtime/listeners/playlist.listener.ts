@@ -5,11 +5,11 @@ import { AppEventMap } from '../../events/contracts/app-event-map';
 
 @Injectable()
 export class PlaylistListener {
-  constructor(private readonly gateway: RealtimeGateway) {}
+  constructor(private readonly gateway: RealtimeGateway) { }
 
   @EventListener({
     event: 'playlist.updated',
-    channel: 'realtime',
+    channel: 'websocket',
   })
   handlePlaylistUpdated(payload: AppEventMap['playlist.updated']) {
     this.gateway.emitPlaylistUpdated(payload);
@@ -17,7 +17,7 @@ export class PlaylistListener {
 
   @EventListener({
     event: 'playlist.user.added',
-    channel: 'realtime',
+    channel: 'websocket',
   })
   handleUserAdded(payload: AppEventMap['playlist.user.added']) {
     this.gateway.emitUserAddedToPlaylist(payload);

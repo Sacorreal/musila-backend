@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsString, IsUUID } from 'class-validator';
 
-export class SendMessageInput {
+export class MessageInput {
     @IsUUID('4', { message: 'El userId debe ser un UUID v4 válido' })
     @IsNotEmpty({ message: 'El userId es obligatorio' })
     userId: string;

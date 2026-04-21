@@ -100,6 +100,13 @@ export class User {
   )
   requestSent?: RequestedTrack[];
 
+  @OneToMany(
+    () => RequestedTrack,
+    (requestedTrack) => requestedTrack.owner,
+    { nullable: true }
+  )
+  requestReceived?: RequestedTrack[]
+
   @Column('boolean', { default: true, name: 'is_user_free' })
   isUserFree: boolean;
 

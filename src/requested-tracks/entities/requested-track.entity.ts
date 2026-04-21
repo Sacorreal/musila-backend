@@ -1,4 +1,3 @@
-
 import { Track } from 'src/tracks/entities/track.entity';
 import { User } from 'src/users/entities/user.entity';
 import {
@@ -12,6 +11,8 @@ import {
 } from 'typeorm';
 import { LicenseType } from './license-type.enum';
 import { RequestsStatus } from './requests-status.enum';
+import { JoinColumn } from 'typeorm/browser';
+
 
 @Entity({ name: 'requested_track' })
 export class RequestedTrack {
@@ -21,6 +22,13 @@ export class RequestedTrack {
 
   @ManyToOne(() => User, (user) => user.requestSent)
   requester: User;
+
+  @ManyToOne(() => User, (user) => user.requestSent)
+  @JoinColumn()
+  owner: User;
+
+
+
 
   @ManyToOne(() => Track, (track) => track.requestedTrack)
   track: Track;
