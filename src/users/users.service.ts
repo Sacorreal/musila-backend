@@ -174,4 +174,28 @@ export class UsersService {
     });
     return { data, total };
   }
+
+  async saveResetToken(userId: string, token: string, expires: Date) {
+    await this.usersRepository.update(userId, {
+      resetToken: token,
+      resetTokenExpires: expires,
+    });
+  }
+
+  async findUserByResetToken(token: string) {
+    return await this.usersRepository.findOne({
+      where: { resetToken: token },
+      select: ['id', 'email', 'name', 'resetTokenExpires'],
+    });
+  }
+
+  async resetPassword(userId: string, hashedPassword: string) {
+    // Para setear valores a null, usamos un update directo.
+    // También se puede usar this.usersRepository.save si necesitas hooks.
+    await this.usersRepository.update(userId, {
+      password: hashedPassword,
+      resetToken: null,
+      resetTokenExpires: null,
+    } as any);
+  }
 }

@@ -66,4 +66,28 @@ export class EmailService {
     }
     
   }
+
+  async sendPasswordResetEmail(
+    email: string,
+    data: { name: string; resetUrl: string },
+  ) {
+    return this.sendEmail({
+      to: email,
+      subject: 'Restablecer tu contraseña',
+      templateId: 'password-reset-template-id',
+      variables: data,
+    });
+  }
+
+  async sendPasswordChangedEmail(
+    email: string,
+    data: { name: string },
+  ) {
+    return this.sendEmail({
+      to: email,
+      subject: 'Notificación de seguridad: Contraseña actualizada',
+      templateId: 'password-changed-template-id',
+      variables: data,
+    });
+  }
 }

@@ -109,6 +109,12 @@ export class User {
   @Column('boolean', { default: true, name: 'is_user_free' })
   isUserFree: boolean;
 
+  @Column('varchar', { nullable: true, name: 'reset_token', select: false })
+  resetToken?: string;
+
+  @Column('timestamp', { nullable: true, name: 'reset_token_expires' })
+  resetTokenExpires?: Date;
+
   @CreateDateColumn({
     name: 'created_at',
     type: 'timestamptz',

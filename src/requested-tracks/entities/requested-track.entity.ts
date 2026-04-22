@@ -5,13 +5,13 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { LicenseType } from './license-type.enum';
 import { RequestsStatus } from './requests-status.enum';
-import { JoinColumn } from 'typeorm/browser';
 
 
 @Entity({ name: 'requested_track' })

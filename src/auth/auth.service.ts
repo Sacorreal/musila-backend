@@ -15,7 +15,10 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { Guest } from 'src/guests/entities/guest.entity';
 //Guest
 import { RegisterGuestDto } from '../guests/dto/register-guest.dto';
-
+import * as crypto from 'crypto';
+import { EventBusService } from 'src/shared/events/event-bus.service';
+import { RequestResetPasswordDto } from './dto/request-reset-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -23,7 +26,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly guestsService: GuestsService,
     private readonly jwtService: JwtService,
-    
+    private readonly eventBus: EventBusService,
   ) {}
 
   /**
@@ -100,5 +103,56 @@ export class AuthService {
       name: account.name,
     };
     return this.jwtService.signAsync(payload);
+  }
+
+  async requestPasswordResetService(dto: RequestResetPasswordDto): Promise<{ message: string }> {
+    const user = await this.usersService.findUserByEmailService(dto.email);
+
+    // Siempre devolvemos el mismo mensaje para no revelar si el email existe
+    const successMessage = 'Si el correo existe, se ha enviado un enlace para restablecer la contraseña';
+
+    if (!user) {
+      return { message: successMessage };
+    }
+
+    // Generar token seguro
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutos
+
+    await this.usersService.saveResetToken(user.id, resetToken, resetTokenExpires);
+
+    this.eventBus.emit('user.password.reset.requested', {
+      email: user.email,
+      name: user.name,
+      token: resetToken,
+    });
+
+    return { message: successMessage };
+  }
+
+  async resetPasswordService(dto: ResetPasswordDto): Promise<{ message: string }> {
+    if (dto.newPassword !== dto.confirmPassword) {
+      throw new BadRequestException('Las contraseñas no coinciden');
+    }
+
+    const user = await this.usersService.findUserByResetToken(dto.token);
+
+    if (!user) {
+      throw new BadRequestException('Token inválido o expirado');
+    }
+
+    if (user.resetTokenExpires && user.resetTokenExpires < new Date()) {
+      throw new BadRequestException('El token ha expirado');
+    }
+
+    const hashedPassword = await bcrypt.hash(dto.newPassword, 10);
+    await this.usersService.resetPassword(user.id, hashedPassword);
+
+    this.eventBus.emit('user.password.changed', {
+      email: user.email,
+      name: user.name,
+    });
+
+    return { message: 'Contraseña actualizada correctamente' };
   }
 }

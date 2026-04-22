@@ -35,6 +35,17 @@ export interface AppEventMap {
     email: string;
   };
 
+  'user.password.reset.requested': {
+    email: string;
+    token: string;
+    name: string;
+  };
+
+  'user.password.changed': {
+    email: string;
+    name: string;
+  };
+
   'event-test': {
     message: string;
   };

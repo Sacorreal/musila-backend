@@ -6,6 +6,8 @@ import { LoginAuthDto } from './dto/login-auth.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 
 import {RegisterGuestDto } from '../guests/dto/register-guest.dto'
+import { RequestResetPasswordDto } from './dto/request-reset-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 
 @ApiTags('Autenticación')
@@ -66,5 +68,30 @@ export class AuthController {
     return this.authService.registerGuestService(guest)
   }
 
+  @Post('forgot-password')
+  @ApiOperation({
+    summary: 'Solicitar recuperación de contraseña',
+    description: 'Envía un enlace de recuperación al correo electrónico si existe.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Solicitud procesada correctamente',
+  })
+  async requestPasswordReset(@Body() dto: RequestResetPasswordDto) {
+    return this.authService.requestPasswordResetService(dto);
+  }
 
+  @Post('reset-password')
+  @ApiOperation({
+    summary: 'Restablecer contraseña',
+    description: 'Restablece la contraseña utilizando el token enviado al correo electrónico.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Contraseña actualizada correctamente',
+  })
+  @ApiResponse({ status: 400, description: 'Datos inválidos o token expirado/inexistente' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPasswordService(dto);
+  }
 }
