@@ -1,26 +1,26 @@
 import { EMAIL_CONFIG } from '../constants/email.constants';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Resend } from 'resend';
-import { EmailTemplateMap, SendEmailOptions } from '../interfaces/email.interface';
+import {
+  EmailTemplateMap,
+  SendEmailOptions,
+} from '../interfaces/email.interface';
 import type { EmailConfig } from '../interfaces/email.interface';
-
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly resend: Resend;
 
-
   constructor(@Inject(EMAIL_CONFIG) private readonly config: EmailConfig) {
     this.resend = new Resend(this.config.apiKey);
-
   }
 
-  async sendEmail<T extends keyof EmailTemplateMap>(options: SendEmailOptions<T>): Promise<void> {
+  async sendEmail<T extends keyof EmailTemplateMap>(
+    options: SendEmailOptions<T>,
+  ): Promise<void> {
     try {
       const { to, subject, templateId, variables } = options;
-
-
 
       await this.resend.emails.send({
         from: this.config.defaultFrom || 'no-reply@tuapp.com',
@@ -53,13 +53,13 @@ export class EmailService {
 
   async sendRequestTrackEmail(
     to: string | string[],
-    data: EmailTemplateMap['send-request-track']
+    data: EmailTemplateMap['send-request-track'],
   ) {
     return this.sendEmail({
       to,
       templateId: 'send-request-track',
-      variables: data
-    })
+      variables: data,
+    });
   }
 
   async sendPasswordResetEmail(
