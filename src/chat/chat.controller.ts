@@ -1,11 +1,13 @@
-import { Controller, Post, Param, Body, Delete } from '@nestjs/common';
+import { Controller, Post, Param, Body, Delete, UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { AddGuestsInput } from './dto/add-guests.input';
 import { CurrentUser } from '../users/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { RemoveGuestsInput } from './dto/remove-guests.input'
+import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('chats')
+@UseGuards(JWTAuthGuard)
 export class ChatController {
   constructor(private readonly chatService: ChatService) { }
 

@@ -1,10 +1,13 @@
 import { GuestsService } from './guests.service';
 
 import { UpdateGuestInput } from './dto/update-guest.input';
-import { Body, Controller, Delete, Get, Param, Put, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
 import { PaginatedGuestsResponseDto } from './dto/guest-pagination.dto';
+import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { CurrentUser } from 'src/users/decorators/current-user.decorator';
+import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
 @ApiTags('Invitados')
 @Controller('guests')
@@ -12,17 +15,21 @@ export class GuestsController {
   constructor(private readonly guestsService: GuestsService) { }
 
   @Get()
+  @UseGuards(JWTAuthGuard)
   @ApiOperation({
     summary: 'Obtener todos los invitados',
-    description: 'Obtiene la lista completa de invitados registrados en el sistema.',
+    description: 'Retorna los invitados del usuario logueado. Si el usuario es ADMIN, retorna todos los invitados del sistema.',
   })
   @ApiResponse({
     status: 200,
     description: 'Lista de invitados obtenida exitosamente',
     type: PaginatedGuestsResponseDto
   })
-  async findAllGuestsController(@Query() paginationDto: PaginationDto) {
-    return await this.guestsService.findAllGuestsService(paginationDto);
+  async findAllGuestsController(
+    @Query() paginationDto: PaginationDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return await this.guestsService.findAllGuestsService(paginationDto, currentUser);
   }
 
   @Get(':id')
