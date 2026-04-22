@@ -26,9 +26,10 @@ export class ChatService {
   ) { }
 
   async saveMessage(messageInput: MessageInput) {
-    const { userId, chatId, content } = messageInput;
+    const { userId, chatId, content, type, fileUrl, filekey, fileName } = messageInput;
+
     const chat = await this.chatRepository.findOne({
-      where: { id: messageInput.chatId },
+      where: { id: chatId },
       relations: ['request', 'request.requester', 'request.owner'],
     });
 
@@ -46,15 +47,23 @@ export class ChatService {
       chat: { id: chatId },
       sender: { id: userId },
       content,
+      type,
+      ...(fileUrl && { fileUrl }),
+      ...(filekey && { fileKey: filekey }),
+      ...(fileName && { fileName }),
     });
 
-    // 🔥 evento realtime
+    // 🔥 evento realtime — incluye campos de archivo si los hay
     this.eventBus.emit('chat.message.sent', {
       chatId,
       messageId: message.id,
       senderId: userId,
       content,
+      type,
       titleTrack: chat.request.track.title,
+      ...(message.fileUrl && { fileUrl: message.fileUrl }),
+      ...(message.fileKey && { fileKey: message.fileKey }),
+      ...(message.fileName && { fileName: message.fileName }),
     });
 
     return message;

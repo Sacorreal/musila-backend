@@ -46,7 +46,13 @@ export interface AppEventMap {
     messageId: string;
     senderId?: string;
     content: string;
-    titleTrack: string
+    type: string;
+    titleTrack: string;
+    fileUrl?: string;
+    fileKey?: string;
+    fileName?: string;
+    fileSize?: number;
+    mimeType?: string;
   };
 
   'chat.guests.added': {

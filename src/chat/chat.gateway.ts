@@ -14,7 +14,7 @@ import { Logger } from '@nestjs/common';
 import { ClientChatEvent } from './types/chat.types';
 import { SocketAuthService } from 'src/shared/realtime/socket-auth.service';
 import { AppEventMap } from 'src/shared/events/contracts/app-event-map';
-
+import { MessageInput } from './dto/send-message.input';
 @WebSocketGateway({
   namespace: '/chat',
   cors: {
@@ -61,11 +61,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage(ClientChatEvent.SEND_MESSAGE)
   async handleSendMessage(
     @ConnectedSocket() client: Socket,
-    @MessageBody()
-    data: {
-      chatId: string;
-      content: string;
-    },
+    @MessageBody() messageInput: MessageInput,
   ) {
     const user = this.socketAuth.getUserFromSocket(client)
 
@@ -75,8 +71,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
     await this.chatService.saveMessage({
       userId: user.id,
-      chatId: data.chatId,
-      content: data.content,
+      chatId: messageInput.chatId,
+      content: messageInput.content,
+      type: messageInput.type,
+      ...(messageInput.fileUrl && { fileUrl: messageInput.fileUrl }),
+      ...(messageInput.filekey && { filekey: messageInput.filekey }),
+      ...(messageInput.fileName && { fileName: messageInput.fileName }),
     });
   }
 
