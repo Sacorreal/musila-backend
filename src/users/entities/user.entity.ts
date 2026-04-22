@@ -89,7 +89,6 @@ export class User {
 
   @OneToMany(() => Playlist, (playlist) => playlist.owner, {
     nullable: true,
-    lazy: true,
   })
   playlists?: Playlist[];
 

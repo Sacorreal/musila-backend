@@ -23,7 +23,7 @@ export class RequestedTrack {
   @ManyToOne(() => User, (user) => user.requestSent)
   requester: User;
 
-  @ManyToOne(() => User, (user) => user.requestSent)
+  @ManyToOne(() => User, (user) => user.requestReceived)
   @JoinColumn()
   owner: User;
 

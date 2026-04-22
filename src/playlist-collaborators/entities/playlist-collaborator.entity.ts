@@ -19,10 +19,10 @@ export class PlaylistCollaborator {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Playlist, { nullable: false, onDelete: 'CASCADE' })
+  @ManyToOne(() => Playlist, playlist => playlist.collaborators, { nullable: false, onDelete: 'CASCADE' })
   playlist: Playlist;
 
-  @ManyToOne(() => Guest, { nullable: false, onDelete: 'CASCADE' })
+  @ManyToOne(() => Guest, guest => guest.playlistCollaborations, { nullable: false, onDelete: 'CASCADE' })
   guest: Guest;
 
   @ApiProperty({ enum: CollaboratorPermission, example: CollaboratorPermission.READ })

@@ -1,8 +1,8 @@
-import { Playlist } from 'src/playlists/entities/playlist.entity';
+import { PlaylistCollaborator } from 'src/playlist-collaborators/entities/playlist-collaborator.entity';
 import { UserRole } from 'src/users/entities/user-role.enum';
 import { User } from 'src/users/entities/user.entity';
 import { Chat } from 'src/chat/entities/chat.entity'
-import { Column, Entity, ManyToMany, ManyToOne, PrimaryGeneratedColumn, CreateDateColumn, DeleteDateColumn, UpdateDateColumn } from 'typeorm';
+import { Column, Entity, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn, CreateDateColumn, DeleteDateColumn, UpdateDateColumn } from 'typeorm';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 @Entity({ name: 'guest' })
@@ -61,8 +61,8 @@ export class Guest {
   @ManyToOne(() => User, (user) => user.guests, { nullable: false })
   invited_by: User;
 
-  @ManyToMany(() => Playlist, (playlist) => playlist.guests, { nullable: true })
-  playlists?: Playlist[];
+  @OneToMany(() => PlaylistCollaborator, collaborator => collaborator.guest, { nullable: true })
+  playlistCollaborations?: PlaylistCollaborator[];
 
   @CreateDateColumn({
     name: 'created_at',
