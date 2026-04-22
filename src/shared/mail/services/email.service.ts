@@ -1,27 +1,28 @@
-/* eslint-disable @typescript-eslint/restrict-template-expressions */
- 
- 
- 
 import { EMAIL_CONFIG } from '../constants/email.constants';
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Resend } from 'resend';
-import { SendEmailOptions } from '../interfaces/email.interface';
-import type { EmailConfig } from '../interfaces/email-options.interface';
+import { EmailTemplateMap, SendEmailOptions } from '../interfaces/email.interface';
+import type { EmailConfig } from '../interfaces/email.interface';
+
 
 @Injectable()
 export class EmailService {
   private readonly logger = new Logger(EmailService.name);
   private readonly resend: Resend;
 
+
   constructor(@Inject(EMAIL_CONFIG) private readonly config: EmailConfig) {
     this.resend = new Resend(this.config.apiKey);
+
   }
 
-  async sendEmail(options: SendEmailOptions): Promise<void> {
+  async sendEmail<T extends keyof EmailTemplateMap>(options: SendEmailOptions<T>): Promise<void> {
     try {
       const { to, subject, templateId, variables } = options;
 
-     await this.resend.emails.send({
+
+
+      await this.resend.emails.send({
         from: this.config.defaultFrom || 'no-reply@tuapp.com',
         to,
         subject,
@@ -31,7 +32,7 @@ export class EmailService {
         },
       });
 
-      this.logger.log(`Email enviado a ${to}`);
+      this.logger.log('Email enviado 📨');
     } catch (error) {
       this.logger.error('Error enviando email', error);
       throw error;
@@ -40,39 +41,33 @@ export class EmailService {
 
   // 🔥 Método específico (recomendado)
   async sendInviteEmail(
-    email: string,
-    data: {
-      invitedByName: string;
-      inviteUrl: string;
-    },
+    to: string | string[],
+    data: EmailTemplateMap['invite-template-id'],
   ) {
     return this.sendEmail({
-      to: email,
+      to,
       templateId: 'invite-template-id',
       variables: data,
     });
   }
 
-  async sendEmailTest() {
-    const { error } = await this.resend.emails.send({
-      from: 'Acme <onboarding@resend.dev>',
-      to: 'schneidercorrea@gmail.com',
-      subject: 'Hello World',
-      html: '<strong>It works!</strong>',
-    });
-
-    if (error) {
-      return console.error({ error });
-    }
-    
+  async sendRequestTrackEmail(
+    to: string | string[],
+    data: EmailTemplateMap['send-request-track']
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'send-request-track',
+      variables: data
+    })
   }
 
   async sendPasswordResetEmail(
-    email: string,
-    data: { name: string; resetUrl: string },
+    to: string | string[],
+    data: EmailTemplateMap['password-reset-template-id'],
   ) {
     return this.sendEmail({
-      to: email,
+      to,
       subject: 'Restablecer tu contraseña',
       templateId: 'password-reset-template-id',
       variables: data,
@@ -80,11 +75,11 @@ export class EmailService {
   }
 
   async sendPasswordChangedEmail(
-    email: string,
-    data: { name: string },
+    to: string | string[],
+    data: EmailTemplateMap['password-changed-template-id'],
   ) {
     return this.sendEmail({
-      to: email,
+      to,
       subject: 'Notificación de seguridad: Contraseña actualizada',
       templateId: 'password-changed-template-id',
       variables: data,

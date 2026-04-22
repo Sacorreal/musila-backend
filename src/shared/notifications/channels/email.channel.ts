@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EmailService } from 'src/shared/mail/services/email.service';
-import { EventListener } from '../../events/decorators/event-listener.decorator'
+import { EventListener } from '../../events/decorators/event-listener.decorator';
 import { AppEventMap } from 'src/shared/events/contracts/app-event-map';
 
 @Injectable()
@@ -20,14 +20,12 @@ export class EmailChannel {
     event: 'user.invite.created',
     channel: 'email',
   })
-  async handleUserCreated(
-    payload: AppEventMap['user.invite.created'],
-  ) {
-    this.logger.log('📧 evento user created disparado 🥳');
+  async handleUserCreated(payload: AppEventMap['user.invite.created']) {
+    this.logger.log('📧 evento user created disparado');
 
-    await this.emailService.sendInviteEmail(payload.email, {
-      invitedByName: payload.name,
-      inviteUrl: payload.email
+    await this.emailService.sendInviteEmail([], {
+      invitedByName: payload.email,
+      inviteUrl: payload.name,
     });
   }
 
@@ -40,7 +38,6 @@ export class EmailChannel {
   })
   handleTestEvent(payload: { message: string }) {
     this.logger.log(`🧪 Test event: ${payload.message}`);
-
   }
 
   /**
@@ -55,7 +52,10 @@ export class EmailChannel {
   ) {
     this.logger.log('📧 evento password reset requested disparado 🔐');
 
-    const appWebUrl = this.configService.get<string>('WEB_APP_PRODUCTION') || this.configService.get<string>('WEB_APP_LOCAL') || this.configService.get<string>('WEB_APP_DEVELOPMENT');
+    const appWebUrl =
+      this.configService.get<string>('WEB_APP_PRODUCTION') ||
+      this.configService.get<string>('WEB_APP_LOCAL') ||
+      this.configService.get<string>('WEB_APP_DEVELOPMENT');
     const resetUrl = `${appWebUrl}/reset-password?token=${payload.token}`;
 
     await this.emailService.sendPasswordResetEmail(payload.email, {
@@ -71,13 +71,36 @@ export class EmailChannel {
     event: 'user.password.changed',
     channel: 'email',
   })
-  async handlePasswordChanged(
-    payload: AppEventMap['user.password.changed'],
-  ) {
+  async handlePasswordChanged(payload: AppEventMap['user.password.changed']) {
     this.logger.log('📧 evento password changed disparado 🔐');
 
     await this.emailService.sendPasswordChangedEmail(payload.email, {
       name: payload.name,
     });
+  }
+
+  @EventListener({
+    event: 'track.request.created',
+    channel: 'email',
+  })
+  async handleTrackRequestCreate(
+    payload: AppEventMap['track.request.created'],
+  ) {
+    this.logger.log('evento solicitud de track disparado 🎶');
+    const {
+      owner: { email: ownerEmail },
+      requester: { email: requesterEmail },
+      licenseType,
+      trackTitle,
+    } = payload;
+    await this.emailService.sendRequestTrackEmail(
+      [ownerEmail, requesterEmail],
+      {
+        ownerEmail,
+        licenseType,
+        requesterEmail,
+        trackTitle,
+      },
+    );
   }
 }

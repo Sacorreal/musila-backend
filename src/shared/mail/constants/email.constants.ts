@@ -8,9 +8,3 @@ export const EMAIL_TEMPLATES = {
 export const RESEND_API_KEY = 'RESEND_API_KEY';
 export const EMAIL_CONFIG = 'EMAIL_CONFIG';
 
-export const EmailTemplates = {
-  WELCOME: 'welcome',
-  RESET_PASSWORD: 'reset-password',
-  VERIFICATION: 'verification',
-  NOTIFICATION: 'notification',
-} as const;

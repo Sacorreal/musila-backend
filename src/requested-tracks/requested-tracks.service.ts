@@ -13,6 +13,7 @@ import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { UserRole } from '../users/entities/user-role.enum';
 import { PaginationDto } from '../shared/dto/pagination.dto'
 import { Chat } from 'src/chat/entities/chat.entity';
+import { EventBusService } from 'src/shared/events/event-bus.service';
 
 const requestedTracksRelations: string[] = [
   'requester',
@@ -21,10 +22,12 @@ const requestedTracksRelations: string[] = [
 
 @Injectable()
 export class RequestedTracksService {
+
   constructor(
     @InjectRepository(RequestedTrack) private readonly requestedTracksRepository: Repository<RequestedTrack>,
     @InjectRepository(Track) private readonly tracksRepository: Repository<Track>,
-    @InjectRepository(Track) private readonly chatRepository: Repository<Chat>,
+    @InjectRepository(Chat) private readonly chatRepository: Repository<Chat>,
+    private readonly eventBus: EventBusService,
   ) { }
 
   private async findRequestedTrackWithRelations(id: string): Promise<RequestedTrack> {
@@ -79,13 +82,17 @@ export class RequestedTracksService {
       licenseType,
     });
 
+    const { owner, requester } = newRequestedTrack
+
     const chat = await this.chatRepository.save({ request: newRequestedTrack })
 
-    //TODO:crear el evento 
-    /*this.eventBus.emit('chat.created', {
-  chatId: chat.id,
-  requestId: request.id,
-});*/
+    this.eventBus.emit('track.request.created', {
+      chatId: chat.id,
+      licenseType,
+      owner,
+      requester,
+      trackTitle: track.title
+    })
 
     return await this.saveAndReturnWithRelations(newRequestedTrack);
   }
