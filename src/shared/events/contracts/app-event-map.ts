@@ -56,4 +56,19 @@ export interface AppEventMap {
     titleTrack: string;
     emailGuest: string[];
   }
+
+  'chat.message.read': {
+    chatId: string;
+    messageId: string;
+    userId: string;
+    readAt: Date;
+  };
+
+  'chat.guests.removed': {
+    chatId: string;
+    guestIds: string[];
+    removedBy: string;
+  }
+
+
 }

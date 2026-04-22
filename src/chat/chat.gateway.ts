@@ -13,6 +13,7 @@ import { ChatService } from './chat.service';
 import { Logger } from '@nestjs/common';
 import { ClientChatEvent } from './types/chat.types';
 import { SocketAuthService } from 'src/shared/realtime/socket-auth.service';
+import { AppEventMap } from 'src/shared/events/contracts/app-event-map';
 
 @WebSocketGateway({
   namespace: '/chat',
@@ -48,10 +49,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { chatId: string },
   ) {
-    const room = this.chatRoom(data.chatId);
-    await client.join(room);
+    await client.join(this.chatRoom(data.chatId));
 
-    this.logger.log(`👥 Usuario unido al chat: ${room}`);
+    this.logger.log(`👥 Usuario unido al chat: ${data.chatId}`);
   }
 
   // =====================================================
@@ -59,7 +59,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   // =====================================================
 
   @SubscribeMessage(ClientChatEvent.SEND_MESSAGE)
-  async handleMessage(
+  async handleSendMessage(
     @ConnectedSocket() client: Socket,
     @MessageBody()
     data: {
@@ -80,26 +80,35 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  @SubscribeMessage('chat.read')
+  handleReadMessage(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { chatId: string; messageId: string },
+  ) {
+    const user = this.socketAuth.getUserFromSocket(client);
+
+    if (!user) return;
+    this.chatService.markAsRead({
+      chatId: data.chatId,
+      messageId: data.messageId,
+      userId: user.id,
+    });
+  }
+
   // =====================================================
   // 📡 SERVER → CLIENT
   // =====================================================
 
-  emitMessage(payload: {
-    chatId: string;
-    messageId: string;
-    senderId: string;
-    content: string;
-  }) {
-    const room = this.chatRoom(payload.chatId);
-
-    this.server.to(room).emit('chat.message', payload);
+  emitToRoom<T extends keyof AppEventMap>(
+    room: string,
+    event: T,
+    payload: AppEventMap[T],
+  ) {
+    this.server.to(room).emit(event, payload);
   }
-
-  // =====================================================
-  // 🧰 HELPERS
-  // =====================================================
 
   private chatRoom(chatId: string) {
     return `chat:${chatId}`;
   }
+
 }

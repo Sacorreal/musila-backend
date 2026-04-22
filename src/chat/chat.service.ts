@@ -1,7 +1,7 @@
 import {
-	Injectable,
-	NotFoundException,
-	ForbiddenException,
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { MessageInput } from './dto/send-message.input';
 import { In, Repository } from 'typeorm';
@@ -11,141 +11,213 @@ import { Message } from './entities/message.entity';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { ChatParticipantRole } from './types/chat.types';
 import { Guest } from 'src/guests/entities/guest.entity';
+import { RemoveGuestsInput } from './dto/remove-guests.input'
 
 @Injectable()
 export class ChatService {
-	constructor(
-		@InjectRepository(Chat)
-		private readonly chatRepository: Repository<Chat>,
-		@InjectRepository(Message)
-		private readonly messageRepository: Repository<Message>,
-		private readonly eventBus: EventBusService,
-		@InjectRepository(Guest)
-		private readonly guestRepository: Repository<Guest>
-	) { }
+  constructor(
+    @InjectRepository(Chat)
+    private readonly chatRepository: Repository<Chat>,
+    @InjectRepository(Message)
+    private readonly messageRepository: Repository<Message>,
+    private readonly eventBus: EventBusService,
+    @InjectRepository(Guest)
+    private readonly guestRepository: Repository<Guest>,
+  ) { }
 
-	async saveMessage(messageInput: MessageInput) {
-		const { userId, chatId, content } = messageInput;
-		const chat = await this.chatRepository.findOne({
-			where: { id: messageInput.chatId },
-			relations: [
-				'request',
-				'request.requester',
-				'request.owner',
-			],
-		});
+  async saveMessage(messageInput: MessageInput) {
+    const { userId, chatId, content } = messageInput;
+    const chat = await this.chatRepository.findOne({
+      where: { id: messageInput.chatId },
+      relations: ['request', 'request.requester', 'request.owner'],
+    });
 
-		if (!chat) throw new NotFoundException('No existe el chat');
+    if (!chat) throw new NotFoundException('No existe el chat');
 
-		const role = this.getUserRole(chat, userId);
+    const role = this.getUserRole(chat, userId);
 
-		if (!role) {
-			throw new ForbiddenException(
-				'No tienes permisos para enviar mensajes en este chat',
-			);
-		}
+    if (!role) {
+      throw new ForbiddenException(
+        'No tienes permisos para enviar mensajes en este chat',
+      );
+    }
 
-		const message = await this.messageRepository.save({
-			chat: { id: chatId },
-			sender: { id: userId },
-			content,
-		});
+    const message = await this.messageRepository.save({
+      chat: { id: chatId },
+      sender: { id: userId },
+      content,
+    });
 
-		// 🔥 evento realtime
-		this.eventBus.emit('chat.message.sent', {
-			chatId,
-			messageId: message.id,
-			senderId: userId,
-			content,
-			titleTrack: chat.request.track.title
-		});
+    // 🔥 evento realtime
+    this.eventBus.emit('chat.message.sent', {
+      chatId,
+      messageId: message.id,
+      senderId: userId,
+      content,
+      titleTrack: chat.request.track.title,
+    });
 
-		return message;
-	}
+    return message;
+  }
 
-	async addGuestsToChat(
-		userId: string,
-		chatId: string,
-		guestIds: string[],
-	) {
-		const chat = await this.chatRepository.findOne({
-			where: { id: chatId },
-			relations: [
-				'request',
-				'request.requester',
-				'request.owner',
-				'guests',
-			],
-		});
+  async addGuestsToChat(userId: string, chatId: string, guestIds: string[]) {
+    const chat = await this.chatRepository.findOne({
+      where: { id: chatId },
+      relations: ['request', 'request.requester', 'request.owner', 'guests'],
+    });
 
-		if (!chat) {
-			throw new NotFoundException('No existe el chat');
-		}
-		// =====================================================
-		// 🔐 VALIDACIÓN DE PERMISOS
-		// =====================================================
+    if (!chat) {
+      throw new NotFoundException('No existe el chat');
+    }
+    // =====================================================
+    // 🔐 VALIDACIÓN DE PERMISOS
+    // =====================================================
 
-		const isOwner = chat.request.owner.id === userId;
-		const isRequester = chat.request.requester.id === userId;
+    const isOwner = chat.request.owner.id === userId;
+    const isRequester = chat.request.requester.id === userId;
 
-		if (!isOwner && !isRequester) {
-			throw new ForbiddenException(
-				'No tienes permisos para agregar invitados',
-			);
-		}
+    if (!isOwner && !isRequester) {
+      throw new ForbiddenException('No tienes permisos para agregar invitados');
+    }
 
-		// =====================================================
-		// 🔍 CARGAR GUESTS
-		// =====================================================
+    // =====================================================
+    // 🔍 CARGAR GUESTS
+    // =====================================================
 
-		const guests = await this.guestRepository.findBy({
-			id: In(guestIds),
-		});
+    const guests = await this.guestRepository.findBy({
+      id: In(guestIds),
+    });
 
-		if (!guests.length) {
-			throw new NotFoundException('No se encontraron invitados');
-		}
+    if (!guests.length) {
+      throw new NotFoundException('No se encontraron invitados');
+    }
 
-		// =====================================================
-		// 🔄 MERGE (evitar duplicados)
-		// =====================================================
+    // =====================================================
+    // 🔄 MERGE (evitar duplicados)
+    // =====================================================
 
-		const existingIds = new Set(chat.guests?.map((g) => g.id));
+    const existingIds = new Set(chat.guests?.map((g) => g.id));
 
-		const newGuests = guests.filter((g) => !existingIds.has(g.id));
+    const newGuests = guests.filter((g) => !existingIds.has(g.id));
 
-		chat.guests = [...(chat.guests || []), ...newGuests];
+    chat.guests = [...(chat.guests || []), ...newGuests];
 
-		await this.chatRepository.save(chat);
+    await this.chatRepository.save(chat);
 
-		// =====================================================
-		// 📡 EVENTO
-		// =====================================================
+    // =====================================================
+    // 📡 EVENTO
+    // =====================================================
 
-		this.eventBus.emit('chat.guests.added', {
-			chatId,
-			guestIds: newGuests.map((g) => g.id),
-			addedBy: userId,
-			titleTrack: chat.request.track.title,
-			emailGuest: guests.map((g) => g.email)
-		});
+    this.eventBus.emit('chat.guests.added', {
+      chatId,
+      guestIds: newGuests.map((g) => g.id),
+      addedBy: userId,
+      titleTrack: chat.request.track.title,
+      emailGuest: guests.map((g) => g.email),
+    });
 
-		return {
-			chatId,
-			added: newGuests.length,
-		};
-	}
+    return {
+      chatId,
+      added: newGuests.length,
+    };
+  }
 
-	private getUserRole(chat: Chat, userId: string): ChatParticipantRole | null {
-		if (chat.request.requester.id === userId) return 'REQUESTER';
+  private getUserRole(chat: Chat, userId: string): ChatParticipantRole | null {
+    if (chat.request.requester.id === userId) return 'REQUESTER';
 
-		if (chat.request.owner.id === userId) return 'OWNER';
+    if (chat.request.owner.id === userId) return 'OWNER';
 
-		const isInvited = chat.guests?.some(
-			(guest) => guest.id === userId,
-		);
-		if (isInvited) return 'INVITED';
+    const isInvited = chat.guests?.some((guest) => guest.id === userId);
+    if (isInvited) return 'INVITED';
 
-		return null;
-	}
+    return null;
+  }
+
+  markAsRead(input: { chatId: string; messageId: string; userId: string }) {
+    const { chatId, messageId, userId } = input;
+
+    this.eventBus.emit('chat.message.read', {
+      chatId,
+      messageId,
+      userId,
+      readAt: new Date(),
+    });
+  }
+
+  async removeGuestsFromChat(
+    userId: string,
+    removeGuestInput: RemoveGuestsInput,
+    chatId: string
+  ) {
+    const { guestIds } = removeGuestInput
+    const chat = await this.chatRepository.findOne({
+      where: { id: chatId },
+      relations: [
+        'request',
+        'request.requester',
+        'request.owner',
+        'guests',
+      ],
+    });
+
+    if (!chat) {
+      throw new NotFoundException('No existe el chat');
+    }
+
+    // =====================================================
+    // 🔐 VALIDACIÓN DE PERMISOS
+    // =====================================================
+
+    const isOwner = chat.request.owner.id === userId;
+    const isRequester = chat.request.requester.id === userId;
+
+    if (!isOwner && !isRequester) {
+      throw new ForbiddenException(
+        'No tienes permisos para remover invitados',
+      );
+    }
+
+    // =====================================================
+    // 🔍 VALIDAR EXISTENCIA EN EL CHAT
+    // =====================================================
+
+    const currentGuests = chat.guests || [];
+
+    const guestIdsSet = new Set(guestIds);
+
+    const guestsToRemove = currentGuests.filter((g) =>
+      guestIdsSet.has(g.id),
+    );
+
+    if (!guestsToRemove.length) {
+      throw new NotFoundException(
+        'Los invitados no pertenecen a este chat',
+      );
+    }
+
+    // =====================================================
+    // 🔄 REMOVER RELACIÓN
+    // =====================================================
+
+    chat.guests = currentGuests.filter(
+      (g) => !guestIdsSet.has(g.id),
+    );
+
+    await this.chatRepository.save(chat);
+
+    // =====================================================
+    // 📡 EVENTO (REALTIME)
+    // =====================================================
+
+    this.eventBus.emit('chat.guests.removed', {
+      chatId,
+      guestIds: guestsToRemove.map((g) => g.id),
+      removedBy: userId,
+    });
+
+    return {
+      chatId,
+      removed: guestsToRemove.length,
+    };
+  }
 }
