@@ -18,6 +18,8 @@ import { EventBusService } from 'src/shared/events/event-bus.service';
 const requestedTracksRelations: string[] = [
   'requester',
   'track',
+  'owner',
+  'chat'
 ]
 
 @Injectable()

@@ -93,6 +93,13 @@ export class EmailChannel {
       licenseType,
       trackTitle,
     } = payload;
+    const appWebUrl =
+      this.configService.get<string>('WEB_APP_PRODUCTION') ||
+      this.configService.get<string>('WEB_APP_LOCAL') ||
+      this.configService.get<string>('WEB_APP_DEVELOPMENT');
+
+    //TODO: verificar la url generada desde el frontend para consultar la solicitud de track
+    const urlTrackRequest = `${appWebUrl}/request-track`
     await this.emailService.sendRequestTrackEmail(
       [ownerEmail, requesterEmail],
       {
@@ -100,6 +107,7 @@ export class EmailChannel {
         licenseType,
         requesterEmail,
         trackTitle,
+        urlTrackRequest
       },
     );
   }

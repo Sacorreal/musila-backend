@@ -38,7 +38,8 @@ export interface EmailTemplateMap {
     trackTitle: string,
     ownerEmail: string,
     requesterEmail: string,
-    licenseType: LicenseType
+    licenseType: LicenseType,
+    urlTrackRequest: string
 
   }
 }

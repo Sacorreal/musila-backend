@@ -7,11 +7,13 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { LicenseType } from './license-type.enum';
 import { RequestsStatus } from './requests-status.enum';
+import { Chat } from 'src/chat/entities/chat.entity';
 
 
 @Entity({ name: 'requested_track' })
@@ -27,8 +29,8 @@ export class RequestedTrack {
   @JoinColumn()
   owner: User;
 
-
-
+  @OneToOne(() => Chat)
+  chat?: Chat
 
   @ManyToOne(() => Track, (track) => track.requestedTrack)
   track: Track;
