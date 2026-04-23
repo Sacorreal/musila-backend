@@ -29,7 +29,7 @@ export class RequestedTrack {
   @JoinColumn()
   owner: User;
 
-  @OneToOne(() => Chat)
+  @OneToOne(() => Chat, (chat) => chat.request)
   chat?: Chat
 
   @ManyToOne(() => Track, (track) => track.requestedTrack)

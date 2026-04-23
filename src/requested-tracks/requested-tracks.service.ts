@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Track } from 'src/tracks/entities/track.entity';
 import { RequestsStatus } from './entities/requests-status.enum';
 
-import { Repository, FindOptionsWhere } from 'typeorm';
+import { Repository, FindOptionsWhere, In, DataSource } from 'typeorm';
 import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
 import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
 import { RequestedTrack } from './entities/requested-track.entity';
@@ -30,6 +30,7 @@ export class RequestedTracksService {
     @InjectRepository(Track) private readonly tracksRepository: Repository<Track>,
     @InjectRepository(Chat) private readonly chatRepository: Repository<Chat>,
     private readonly eventBus: EventBusService,
+    private readonly dataSource: DataSource,
   ) { }
 
   private async findRequestedTrackWithRelations(id: string): Promise<RequestedTrack> {
@@ -65,40 +66,47 @@ export class RequestedTracksService {
     const isAuthor = track.authors.some(author => author.id === userRequester.id);
     if (isAuthor) throw new BadRequestException('No puedes solicitar una licencia de tu propia canción');
 
-    // ❌ evitar duplicados
-    const existing = await this.requestedTracksRepository.findOne({
+    // ❌ Evitar duplicados: solo bloquear si ya existe una solicitud ACTIVA (pendiente o aprobada)
+    // Si fue rechazada, el usuario puede volver a solicitar la misma pista
+    const activeStatuses = [RequestsStatus.PENDIENTE, RequestsStatus.APROBADA];
+
+    const existingActive = await this.requestedTracksRepository.findOne({
       where: {
         requester: { id: userRequester.id },
         track: { id: trackId },
-        status: RequestsStatus.PENDIENTE
+        status: In(activeStatuses),
       }
-    })
-
-    if (existing) {
-      throw new ConflictException('Ya tienes una solicitud pendiente');
-    }
-
-    const newRequestedTrack = this.requestedTracksRepository.create({
-      requester: { id: userRequester.id },
-      track: { id: trackId },
-      licenseType,
     });
 
-    // 1️⃣ Guardar el RequestedTrack primero para que tenga ID válido
-    const savedRequestedTrack = await this.requestedTracksRepository.save(newRequestedTrack);
+    if (existingActive) {
+      throw new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        message: 'Ya tienes una solicitud activa para esta pista',
+        details: {
+          trackId,
+          currentStatus: existingActive.status,
+          requestId: existingActive.id,
+        }
+      });
+    }
 
-    // 2️⃣ Guardar el Chat referenciando el RequestedTrack ya persistido
-    await this.chatRepository.save({ request: { id: savedRequestedTrack.id } });
+    // 🔒 Transacción: RequestedTrack + Chat se crean juntos o ninguno se guarda.
+    // Esto evita registros huérfanos que causarían falsos 409 en solicitudes futuras.
+    const savedId = await this.dataSource.transaction(async (manager) => {
+      const newRequestedTrack = manager.create(RequestedTrack, {
+        requester: { id: userRequester.id },
+        track: { id: trackId },
+        licenseType,
+      });
 
-    // 3️⃣ Emitir el evento con datos del contexto (no del objeto sin hidratar)
-    /*this.eventBus.emit('track.request.created', {
-      chatId: chat.id,
-      licenseType,
-      requesterId: userRequester.id,
-      trackTitle: track.title
-    });*/
+      const savedRequestedTrack = await manager.save(RequestedTrack, newRequestedTrack);
+      await manager.save(Chat, { request: { id: savedRequestedTrack.id } });
 
-    return await this.findRequestedTrackWithRelations(savedRequestedTrack.id);
+      return savedRequestedTrack.id;
+    });
+
+    return await this.findRequestedTrackWithRelations(savedId);
   }
 
   async findAllRequestedTracksService(

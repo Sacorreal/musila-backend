@@ -19,7 +19,7 @@ export class Chat {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => RequestedTrack)
+  @OneToOne(() => RequestedTrack, (rt) => rt.chat)
   @JoinColumn()
   request: RequestedTrack;
 
