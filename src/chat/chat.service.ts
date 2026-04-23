@@ -25,8 +25,8 @@ export class ChatService {
     private readonly guestRepository: Repository<Guest>,
   ) { }
 
-  async saveMessage(messageInput: MessageInput) {
-    const { userId, chatId, content, type, fileUrl, filekey, fileName } = messageInput;
+  async saveMessage(userId: string, messageInput: MessageInput) {
+    const { chatId, content, type, fileUrl, filekey, fileName } = messageInput;
 
     const chat = await this.chatRepository.findOne({
       where: { id: chatId },

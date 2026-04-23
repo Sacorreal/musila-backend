@@ -69,15 +69,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       client.emit('auth.error', { message: 'No autenticado' })
       return
     }
-    await this.chatService.saveMessage({
-      userId: user.id,
-      chatId: messageInput.chatId,
-      content: messageInput.content,
-      type: messageInput.type,
-      ...(messageInput.fileUrl && { fileUrl: messageInput.fileUrl }),
-      ...(messageInput.filekey && { filekey: messageInput.filekey }),
-      ...(messageInput.fileName && { fileName: messageInput.fileName }),
-    });
+    await this.chatService.saveMessage(user.id, messageInput);
   }
 
   @SubscribeMessage('chat.read')

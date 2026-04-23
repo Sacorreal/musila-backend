@@ -4,8 +4,6 @@ import { EMAIL_CONFIG } from './constants/email.constants';
 import { EmailConfig } from './interfaces/email.interface';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 
-import { EmailController } from './email.controller'
-
 @Global()
 @Module({})
 export class EmailModule {
@@ -22,11 +20,9 @@ export class EmailModule {
             defaultFrom: config.getOrThrow<string>('EMAIL_FROM'),
             defaultReplyTo: config.getOrThrow<string>('EMAIL_REPLY_TO'),
           }),
-
         },
         EmailService,
       ],
-      controllers: [EmailController],
       exports: [EmailService],
     };
   }
