@@ -55,7 +55,7 @@ export class RequestedTracksService {
     // Cargamos solo el ID de los autores para no saturar memoria
     const track = await this.tracksRepository.findOne({
       where: { id: trackId },
-      select: ['id'],
+      select: ['id', 'title'],
       relations: ['authors']
     });
 
@@ -84,19 +84,21 @@ export class RequestedTracksService {
       licenseType,
     });
 
-    const { owner, requester } = newRequestedTrack
+    // 1️⃣ Guardar el RequestedTrack primero para que tenga ID válido
+    const savedRequestedTrack = await this.requestedTracksRepository.save(newRequestedTrack);
 
-    const chat = await this.chatRepository.save({ request: newRequestedTrack })
+    // 2️⃣ Guardar el Chat referenciando el RequestedTrack ya persistido
+    await this.chatRepository.save({ request: { id: savedRequestedTrack.id } });
 
-    this.eventBus.emit('track.request.created', {
+    // 3️⃣ Emitir el evento con datos del contexto (no del objeto sin hidratar)
+    /*this.eventBus.emit('track.request.created', {
       chatId: chat.id,
       licenseType,
-      owner,
-      requester,
+      requesterId: userRequester.id,
       trackTitle: track.title
-    })
+    });*/
 
-    return await this.saveAndReturnWithRelations(newRequestedTrack);
+    return await this.findRequestedTrackWithRelations(savedRequestedTrack.id);
   }
 
   async findAllRequestedTracksService(

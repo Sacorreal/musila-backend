@@ -1,5 +1,4 @@
 import { LicenseType } from "src/requested-tracks/entities/license-type.enum";
-import { User } from "src/users/entities/user.entity";
 
 export interface AppEventMap {
   // 👥 INVITES
@@ -94,8 +93,7 @@ export interface AppEventMap {
 
   'track.request.created': {
     chatId: string;
-    requester: User;
-    owner: User;
+    requesterId: string;
     trackTitle: string;
     licenseType: LicenseType;
   }

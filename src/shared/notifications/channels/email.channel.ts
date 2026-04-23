@@ -79,36 +79,5 @@ export class EmailChannel {
     });
   }
 
-  @EventListener({
-    event: 'track.request.created',
-    channel: 'email',
-  })
-  async handleTrackRequestCreate(
-    payload: AppEventMap['track.request.created'],
-  ) {
-    this.logger.log('evento solicitud de track disparado 🎶');
-    const {
-      owner: { email: ownerEmail },
-      requester: { email: requesterEmail },
-      licenseType,
-      trackTitle,
-    } = payload;
-    const appWebUrl =
-      this.configService.get<string>('WEB_APP_PRODUCTION') ||
-      this.configService.get<string>('WEB_APP_LOCAL') ||
-      this.configService.get<string>('WEB_APP_DEVELOPMENT');
 
-    //TODO: verificar la url generada desde el frontend para consultar la solicitud de track
-    const urlTrackRequest = `${appWebUrl}/request-track`
-    await this.emailService.sendRequestTrackEmail(
-      [ownerEmail, requesterEmail],
-      {
-        ownerEmail,
-        licenseType,
-        requesterEmail,
-        trackTitle,
-        urlTrackRequest
-      },
-    );
-  }
 }
