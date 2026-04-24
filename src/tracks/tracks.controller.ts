@@ -4,12 +4,11 @@ import {
   Delete,
   Get,
   Param,
+  ParseUUIDPipe,
   Post,
   Put,
   Query,
-
   UseGuards,
-  
 } from '@nestjs/common';
 
 import {
@@ -102,6 +101,23 @@ export class TracksController {
     return await this.tracksService.findMyTracksService(user, paginationDto)
   }
 
+  /** Alias REST estándar: GET /tracks/me → mis tracks **/
+  @Get('me')
+  @ApiOperation({
+    summary: 'Obtener tracks del usuario autenticado (alias de my-tracks)'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Objeto con la lista de tracks y el total de registros',
+    type: PaginatedTracksResponseDto,
+  })
+  async findMyTracksAlias(
+    @CurrentUser() user: JwtPayload,
+    @Query() paginationDto: PaginationDto,
+  ) {
+    return await this.tracksService.findMyTracksService(user, paginationDto);
+  }
+
   @Get(':id')
   @ApiOperation({
     summary: 'Obtener un track por ID',
@@ -118,7 +134,9 @@ export class TracksController {
     description: 'Información del track obtenida exitosamente',
   })
   @ApiResponse({ status: 404, description: 'Pista musical no encontrada' })
-  async findOneTrackController(@Param('id') id: string): Promise<TrackResponseDto> {
+  async findOneTrackController(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<TrackResponseDto> {
     return await this.tracksService.findOneTrackService(id);
   }
   
