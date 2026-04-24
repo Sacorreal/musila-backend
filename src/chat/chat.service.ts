@@ -30,7 +30,7 @@ export class ChatService {
 
     const chat = await this.chatRepository.findOne({
       where: { id: chatId },
-      relations: ['request', 'request.requester', 'request.owner'],
+      relations: ['request', 'request.requester', 'request.owner', 'request.track'],
     });
 
     if (!chat) throw new NotFoundException('No existe el chat');
