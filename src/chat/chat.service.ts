@@ -30,7 +30,7 @@ export class ChatService {
 
     const chat = await this.chatRepository.findOne({
       where: { id: chatId },
-      relations: ['request', 'request.requester', 'request.owner', 'request.track'],
+      relations: ['request', 'request.requester', 'request.owner', 'request.track', 'request.track.authors', 'guests'],
     });
 
     if (!chat) throw new NotFoundException('No existe el chat');
@@ -132,10 +132,17 @@ export class ChatService {
   }
 
   private getUserRole(chat: Chat, userId: string): ChatParticipantRole | null {
-    if (chat.request.requester.id === userId) return 'REQUESTER';
+    // Es el solicitante del track
+    if (chat.request?.requester?.id === userId) return 'REQUESTER';
 
-    if (chat.request.owner.id === userId) return 'OWNER';
+    // Es el dueño explícito (si se asignó)
+    if (chat.request?.owner?.id === userId) return 'OWNER';
 
+    // Fallback: es autor del track (owner nunca se asigna explícitamente en la BD)
+    const isTrackAuthor = chat.request?.track?.authors?.some((a) => a.id === userId);
+    if (isTrackAuthor) return 'OWNER';
+
+    // Es un invitado al chat
     const isInvited = chat.guests?.some((guest) => guest.id === userId);
     if (isInvited) return 'INVITED';
 
