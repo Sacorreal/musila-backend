@@ -1,4 +1,4 @@
-import { Controller, Post, Param, Body, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Post, Param, Body, Delete, Get, UseGuards } from '@nestjs/common';
 import { ChatService } from './chat.service';
 import { AddGuestsInput } from './dto/add-guests.input';
 import { CurrentUser } from '../users/decorators/current-user.decorator';
@@ -27,5 +27,13 @@ export class ChatController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.chatService.removeGuestsFromChat(user.id, dto, chatId)
+  }
+
+  @Get(':chatId/messages')
+  async getMessages(
+    @Param('chatId') chatId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.chatService.getChatMessages(user.id, chatId);
   }
 }

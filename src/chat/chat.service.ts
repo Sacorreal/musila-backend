@@ -229,4 +229,22 @@ export class ChatService {
       removed: guestsToRemove.length,
     };
   }
+
+  async getChatMessages(userId: string, chatId: string) {
+    const chat = await this.chatRepository.findOne({
+      where: { id: chatId },
+      relations: ['request', 'request.requester', 'request.owner', 'guests', 'messages', 'messages.sender'],
+    });
+
+    if (!chat) {
+      throw new NotFoundException('No existe el chat');
+    }
+
+    const role = this.getUserRole(chat, userId);
+    if (!role) {
+      throw new ForbiddenException('No tienes permisos para ver este chat');
+    }
+
+    return chat.messages || [];
+  }
 }

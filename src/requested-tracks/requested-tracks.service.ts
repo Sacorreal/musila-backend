@@ -117,16 +117,23 @@ export class RequestedTracksService {
 
     const isAdmin = user?.role === UserRole.ADMIN;
 
-    // Si no es Admin, filtramos para que solo vea las solicitudes hacia sus propias canciones
-    const where: FindOptionsWhere<RequestedTrack> = {
-      ...(!isAdmin && user && { track: { authors: { id: user.id } } })
-    };
+    // Si no es Admin, filtramos para que vea:
+    // 1. Solicitudes que él mismo hizo (requester)
+    // 2. Solicitudes hacia sus canciones (autor)
+    // 3. Solicitudes donde es un invitado (guest)
+    const where: FindOptionsWhere<RequestedTrack> | FindOptionsWhere<RequestedTrack>[] = isAdmin
+      ? {}
+      : [
+          { requester: { id: user.id } },
+          { track: { authors: { id: user.id } } },
+          { chat: { guests: { id: user.id } } }
+        ];
 
     const [data, total] = await this.requestedTracksRepository.findAndCount({
       where,
       take: limit,
       skip: offset,
-      relations: ['track']
+      relations: ['track', 'requester', 'chat']
     });
 
     return {
