@@ -51,13 +51,13 @@ export class SocketAuthService {
     }
 
     private extractToken(client: Socket): string | undefined {
-        const authToken = client.handshake.auth?.token;
-        if (authToken) return authToken;
+        const auth = client.handshake.auth?.token || client.handshake.headers?.authorization;
 
-        const header = client.handshake.headers?.authorization;
-        if (header) {
-            const [type, token] = header.split(' ');
-            if (type === 'Bearer') return token;
+        if (auth && typeof auth === 'string') {
+            if (auth.startsWith('Bearer ')) {
+                return auth.split(' ')[1];
+            }
+            return auth;
         }
 
         return undefined;

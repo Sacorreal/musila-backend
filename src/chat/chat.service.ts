@@ -26,47 +26,53 @@ export class ChatService {
   ) { }
 
   async saveMessage(userId: string, messageInput: MessageInput) {
-    const { chatId, content, type, fileUrl, filekey, fileName } = messageInput;
+    try {
+      const { chatId, content, type, fileUrl, filekey, fileName } = messageInput;
 
-    const chat = await this.chatRepository.findOne({
-      where: { id: chatId },
-      relations: ['request', 'request.requester', 'request.owner', 'request.track', 'request.track.authors', 'guests'],
-    });
+      const chat = await this.chatRepository.findOne({
+        where: { id: chatId },
+        relations: ['request', 'request.requester', 'request.owner', 'request.track', 'request.track.authors', 'guests'],
+      });
 
-    if (!chat) throw new NotFoundException('No existe el chat');
+      if (!chat) throw new NotFoundException('No existe el chat');
 
-    const role = this.getUserRole(chat, userId);
+      const role = this.getUserRole(chat, userId);
 
-    if (!role) {
-      throw new ForbiddenException(
-        'No tienes permisos para enviar mensajes en este chat',
-      );
+      if (!role) {
+        console.error(`[ChatService] Permiso denegado para usuario ${userId} en chat ${chatId}`);
+        throw new ForbiddenException(
+          'No tienes permisos para enviar mensajes en este chat',
+        );
+      }
+
+      const message = await this.messageRepository.save({
+        chat: { id: chatId },
+        sender: { id: userId },
+        content,
+        type,
+        ...(fileUrl && { fileUrl }),
+        ...(filekey && { fileKey: filekey }),
+        ...(fileName && { fileName }),
+      });
+
+      // 🔥 evento realtime — incluye campos de archivo si los hay
+      this.eventBus.emit('chat.message.sent', {
+        chatId,
+        messageId: message.id,
+        senderId: userId,
+        content,
+        type,
+        titleTrack: chat.request?.track?.title || 'Track',
+        ...(message.fileUrl && { fileUrl: message.fileUrl }),
+        ...(message.fileKey && { fileKey: message.fileKey }),
+        ...(message.fileName && { fileName: message.fileName }),
+      });
+
+      return message;
+    } catch (error) {
+      console.error('[ChatService] Error al guardar mensaje:', error);
+      throw error;
     }
-
-    const message = await this.messageRepository.save({
-      chat: { id: chatId },
-      sender: { id: userId },
-      content,
-      type,
-      ...(fileUrl && { fileUrl }),
-      ...(filekey && { fileKey: filekey }),
-      ...(fileName && { fileName }),
-    });
-
-    // 🔥 evento realtime — incluye campos de archivo si los hay
-    this.eventBus.emit('chat.message.sent', {
-      chatId,
-      messageId: message.id,
-      senderId: userId,
-      content,
-      type,
-      titleTrack: chat.request.track.title,
-      ...(message.fileUrl && { fileUrl: message.fileUrl }),
-      ...(message.fileKey && { fileKey: message.fileKey }),
-      ...(message.fileName && { fileName: message.fileName }),
-    });
-
-    return message;
   }
 
   async addGuestsToChat(userId: string, chatId: string, guestIds: string[]) {
