@@ -3,4 +3,5 @@ export enum StorageFolder {
   TRACK_COVER = 'tracks/covers',
   USER_AVATAR = 'users/avatars',
   DOCUMENTS = 'documents',
+  CHAT = 'chat',
 }

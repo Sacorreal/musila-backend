@@ -46,7 +46,7 @@ export class StorageService {
   // =====================================================
 
   async generateUploadUrl(params: {
-    folder: StorageFolder;
+    folder: string;
     fileType: string;
   }) {
     this.validateMimeType(params.fileType);

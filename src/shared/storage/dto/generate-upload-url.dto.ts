@@ -5,13 +5,10 @@ import { StorageFolder } from '../dto/storage-folder.enum';
 export class GenerateUploadUrlDto {
   @ApiProperty({
     description: 'Carpeta de destino en DigitalOcean Spaces',
-    enum: StorageFolder,
-    example: StorageFolder.TRACK_AUDIO,
+    example: 'chat/some-id/documents',
   })
-  @IsEnum(StorageFolder, {
-    message: 'Invalid storage folder',
-  })
-  folder: StorageFolder;
+  @IsString()
+  folder: string;
 
   @ApiProperty({
     description: 'MIME type del archivo a subir',
