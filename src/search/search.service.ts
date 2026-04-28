@@ -4,7 +4,7 @@ import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { UserRole } from 'src/users/entities/user-role.enum';
 import { User } from 'src/users/entities/user.entity';
-import { ILike, Raw, Repository } from 'typeorm';
+import { ILike, In, Raw, Repository } from 'typeorm';
 
 @Injectable()
 export class SearchService {
@@ -41,10 +41,15 @@ export class SearchService {
 
                 this.usersRepository.find({
                     where: [
-                        { role: UserRole.AUTOR, name: startsWith },
-                        { role: UserRole.AUTOR, lastName: startsWith },
-                        { role: UserRole.AUTOR, name: contains },
-                        { role: UserRole.AUTOR, lastName: contains }
+                        { role: In([UserRole.AUTOR, UserRole.CANTAUTOR]), name: startsWith },
+                        { role: In([UserRole.AUTOR, UserRole.CANTAUTOR]), lastName: startsWith },
+                        { role: In([UserRole.AUTOR, UserRole.CANTAUTOR]), name: contains },
+                        { role: In([UserRole.AUTOR, UserRole.CANTAUTOR]), lastName: contains },
+                        // Búsqueda por nombre completo (concatenando campos)
+                        { 
+                            role: In([UserRole.AUTOR, UserRole.CANTAUTOR]), 
+                            name: Raw(alias => `CONCAT_WS(' ', "${alias.split('.')[0]}"."name", "${alias.split('.')[0]}"."second_name", "${alias.split('.')[0]}"."last_name", "${alias.split('.')[0]}"."last_second_name") ILIKE :q`, { q: `%${query}%` }) 
+                        }
                     ],
                     order: { name: 'ASC' }
                 })
