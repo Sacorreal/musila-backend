@@ -4,7 +4,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Track } from 'src/tracks/entities/track.entity';
 import { RequestsStatus } from './entities/requests-status.enum';
 
-import { Repository, FindOptionsWhere, In, DataSource } from 'typeorm';
+import { Repository, FindOptionsWhere, In, DataSource, Not } from 'typeorm';
+import { Message } from 'src/chat/entities/message.entity';
 import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
 import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
 import { RequestedTrack } from './entities/requested-track.entity';
@@ -29,6 +30,7 @@ export class RequestedTracksService {
     @InjectRepository(RequestedTrack) private readonly requestedTracksRepository: Repository<RequestedTrack>,
     @InjectRepository(Track) private readonly tracksRepository: Repository<Track>,
     @InjectRepository(Chat) private readonly chatRepository: Repository<Chat>,
+    @InjectRepository(Message) private readonly messageRepository: Repository<Message>,
     private readonly eventBus: EventBusService,
     private readonly dataSource: DataSource,
   ) { }
@@ -133,11 +135,25 @@ export class RequestedTracksService {
       where,
       take: limit,
       skip: offset,
-      relations: ['track', 'requester', 'chat']
+      relations: ['track', 'track.authors', 'requester', 'chat']
     });
 
+    const dataWithCounts = await Promise.all(data.map(async (req) => {
+      if (!req.chat) return { ...req, unreadCount: 0 };
+      
+      const unreadCount = await this.messageRepository.count({
+        where: {
+          chat: { id: req.chat.id },
+          isRead: false,
+          sender: { id: Not(user.id) }
+        }
+      });
+      
+      return { ...req, unreadCount };
+    }));
+
     return {
-      data,
+      data: dataWithCounts,
       total
     };
   }

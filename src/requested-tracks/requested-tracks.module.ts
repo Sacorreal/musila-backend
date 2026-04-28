@@ -6,9 +6,10 @@ import { RequestedTrack } from './entities/requested-track.entity';
 import { RequestedTracksController } from './requested-tracks.controller';
 import { RequestedTracksService } from './requested-tracks.service';
 import { Chat } from 'src/chat/entities/chat.entity';
+import { Message } from 'src/chat/entities/message.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([RequestedTrack, User, Track, Chat])],
+  imports: [TypeOrmModule.forFeature([RequestedTrack, User, Track, Chat, Message])],
   controllers: [RequestedTracksController],
   providers: [RequestedTracksService],
 })

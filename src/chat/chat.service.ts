@@ -246,7 +246,7 @@ export class ChatService {
   async getChatMessages(userId: string, chatId: string) {
     const chat = await this.chatRepository.findOne({
       where: { id: chatId },
-      relations: ['request', 'request.requester', 'request.owner', 'guests', 'messages', 'messages.sender'],
+      relations: ['request', 'request.requester', 'request.owner', 'guests', 'request.track', 'request.track.authors'],
     });
 
     if (!chat) {
@@ -258,6 +258,13 @@ export class ChatService {
       throw new ForbiddenException('No tienes permisos para ver este chat');
     }
 
-    return chat.messages || [];
+    // Traer mensajes ordenados por fecha de creación
+    return await this.messageRepository.find({
+      where: { chat: { id: chatId } },
+      relations: ['sender'],
+      order: {
+        createdAt: 'ASC',
+      },
+    });
   }
 }

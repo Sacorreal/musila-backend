@@ -27,6 +27,9 @@ export class Message {
   @Column({ default: false, name: 'is_system' })
   isSystem: boolean;
 
+  @Column({ default: false, name: 'is_read' })
+  isRead: boolean;
+
   @Column({
     type: 'enum',
     enum: MessageType,

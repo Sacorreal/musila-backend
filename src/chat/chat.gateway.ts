@@ -15,6 +15,8 @@ import { ClientChatEvent } from './types/chat.types';
 import { SocketAuthService } from 'src/shared/realtime/socket-auth.service';
 import { AppEventMap } from 'src/shared/events/contracts/app-event-map';
 import { MessageInput } from './dto/send-message.input';
+import { OnEvent } from '@nestjs/event-emitter';
+
 @WebSocketGateway({
   namespace: '/chat',
   cors: {
@@ -91,6 +93,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       messageId: data.messageId,
       userId: user.id,
     });
+  }
+
+  // =====================================================
+  // 📡 EVENT LISTENERS (INTERNAL → SOCKET)
+  // =====================================================
+
+  @OnEvent('chat.message.sent')
+  handleMessageSent(payload: AppEventMap['chat.message.sent']) {
+    this.emitToRoom(this.chatRoom(payload.chatId), 'chat.message.received', payload);
   }
 
   // =====================================================

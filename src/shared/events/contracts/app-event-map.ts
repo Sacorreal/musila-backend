@@ -68,6 +68,8 @@ export interface AppEventMap {
     mimeType?: string;
   };
 
+  'chat.message.received': AppEventMap['chat.message.sent'];
+
   'chat.guests.added': {
     chatId: string;
     guestIds: string[];
