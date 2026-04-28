@@ -4,7 +4,7 @@ import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { UserRole } from 'src/users/entities/user-role.enum';
 import { User } from 'src/users/entities/user.entity';
-import { ILike, Repository } from 'typeorm';
+import { ILike, Raw, Repository } from 'typeorm';
 
 @Injectable()
 export class SearchService {
@@ -15,39 +15,45 @@ export class SearchService {
     ) { }
 
     async searchService(query: string) {
-        if (!query || query.trim() === '') return []
+        if (!query || query.trim() === '') return { tracks: [], musicalGenres: [], authors: [] }
 
-        const startsWith = ILike(`${query}%`)
-        const contains = ILike(`%${query}%`)
+        try {
+            const startsWith = ILike(`${query}%`)
+            const contains = ILike(`%${query}%`)
 
-        const [tracks, musicalGenres, authors] = await Promise.all([
-            this.tracksRepository.find({
-                where: [
-                    { title: startsWith, isAvailable: true },
-                    { title: contains, isAvailable: true }
-                ],
-                order: { title: 'ASC' }
-            }),
+            const [tracks, musicalGenres, authors] = await Promise.all([
+                this.tracksRepository.find({
+                    where: [
+                        { title: startsWith, isAvailable: true },
+                        { title: contains, isAvailable: true }
+                    ],
+                    order: { title: 'ASC' }
+                }),
 
-            this.musicalGenresRepository.find({
-                where: [
-                    { genre: startsWith },
-                    { genre: contains }
-                ],
-                order: { genre: 'ASC' }
-            }),
+                this.musicalGenresRepository.find({
+                    where: [
+                        { genre: startsWith },
+                        { genre: contains },
+                        { subGenre: Raw(alias => `"${alias.replace('.', '"."')}"::text ILIKE :q`, { q: `%${query}%` }) }
+                    ],
+                    order: { genre: 'ASC' }
+                }),
 
-            this.usersRepository.find({
-                where: [
-                    { role: UserRole.AUTOR, name: startsWith },
-                    { role: UserRole.AUTOR, lastName: startsWith },
-                    { role: UserRole.AUTOR, name: contains },
-                    { role: UserRole.AUTOR, lastName: contains }
-                ],
-                order: { name: 'ASC' }
-            })
-        ])
+                this.usersRepository.find({
+                    where: [
+                        { role: UserRole.AUTOR, name: startsWith },
+                        { role: UserRole.AUTOR, lastName: startsWith },
+                        { role: UserRole.AUTOR, name: contains },
+                        { role: UserRole.AUTOR, lastName: contains }
+                    ],
+                    order: { name: 'ASC' }
+                })
+            ])
 
-        return { tracks, musicalGenres, authors }
+            return { tracks, musicalGenres, authors }
+        } catch (error) {
+            console.error("[SearchService] Error during search:", error)
+            throw error
+        }
     }
 }
