@@ -115,10 +115,11 @@ export class CreateUserInput {
     description: 'URL de la imagen de perfil del usuario (opcional).'
   })
   @IsOptional()
-  @IsUrl({}, { message: 'El avatar debe ser una URL válida' })
+  @IsString({ message: 'La llave del avatar debe ser un texto válido' })
   avatarKey?: string;
 
   @IsOptional()
+  @IsUrl({}, { message: 'El avatar debe ser una URL válida' })
   avatarUrl?: string
 
   @ApiPropertyOptional({

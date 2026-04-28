@@ -123,11 +123,29 @@ export class UsersController {
     return await this.usersService.findOneUserByIdService(id);
   }
 
-  @Put(':id')  
+  @UseGuards(JWTAuthGuard)
+  @Put('me')
+  @ApiOperation({
+    summary: 'Actualizar perfil del usuario autenticado',
+    description: 'Actualiza la información del usuario que tiene la sesión iniciada.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Perfil actualizado exitosamente',
+  })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  async updateMyProfileController(
+    @CurrentUser() user: JwtPayload,
+    @Body() updateUserInput: UpdateUserInput
+  ) {
+    return await this.usersService.updateUserService(user.id, updateUserInput);
+  }
+
+  @Put(':id')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
-    summary: 'Actualizar usuario',
-    description: 'Actualiza la información del usuario existente.',
+    summary: 'Actualizar usuario por ID',
+    description: 'Actualiza la información de un usuario específico.',
   })
   @ApiParam({ name: 'id', description: 'ID del usuario', example: '123e4567-e89b-12d3-a456-426614174000' })
   @ApiResponse({
@@ -138,11 +156,10 @@ export class UsersController {
   @ApiResponse({ status: 401, description: 'No autorizado' })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   async updatePlaylistsController(
-    @Body() updateUserInput: UpdateUserInput,   
-    @Param('id') id: string,
+    @Body() updateUserInput: UpdateUserInput,
+    @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return await this.usersService.updateUserService(id,updateUserInput )
-    
+    return await this.usersService.updateUserService(id, updateUserInput)
   }
 
   @UseGuards(JWTAuthGuard)
@@ -160,22 +177,7 @@ export class UsersController {
     return await this.usersService.removeUserService(user.id);
   }
 
-  @UseGuards(JWTAuthGuard)
-  @Put('me')
-  @ApiOperation({
-    summary: 'actualizar usuario',
-    description: 'actualiza un usuario del sistema por su ID.',
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'Usuario actualizado exitosamente',
-  })
-  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
-  async updateUserController(
-  @CurrentUser() user: JwtPayload,
-  @Body() updateUserInput: UpdateUserInput) {
-    return await this.usersService.updateUserService(user.id,updateUserInput );
-  }
+
 
 
 
