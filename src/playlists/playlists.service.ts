@@ -13,7 +13,7 @@ import { PaginationDto } from 'src/shared/dto/pagination.dto';
 
 
 
-const playlistsRelations: string[] = ['owner', 'guests', 'tracks'];
+const playlistsRelations: string[] = ['owner', 'collaborators', 'collaborators.guest', 'tracks', 'tracks.genre'];
 
 @Injectable()
 export class PlaylistsService {
@@ -69,7 +69,7 @@ export class PlaylistsService {
     // 1. Construimos la condición de búsqueda dinámicamente según el rol
     const whereCondition =
       user.role === UserRole.INVITADO
-        ? { guests: { id: user.id } } // Si es invitado, busca en el array de invitados
+        ? { collaborators: { guest: { id: user.id } } } // Si es invitado, busca en la tabla intermedia
         : { owner: { id: user.id } }; // Para el resto, busca por propietario
 
     // 2. Ejecutamos una sola consulta directa a la base de datos

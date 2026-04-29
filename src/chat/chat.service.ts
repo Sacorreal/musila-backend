@@ -166,9 +166,9 @@ export class ChatService {
       .createQueryBuilder('message')
       .update()
       .set({ isRead: true })
-      .where('message.chat = :chatId', { chatId })
-      .andWhere('message.sender != :userId', { userId })
-      .andWhere('message.isRead = false')
+      .where('message."chatId" = :chatId', { chatId })
+      .andWhere('message."senderId" != :userId', { userId })
+      .andWhere('message.is_read = false')
       .execute();
 
     this.eventBus.emit('chat.message.read', {
