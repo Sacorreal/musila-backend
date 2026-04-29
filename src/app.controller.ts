@@ -1,14 +1,12 @@
 import { Controller, Get } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { EventBusService} from './shared/events/event-bus.service'
 
 @ApiTags('Health')
 @Controller()
 export class AppController {
 
   constructor(
-  private readonly eventBus: EventBusService, // 🔥 funciona directo
-) {}
+  ) { }
 
   @Get()
   @ApiOperation({
@@ -29,10 +27,8 @@ export class AppController {
   })
   getHealth() {
 
-    this.eventBus.emit('event-test',{
-      message:'hola estoy emitiendo un evento 🎉'
-    })
-    
+
+
     return {
       status: 'ok',
       message: 'API is running correctly 🎉',
