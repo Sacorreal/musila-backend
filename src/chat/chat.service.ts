@@ -155,12 +155,24 @@ export class ChatService {
     return null;
   }
 
-  markAsRead(input: { chatId: string; messageId: string; userId: string }) {
-    const { chatId, messageId, userId } = input;
+  async markAsRead(input: { chatId: string; userId: string }) {
+    const { chatId, userId } = input;
+
+    // Marcar como leídos TODOS los mensajes del chat que:
+    // 1. Pertenecen a este chat
+    // 2. NO fueron enviados por el usuario actual (él solo lee los de otros)
+    // 3. Aún no están marcados como leídos
+    await this.messageRepository
+      .createQueryBuilder('message')
+      .update()
+      .set({ isRead: true })
+      .where('message.chat = :chatId', { chatId })
+      .andWhere('message.sender != :userId', { userId })
+      .andWhere('message.isRead = false')
+      .execute();
 
     this.eventBus.emit('chat.message.read', {
       chatId,
-      messageId,
       userId,
       readAt: new Date(),
     });

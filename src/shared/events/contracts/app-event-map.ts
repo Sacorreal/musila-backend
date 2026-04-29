@@ -80,7 +80,6 @@ export interface AppEventMap {
 
   'chat.message.read': {
     chatId: string;
-    messageId: string;
     userId: string;
     readAt: Date;
   };
