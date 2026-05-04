@@ -13,6 +13,7 @@ import { Repository } from 'typeorm';
 import { CreateInviteDto } from './dto/create-invite.dto';
 import { InviteResponseDto } from './dto/invite-response.dto';
 import { Invite } from './entities/invite.entity';
+import { EventBusService } from 'src/shared/events/event-bus.service';
 
 /** Tiempo de expiración de la invitación en milisegundos (24 horas) */
 const EXPIRATION_MS = 24 * 60 * 60 * 1_000;
@@ -25,6 +26,7 @@ export class InvitesService {
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
     private readonly configService: ConfigService,
+    private readonly eventBus: EventBusService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -56,6 +58,16 @@ export class InvitesService {
 
     const inviteUrl = this.buildInviteUrl(saved.token);
     const qrCode = await this.generateQrDataUri(inviteUrl);
+
+    if (saved.email) {
+      this.eventBus.emit('invite.created', {
+        email: saved.email,
+        token: saved.token,
+        invitedByName: owner.name,
+        guestName: dto.guestName,
+        inviteUrl,
+      });
+    }
 
     return this.toResponseDto(saved, inviteUrl, qrCode);
   }

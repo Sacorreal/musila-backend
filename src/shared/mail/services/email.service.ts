@@ -51,6 +51,18 @@ export class EmailService {
     });
   }
 
+  async sendInvitationGuestEmail(
+    to: string | string[],
+    data: EmailTemplateMap['send-invitation-guest'],
+  ) {
+    return this.sendEmail({
+      to,
+      subject: 'Tienes una nueva invitación en Musila',
+      templateId: 'send-invitation-guest',
+      variables: data,
+    });
+  }
+
   async sendRequestTrackEmail(
     to: string | string[],
     data: EmailTemplateMap['send-request-track'],

@@ -6,6 +6,8 @@ export interface AppEventMap {
     email: string;
     token: string;
     invitedByName: string;
+    guestName: string;
+    inviteUrl: string;
   };
 
   'invite.accepted': {

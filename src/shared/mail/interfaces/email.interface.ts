@@ -25,6 +25,12 @@ export interface EmailTemplateMap {
     inviteUrl: string;
   };
 
+  'send-invitation-guest': {
+    inviterName: string;
+    guestName: string;
+    UrlInvitationGuest: string;
+  };
+
   'password-reset-template-id': {
     name: string;
     resetUrl: string;

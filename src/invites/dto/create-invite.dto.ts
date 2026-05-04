@@ -1,13 +1,21 @@
-import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateInviteDto {
-  @ApiPropertyOptional({
-    description: 'Correo electrónico del destinatario de la invitación (opcional)',
+  @ApiProperty({
+    description: 'Correo electrónico del destinatario de la invitación',
     example: 'colaborador@example.com',
   })
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
   @IsEmail()
-  email?: string;
+  email: string;
+
+  @ApiProperty({
+    description: 'Nombre de la persona invitada',
+    example: 'Juan',
+  })
+  @IsNotEmpty()
+  @IsString()
+  guestName: string;
 }
