@@ -12,7 +12,7 @@ import { UserRole } from 'src/users/entities/user-role.enum';
 
 import bcrypt from 'bcrypt';
 
-const guestRelations: string[] = ['invited_by', 'playlists']
+const guestRelations: string[] = ['invited_by', 'playlistCollaborations', 'chats']
 
 @Injectable()
 export class GuestsService {
