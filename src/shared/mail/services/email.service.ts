@@ -20,17 +20,15 @@ export class EmailService {
     options: SendEmailOptions<T>,
   ): Promise<void> {
     try {
-      const { to, subject, templateId, variables } = options;
+      const { to, templateId, variables } = options;
 
       await this.resend.emails.send({
-        from: this.config.defaultFrom || 'no-reply@tuapp.com',
         to,
-        subject,
         template: {
           id: templateId,
           variables,
         },
-      });
+      } as any);
 
       this.logger.log('Email enviado 📨');
     } catch (error) {
@@ -57,7 +55,6 @@ export class EmailService {
   ) {
     return this.sendEmail({
       to,
-      subject: 'Tienes una nueva invitación en Musila',
       templateId: 'send-invitation-guest',
       variables: data,
     });
@@ -80,7 +77,6 @@ export class EmailService {
   ) {
     return this.sendEmail({
       to,
-      subject: 'Restablecer tu contraseña',
       templateId: 'password-reset-template-id',
       variables: data,
     });
@@ -92,7 +88,6 @@ export class EmailService {
   ) {
     return this.sendEmail({
       to,
-      subject: 'Notificación de seguridad: Contraseña actualizada',
       templateId: 'password-changed-template-id',
       variables: data,
     });
