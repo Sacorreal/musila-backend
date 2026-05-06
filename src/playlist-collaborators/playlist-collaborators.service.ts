@@ -76,6 +76,47 @@ export class PlaylistCollaboratorsService {
   }
 
   /**
+   * Agrega multiples colaboradores a una playlist.
+   */
+  async addMultipleCollaborators(
+    playlistId: string,
+    dto: import('./dto/add-multiple-collaborators.dto').AddMultipleCollaboratorsDto,
+    user: JwtPayload,
+  ): Promise<PlaylistCollaborator[]> {
+    const playlist = await this.findPlaylistOrFail(playlistId);
+    this.assertOwnership(playlist, user);
+
+    const addedCollaborators: PlaylistCollaborator[] = [];
+
+    for (const collabDto of dto.collaborators) {
+      try {
+        const guest = await this.findGuestOrFail(collabDto.guestId);
+        this.assertGuestBelongsToUser(guest, user);
+
+        const existingCollaborator = await this.collaboratorRepository.findOne({
+          where: { playlist: { id: playlistId }, guest: { id: collabDto.guestId } },
+        });
+
+        if (!existingCollaborator) {
+          const collaborator = this.collaboratorRepository.create({
+            playlist,
+            guest,
+            permission: collabDto.permission ?? CollaboratorPermission.READ,
+          });
+          const saved = await this.collaboratorRepository.save(collaborator);
+          const result = await this.findCollaboratorWithRelations(saved.id);
+          addedCollaborators.push(result);
+        }
+      } catch (error) {
+        // Ignoramos errores individuales para seguir con el resto
+        console.error(`Error agregando colaborador ${collabDto.guestId}:`, error);
+      }
+    }
+
+    return addedCollaborators;
+  }
+
+  /**
    * Elimina un colaborador de una playlist.
    */
   async removeCollaborator(

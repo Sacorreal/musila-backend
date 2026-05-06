@@ -57,6 +57,25 @@ export class PlaylistCollaboratorsController {
     return this.collaboratorsService.addCollaborator(playlistId, dto, user);
   }
 
+  // ─── POST /playlists/:playlistId/collaborators/bulk ────────────────────────
+  @Post('bulk')
+  @ApiOperation({
+    summary: 'Agregar múltiples colaboradores a playlist',
+    description: 'Asigna varios invitados como colaboradores de una playlist con niveles de permiso específicos.',
+  })
+  @ApiParam({
+    name: 'playlistId',
+    description: 'ID de la playlist (UUID)',
+  })
+  @ApiResponse({ status: 201, description: 'Colaboradores agregados exitosamente' })
+  async addMultipleCollaborators(
+    @Param('playlistId') playlistId: string,
+    @Body() dto: import('./dto/add-multiple-collaborators.dto').AddMultipleCollaboratorsDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.collaboratorsService.addMultipleCollaborators(playlistId, dto, user);
+  }
+
   // ─── GET /playlists/:playlistId/collaborators ──────────────────────────────
   @Get()
   @ApiOperation({
