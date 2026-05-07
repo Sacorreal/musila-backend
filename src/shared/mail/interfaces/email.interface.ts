@@ -31,12 +31,12 @@ export interface EmailTemplateMap {
     UrlInvitationGuest: string;
   };
 
-  'password-reset-template-id': {
+  'password-reset': {
     name: string;
     resetUrl: string;
   };
 
-  'password-changed-template-id': {
+  'password-changed': {
     name: string;
   };
 

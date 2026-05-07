@@ -73,22 +73,22 @@ export class EmailService {
 
   async sendPasswordResetEmail(
     to: string | string[],
-    data: EmailTemplateMap['password-reset-template-id'],
+    data: EmailTemplateMap['password-reset'],
   ) {
     return this.sendEmail({
       to,
-      templateId: 'password-reset-template-id',
+      templateId: 'password-reset',
       variables: data,
     });
   }
 
   async sendPasswordChangedEmail(
     to: string | string[],
-    data: EmailTemplateMap['password-changed-template-id'],
+    data: EmailTemplateMap['password-changed'],
   ) {
     return this.sendEmail({
       to,
-      templateId: 'password-changed-template-id',
+      templateId: 'password-changed',
       variables: data,
     });
   }
