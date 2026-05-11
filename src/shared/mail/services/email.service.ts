@@ -92,4 +92,15 @@ export class EmailService {
       variables: data,
     });
   }
+
+  async sendTrackRequestUpdatedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['update-request-track-status'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'update-request-track-status',
+      variables: data,
+    });
+  }
 }

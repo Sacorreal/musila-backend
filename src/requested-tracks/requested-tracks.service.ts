@@ -167,7 +167,18 @@ export class RequestedTracksService {
 
     Object.assign(existingRequestedTrack, updateRequestedTrackInput)
 
-    return await this.saveAndReturnWithRelations(existingRequestedTrack)
+    const updatedRequestedTrack = await this.saveAndReturnWithRelations(existingRequestedTrack)
+
+    this.eventBus.emit('track.request.updated', {
+      requestId: updatedRequestedTrack.id,
+      chatId: updatedRequestedTrack.chat?.id || '',
+      trackTitle: updatedRequestedTrack.track.title,
+      status: updatedRequestedTrack.status,
+      requesterEmail: updatedRequestedTrack.requester.email,
+      requesterName: updatedRequestedTrack.requester.name,
+    });
+
+    return updatedRequestedTrack;
   }
 
   async removeRequestedTracksService(id: string) {

@@ -79,5 +79,29 @@ export class EmailChannel {
     });
   }
 
+  /**
+   * 🎵 TRACK REQUEST UPDATED → EMAIL
+   */
+  @EventListener({
+    event: 'track.request.updated',
+    channel: 'email',
+  })
+  async handleTrackRequestUpdated(payload: AppEventMap['track.request.updated']) {
+    this.logger.log('📧 evento track request updated disparado 🎵');
 
+    const appWebUrl =
+      this.configService.get<string>('WEB_APP_PRODUCTION') ||
+      this.configService.get<string>('WEB_APP_LOCAL') ||
+      this.configService.get<string>('WEB_APP_DEVELOPMENT');
+    
+    // Suponiendo que la URL para ver la solicitud es algo como /music/solicitudes/[requestId]
+    const urlTrackRequest = `${appWebUrl}/music/solicitudes`;
+
+    await this.emailService.sendTrackRequestUpdatedEmail(payload.requesterEmail, {
+      trackTitle: payload.trackTitle,
+      requesterEmail: payload.requesterEmail,
+      status: payload.status,
+      urlTrackRequest,
+    });
+  }
 }

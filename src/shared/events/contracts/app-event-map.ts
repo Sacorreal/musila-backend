@@ -101,5 +101,14 @@ export interface AppEventMap {
     licenseType: LicenseType;
   }
 
+  'track.request.updated': {
+    requestId: string;
+    chatId: string;
+    trackTitle: string;
+    status: string;
+    requesterEmail: string;
+    requesterName: string;
+  }
+
 
 }

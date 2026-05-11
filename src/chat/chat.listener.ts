@@ -42,4 +42,13 @@ export class ChatListener {
     const room = `chat:${payload.chatId}`;
     this.gateway.emitToRoom(room, 'chat.guests.removed', payload);
   }
+
+  @EventListener({
+    event: 'track.request.updated',
+    channel: 'websocket',
+  })
+  handleTrackRequestUpdated(payload: AppEventMap['track.request.updated']) {
+    const room = `chat:${payload.chatId}`;
+    this.gateway.emitToRoom(room, 'track.request.updated', payload);
+  }
 }

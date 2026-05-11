@@ -47,5 +47,12 @@ export interface EmailTemplateMap {
     licenseType: LicenseType,
     urlTrackRequest: string
 
-  }
+  };
+
+  'update-request-track-status': {
+    trackTitle: string;
+    requesterEmail: string;
+    status: string;
+    urlTrackRequest: string;
+  };
 }
