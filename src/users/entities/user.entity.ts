@@ -3,6 +3,7 @@ import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Playlist } from 'src/playlists/entities/playlist.entity';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { Track } from 'src/tracks/entities/track.entity';
+import { Notification } from 'src/notifications/entities/notification.entity';
 import {
   Column,
   CreateDateColumn,
@@ -105,6 +106,11 @@ export class User {
     { nullable: true }
   )
   requestReceived?: RequestedTrack[]
+
+  @OneToMany(() => Notification, (notification) => notification.recipient, {
+    nullable: true,
+  })
+  notifications?: Notification[];
 
   @Column('boolean', { default: true, name: 'is_user_free' })
   isUserFree: boolean;

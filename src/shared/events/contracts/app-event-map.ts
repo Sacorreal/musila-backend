@@ -97,6 +97,7 @@ export interface AppEventMap {
   'track.request.created': {
     chatId: string;
     requesterId: string;
+    authorIds: string[];
     trackTitle: string;
     licenseType: LicenseType;
   }
@@ -106,6 +107,7 @@ export interface AppEventMap {
     chatId: string;
     trackTitle: string;
     status: string;
+    requesterId: string;
     requesterEmail: string;
     requesterName: string;
   }

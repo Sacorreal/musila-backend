@@ -108,7 +108,17 @@ export class RequestedTracksService {
       return savedRequestedTrack.id;
     });
 
-    return await this.findRequestedTrackWithRelations(savedId);
+    const fullTrack = await this.findRequestedTrackWithRelations(savedId);
+
+    this.eventBus.emit('track.request.created', {
+      chatId: fullTrack.chat?.id || '',
+      requesterId: userRequester.id,
+      authorIds: track.authors.map(a => a.id),
+      trackTitle: track.title,
+      licenseType: fullTrack.licenseType,
+    });
+
+    return fullTrack;
   }
 
   async findAllRequestedTracksService(
@@ -174,6 +184,7 @@ export class RequestedTracksService {
       chatId: updatedRequestedTrack.chat?.id || '',
       trackTitle: updatedRequestedTrack.track.title,
       status: updatedRequestedTrack.status,
+      requesterId: updatedRequestedTrack.requester.id,
       requesterEmail: updatedRequestedTrack.requester.email,
       requesterName: updatedRequestedTrack.requester.name,
     });

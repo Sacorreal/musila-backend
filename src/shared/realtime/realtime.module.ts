@@ -15,6 +15,6 @@ import { SocketAuthService } from './socket-auth.service';
     PlaylistListener,
     SocketAuthService
   ],
-  exports: [],
+  exports: [SocketAuthService],
 })
 export class RealtimeModule { }

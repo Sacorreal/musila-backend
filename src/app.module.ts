@@ -21,7 +21,7 @@ import { EmailModule} from './shared/mail/email.module'
 import { EventBusModule } from './shared/events/event-bus.module';
 import { RealtimeModule} from './shared/realtime/realtime.module'
 import { ChatModule } from './chat/chat.module';
-
+import { AppNotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -43,7 +43,9 @@ import { ChatModule } from './chat/chat.module';
     PlaylistCollaboratorsModule,
     StorageModule.forRootAsync(),
     SearchModule,   
-    EmailModule.forRootAsync(), ChatModule,
+    EmailModule.forRootAsync(), 
+    ChatModule, 
+    AppNotificationsModule
   ],
   controllers: [AppController],
   providers: [],
