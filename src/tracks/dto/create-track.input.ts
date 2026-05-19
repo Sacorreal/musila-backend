@@ -12,6 +12,7 @@ import {
 import { ExternalIdInput } from './external-id.input';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform, Type } from 'class-transformer';
+import { IntellectualPropertyInput } from './intellectual-property.input';
 
 
 
@@ -127,5 +128,12 @@ export class CreateTrackInput {
   @Type(() => ExternalIdInput)
   externalsIds?: ExternalIdInput[];
 
-
+  @ApiPropertyOptional({
+    type: [IntellectualPropertyInput],
+    description: 'Propiedades intelectuales del track (Copyright Offices, CMOs).',
+  })
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => IntellectualPropertyInput)
+  intellectualProperties?: IntellectualPropertyInput[];
 }

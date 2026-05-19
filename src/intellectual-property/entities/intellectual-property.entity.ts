@@ -17,13 +17,21 @@ export class IntellectualProperty {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ApiProperty({ example: 'Registro NDA - Canción X', description: 'Título del documento o de la propiedad intelectual' })
+  @ApiProperty({ example: 'cmo', description: 'Tipo de propiedad intelectual (copyrightOffice o cmo).' })
   @Column('varchar', { nullable: false })
-  title: string;
+  type: string;
+
+  @ApiProperty({ example: 'SAYCO', description: 'Código del país o acrónimo de la CMO.' })
+  @Column('varchar', { nullable: false })
+  key: string;
 
   @ApiProperty({ type: () => Track, description: 'La pista musical a la que está asociada esta propiedad intelectual' })
-  @ManyToOne(() => Track, (track) => track.intellectualProperties)
+  @ManyToOne(() => Track, (track) => track.intellectualProperties, { onDelete: 'CASCADE' })
   track: Track;
+
+  @ApiProperty({ example: 'intellectual-property/doc123.pdf', description: 'Llave de almacenamiento para el documento PDF.' })
+  @Column('varchar', { nullable: true, name: 'document_key' })
+  documentKey: string;
 
   @ApiProperty({ example: 'https://docs.google.com/...', description: 'URL del documento legal respaldatorio' })
   @Column('varchar', { nullable: false, name: 'document_url' })

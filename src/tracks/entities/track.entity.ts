@@ -57,7 +57,7 @@ export class Track {
   @Column('jsonb', { name: 'externals_ids', nullable: true })
   externalsIds?: ExternalId[]
 
-  @OneToMany(() => IntellectualProperty, (it) => it.track)
+  @OneToMany(() => IntellectualProperty, (it) => it.track, { cascade: true })
   intellectualProperties?: IntellectualProperty[];
 
   @Column('boolean', { default: true, name: 'is_available' })

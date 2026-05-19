@@ -5,6 +5,7 @@ import { Track } from './entities/track.entity';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { User } from 'src/users/entities/user.entity';
 import { UserRole } from 'src/users/entities/user-role.enum';
+import { TrackResponseDto } from './dto/track-response.dto';
 
 describe('TracksService - findAllTracksService', () => {
   let service: TracksService;
@@ -39,7 +40,7 @@ describe('TracksService - findAllTracksService', () => {
     const result = await service.findAllTracksService(options as any, mockUser as any);
 
     // 1. Verificar estructura del retorno
-    expect(result).toEqual({ data: mockTracks, total: mockTotal });
+    expect(result).toEqual({ data: mockTracks.map(t => TrackResponseDto.fromEntity(t as any)), total: mockTotal });
 
     // 2. Verificar que el filtro se construyó correctamente
     expect(trackRepository.findAndCount).toHaveBeenCalledWith({
