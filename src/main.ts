@@ -11,6 +11,7 @@ if (process.env.NODE_ENV === 'local') {
 import { AppModule } from './app.module';
 import { RequestsStatusDto } from './requested-tracks/dto/requests-status.dto';
 import * as cookieParser from 'cookie-parser';
+import { GlobalExceptionFilter } from './shared/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -24,6 +25,7 @@ async function bootstrap() {
       },
     }),
   );
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   const allowedOrigins = [
     process.env.WEB_APP_PRODUCTION,

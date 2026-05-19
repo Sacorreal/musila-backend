@@ -125,6 +125,17 @@ export class TracksService {
     }
 
     // =============================
+    // 3.5️⃣ Validar Propiedades Intelectuales
+    // =============================
+
+    if (rest.intellectualProperties) {
+      const splitSheets = rest.intellectualProperties.filter(ip => ip.type === 'splitSheet');
+      if (splitSheets.length > 1) {
+        throw new BadRequestException('Solo se permite un documento Split Sheet por canción');
+      }
+    }
+
+    // =============================
     // 4️⃣ Crear entidad
     // =============================
 
@@ -220,6 +231,13 @@ export class TracksService {
     const existingTrack = await this.findTrackWithRelations(id);
 
     const { genreId, authorsIds, ...rest } = updateTrackInput;
+
+    if (rest.intellectualProperties) {
+      const splitSheets = rest.intellectualProperties.filter(ip => ip.type === 'splitSheet');
+      if (splitSheets.length > 1) {
+        throw new BadRequestException('Solo se permite un documento Split Sheet por canción');
+      }
+    }
 
     Object.assign(existingTrack, rest);
 

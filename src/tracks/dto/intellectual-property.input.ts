@@ -4,15 +4,16 @@ import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
 export enum IntellectualPropertyType {
   COPYRIGHT_OFFICE = 'copyrightOffice',
   CMO = 'cmo',
+  SPLIT_SHEET = 'splitSheet',
 }
 
 export class IntellectualPropertyInput {
   @ApiProperty({
     example: 'cmo',
-    description: 'Tipo de propiedad intelectual (copyrightOffice o cmo).',
+    description: 'Tipo de propiedad intelectual (copyrightOffice, cmo, o splitSheet).',
     enum: IntellectualPropertyType,
   })
-  @IsEnum(IntellectualPropertyType, { message: 'El tipo debe ser copyrightOffice o cmo' })
+  @IsEnum(IntellectualPropertyType, { message: 'El tipo debe ser copyrightOffice, cmo o splitSheet' })
   @IsNotEmpty()
   type: IntellectualPropertyType;
 

@@ -129,6 +129,14 @@ export class CreateTrackInput {
   externalsIds?: ExternalIdInput[];
 
   @ApiPropertyOptional({
+    example: 'T-034.524.680-1',
+    description: 'Código ISWC (International Standard Musical Work Code).'
+  })
+  @IsOptional()
+  @IsString({ message: 'ISWC debe ser una cadena de texto' })
+  iswc?: string;
+
+  @ApiPropertyOptional({
     type: [IntellectualPropertyInput],
     description: 'Propiedades intelectuales del track (Copyright Offices, CMOs).',
   })

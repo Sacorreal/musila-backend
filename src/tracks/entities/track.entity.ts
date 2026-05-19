@@ -57,6 +57,9 @@ export class Track {
   @Column('jsonb', { name: 'externals_ids', nullable: true })
   externalsIds?: ExternalId[]
 
+  @Column('varchar', { nullable: true, name: 'iswc' })
+  iswc?: string;
+
   @OneToMany(() => IntellectualProperty, (it) => it.track, { cascade: true })
   intellectualProperties?: IntellectualProperty[];
 

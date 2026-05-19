@@ -59,6 +59,9 @@ export class TrackResponseDto {
   @ApiProperty({ nullable: true, type: 'array' })
   externalsIds?: ExternalId[];
 
+  @ApiProperty({ nullable: true })
+  iswc?: string;
+
   @ApiProperty()
   isAvailable: boolean;
 
@@ -103,6 +106,7 @@ export class TrackResponseDto {
     dto.language = track.language;
     dto.lyric = track.lyric;
     dto.externalsIds = track.externalsIds;
+    dto.iswc = track.iswc;
     dto.isAvailable = track.isAvailable;
     dto.isGospel = track.isGospel;
     dto.coverKey = track.coverKey;
