@@ -31,7 +31,8 @@ export class SocketAuthService {
             );
 
             return payload;
-        } catch {
+        } catch (error) {
+            this.logger.error(`Error verificando token:`, error);
             this.reject(client, 'Token inválido');
             return null;
         }

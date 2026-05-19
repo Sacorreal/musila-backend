@@ -7,9 +7,7 @@ import { SocketAuthService } from './socket-auth.service';
 
 
 @Module({
-  imports: [
-    JwtModule
-  ],
+  imports: [],
   providers: [
     RealtimeGateway,
     PlaylistListener,
