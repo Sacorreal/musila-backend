@@ -141,7 +141,7 @@ export class UsersService {
     const qb = this.usersRepository
       .createQueryBuilder('u')
       .orderBy('u.createdAt', 'DESC')
-      .take(limit)
+      .take(Math.min(limit ?? 10, 100))
       .skip(offset);
 
     if (search) {

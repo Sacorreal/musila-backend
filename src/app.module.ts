@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from './shared/config/config.module';
@@ -25,6 +27,11 @@ import { AppNotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      { name: 'short',  ttl: 1000,  limit: 10  },
+      { name: 'medium', ttl: 10000, limit: 50  },
+      { name: 'long',   ttl: 60000, limit: 200 },
+    ]),
     EventBusModule,
     RealtimeModule,
     NotificationsModule,
@@ -48,6 +55,8 @@ import { AppNotificationsModule } from './notifications/notifications.module';
     AppNotificationsModule
   ],
   controllers: [AppController],
-  providers: [],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
+  ],
 })
 export class AppModule {}

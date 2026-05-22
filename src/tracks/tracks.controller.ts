@@ -159,9 +159,11 @@ export class TracksController {
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
   async updateTrackController(
     @Body() updateTrackInput: UpdateTrackInput,
-    @Param('id') id: string,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return await this.tracksService.updateTrackService(id, updateTrackInput);
+    const requesterId = user.role === UserRole.ADMIN ? undefined : user.id;
+    return await this.tracksService.updateTrackService(id, updateTrackInput, requesterId);
   }
 
   @Delete(':id')
@@ -179,7 +181,11 @@ export class TracksController {
     description: 'Track eliminado exitosamente',
   })
   @ApiResponse({ status: 404, description: 'Track no encontrado' })
-  async removeTrackController(@Param('id') id: string) {
-    return await this.tracksService.removeTrackService(id);
+  async removeTrackController(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const requesterId = user.role === UserRole.ADMIN ? undefined : user.id;
+    return await this.tracksService.removeTrackService(id, requesterId);
   }
 }

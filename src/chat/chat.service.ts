@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   NotFoundException,
   ForbiddenException,
 } from '@nestjs/common';
@@ -15,6 +16,8 @@ import { RemoveGuestsInput } from './dto/remove-guests.input'
 
 @Injectable()
 export class ChatService {
+  private readonly logger = new Logger(ChatService.name);
+
   constructor(
     @InjectRepository(Chat)
     private readonly chatRepository: Repository<Chat>,
@@ -39,7 +42,7 @@ export class ChatService {
       const role = this.getUserRole(chat, userId);
 
       if (!role) {
-        console.error(`[ChatService] Permiso denegado para usuario ${userId} en chat ${chatId}`);
+        this.logger.warn(`Permiso denegado para usuario ${userId} en chat ${chatId}`);
         throw new ForbiddenException(
           'No tienes permisos para enviar mensajes en este chat',
         );
@@ -70,7 +73,7 @@ export class ChatService {
 
       return message;
     } catch (error) {
-      console.error('[ChatService] Error al guardar mensaje:', error);
+      this.logger.error('Error al guardar mensaje de chat:', error);
       throw error;
     }
   }

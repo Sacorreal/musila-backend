@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
+import helmet from 'helmet';
 
 if (process.env.NODE_ENV === 'local') {
   dotenv.config({ path: '.env.local' });
@@ -15,6 +16,11 @@ import { GlobalExceptionFilter } from './shared/filters/global-exception.filter'
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }));
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,

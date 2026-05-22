@@ -10,6 +10,7 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuid } from 'uuid';
@@ -22,6 +23,7 @@ import { StorageFolder } from './dto/storage-folder.enum';
 
 @Injectable()
 export class StorageService {
+  private readonly logger = new Logger(StorageService.name);
   private readonly s3: S3Client;
 
   constructor(
@@ -97,7 +99,7 @@ export class StorageService {
         }),
       );
     } catch (error) {
-      console.error('Storage delete error:', error);
+      this.logger.error('Error al eliminar archivo del storage:', error);
     }
   }
 

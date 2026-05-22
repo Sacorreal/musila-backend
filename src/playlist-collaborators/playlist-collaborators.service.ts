@@ -2,6 +2,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -16,6 +17,8 @@ import { PlaylistCollaborator } from './entities/playlist-collaborator.entity';
 
 @Injectable()
 export class PlaylistCollaboratorsService {
+  private readonly logger = new Logger(PlaylistCollaboratorsService.name);
+
   constructor(
     @InjectRepository(PlaylistCollaborator)
     private readonly collaboratorRepository: Repository<PlaylistCollaborator>,
@@ -109,7 +112,7 @@ export class PlaylistCollaboratorsService {
         }
       } catch (error) {
         // Ignoramos errores individuales para seguir con el resto
-        console.error(`Error agregando colaborador ${collabDto.guestId}:`, error);
+        this.logger.error(`Error agregando colaborador ${collabDto.guestId}:`, error);
       }
     }
 

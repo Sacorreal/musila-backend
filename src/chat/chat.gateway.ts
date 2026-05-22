@@ -68,7 +68,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const user = this.socketAuth.getUserFromSocket(client)
 
     if (!user) {
-      console.error('[ChatGateway] Usuario no autenticado en socket');
+      this.logger.warn('Usuario no autenticado intentó enviar mensaje por socket');
       client.emit('auth.error', { message: 'No autenticado' })
       return
     }
@@ -76,7 +76,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       await this.chatService.saveMessage(user.id, messageInput);
     } catch (error) {
-      console.error('[ChatGateway] Error procesando mensaje:', error.message);
+      this.logger.error('Error procesando mensaje de chat:', error.message);
     }
   }
 

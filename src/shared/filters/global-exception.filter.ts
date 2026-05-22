@@ -7,6 +7,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { randomUUID } from 'crypto';
 
 /**
  * Filtro global de excepciones.
@@ -58,7 +59,8 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     }
 
     // Otros errores no esperados → log + 500
-    this.logger.error('Unhandled exception:', exception);
+    const errorId = randomUUID();
+    this.logger.error(`[${errorId}] Unhandled exception on ${request.method} ${request.url}:`, exception);
 
     if (!response.headersSent) {
       response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
@@ -66,6 +68,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         timestamp: new Date().toISOString(),
         path: request.url,
         message: 'Internal server error',
+        errorId,
       });
     }
   }

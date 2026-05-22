@@ -104,7 +104,7 @@ export class UsersController {
   }
 
   @UseGuards(JWTAuthGuard)
-  @Delete('me/:id')
+  @Delete('me')
   @ApiOperation({ summary: 'Eliminar cuenta propia' })
   async removeUserController(@CurrentUser() user: JwtPayload) {
     return await this.usersService.removeUserService(user.id);

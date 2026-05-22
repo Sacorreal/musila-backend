@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -217,7 +218,7 @@ export class TracksService {
     // 4. Ejecución de la consulta
     const [tracks, total] = await this.tracksRepository.findAndCount({
       where,
-      take: limit,
+      take: Math.min(limit ?? 10, 200),
       skip: offset,
     });
 
@@ -232,8 +233,13 @@ export class TracksService {
     return TrackResponseDto.fromEntity(track);
   }
 
-  async updateTrackService(id: string, updateTrackInput: UpdateTrackInput) {
+  async updateTrackService(id: string, updateTrackInput: UpdateTrackInput, requesterId?: string) {
     const existingTrack = await this.findTrackWithRelations(id);
+
+    if (requesterId) {
+      const isAuthor = existingTrack.authors?.some((a) => a.id === requesterId);
+      if (!isAuthor) throw new ForbiddenException('No tienes permiso para editar este track');
+    }
 
     const { genreId, authorsIds, ...rest } = updateTrackInput;
 
@@ -268,16 +274,20 @@ export class TracksService {
     return TrackResponseDto.fromEntity(updated);
   }
 
-  async removeTrackService(id: string) {
-    const result = await this.tracksRepository.softDelete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException('El track no existe')
+  async removeTrackService(id: string, requesterId?: string) {
+    const track = await this.tracksRepository.findOne({
+      where: { id },
+      relations: ['authors'],
+    });
+    if (!track) throw new NotFoundException('El track no existe');
+
+    if (requesterId) {
+      const isAuthor = track.authors?.some((a) => a.id === requesterId);
+      if (!isAuthor) throw new ForbiddenException('No tienes permiso para eliminar este track');
     }
 
-    return {
-      id,
-      message: 'Track eliminado correctamente'
-    }
+    await this.tracksRepository.softDelete(id);
+    return { id, message: 'Track eliminado correctamente' };
   }
 
 

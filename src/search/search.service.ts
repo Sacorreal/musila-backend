@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Track } from 'src/tracks/entities/track.entity';
@@ -8,6 +8,8 @@ import { ILike, In, Raw, Repository } from 'typeorm';
 
 @Injectable()
 export class SearchService {
+    private readonly logger = new Logger(SearchService.name);
+
     constructor(
         @InjectRepository(Track) private readonly tracksRepository: Repository<Track>,
         @InjectRepository(MusicalGenre) private readonly musicalGenresRepository: Repository<MusicalGenre>,
@@ -57,7 +59,7 @@ export class SearchService {
 
             return { tracks, musicalGenres, authors }
         } catch (error) {
-            console.error("[SearchService] Error during search:", error)
+            this.logger.error('Error durante búsqueda:', error)
             throw error
         }
     }
