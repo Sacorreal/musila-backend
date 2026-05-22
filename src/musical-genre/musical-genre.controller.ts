@@ -7,13 +7,18 @@ import {
   Post,
   Query,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateMusicalGenreInput } from './dto/create-musical-genre.input';
 import { UpdateMusicalGenreInput } from './dto/update-musical-genre.input';
 import { MusicalGenreService } from './musical-genre.service';
-import { PaginationDto} from '../shared/dto/pagination.dto';
+import { PaginationDto } from '../shared/dto/pagination.dto';
 import { PaginatedMusicalGenreResponseDto } from './dto/musical-genre-pagination.dto';
+import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../users/guards/roles.guard';
+import { Roles } from '../users/decorators/roles.decorator';
+import { UserRole } from '../users/entities/user-role.enum';
 
 @ApiTags('Géneros Musicales')
 @Controller('musical-genre')
@@ -23,6 +28,8 @@ export class MusicalGenreController {
 
 
 
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JWTAuthGuard, RolesGuard)
   @ApiBearerAuth('JWT-auth')
   @Post()
   @ApiOperation({
@@ -76,6 +83,8 @@ export class MusicalGenreController {
   }
 
 
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JWTAuthGuard, RolesGuard)
   @ApiBearerAuth('JWT-auth')
   @Put(':id')
   @ApiOperation({
@@ -103,6 +112,8 @@ export class MusicalGenreController {
 
  
  
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JWTAuthGuard, RolesGuard)
   @ApiBearerAuth('JWT-auth')
   @Delete(':id')
   @ApiOperation({

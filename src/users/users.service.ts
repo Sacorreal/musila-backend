@@ -1,11 +1,13 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { In, Repository } from 'typeorm';
+import * as bcrypt from 'bcrypt';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
 import { UserRole } from './entities/user-role.enum';
@@ -13,6 +15,7 @@ import { User } from './entities/user.entity';
 import { StorageService } from '../shared/storage/storage.service';
 
 import { PaginationDto } from '../shared/dto/pagination.dto';
+import { FilterUserDto } from './dto/filter-user.dto';
 
 const userRelations: string[] = [
   'tracks',
@@ -132,13 +135,25 @@ export class UsersService {
     return this.findUserWithRelations(id);
   }
 
-  async findAllUsersService(paginationDto: PaginationDto) {
-    const { limit, offset } = paginationDto;
-    const [data, total] = await this.usersRepository.findAndCount({
-      take: limit,
-      skip: offset,
-      order: { createdAt: 'DESC' },
-    });
+  async findAllUsersService(dto: FilterUserDto) {
+    const { limit, offset, search, role, isVerified } = dto;
+
+    const qb = this.usersRepository
+      .createQueryBuilder('u')
+      .orderBy('u.createdAt', 'DESC')
+      .take(limit)
+      .skip(offset);
+
+    if (search) {
+      qb.andWhere(
+        '(u.name ILIKE :s OR u.last_name ILIKE :s OR u.email ILIKE :s)',
+        { s: `%${search}%` },
+      );
+    }
+    if (role) qb.andWhere('u.role = :role', { role });
+    if (isVerified !== undefined) qb.andWhere('u.is_verified = :isVerified', { isVerified });
+
+    const [data, total] = await qb.getManyAndCount();
     return { data, total };
   }
 
@@ -173,6 +188,20 @@ export class UsersService {
       order: { createdAt: 'DESC' },
     });
     return { data, total };
+  }
+
+  async createAdminUserService(dto: CreateUserInput): Promise<User> {
+    const exists = await this.usersRepository.findOne({ where: { email: dto.email } });
+    if (exists) throw new ConflictException('Ya existe un usuario con ese email');
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    return this.createUserService({ ...dto, password: hashedPassword, role: UserRole.ADMIN });
+  }
+
+  async deleteUserByIdService(id: string): Promise<{ id: string; message: string }> {
+    const result = await this.usersRepository.softDelete(id);
+    if (result.affected === 0) throw new NotFoundException('El usuario no existe');
+    return { id, message: 'Usuario eliminado' };
   }
 
   async saveResetToken(userId: string, token: string, expires: Date) {

@@ -8,7 +8,7 @@ import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { UserRole } from 'src/users/entities/user-role.enum';
 import { User } from 'src/users/entities/user.entity';
-import { FindOptionsWhere, In, Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { Track } from './entities/track.entity';
@@ -187,7 +187,8 @@ export class TracksService {
       language,
       subGenre,
       genreId,
-      isAvailable = true
+      isAvailable,
+      title,
     } = options.params ?? {};
 
     // 1. Determinar si el usuario tiene acceso a todas las canciones (RBAC)
@@ -198,13 +199,17 @@ export class TracksService {
       UserRole.INVITADO
     ].includes(user?.role);
 
+    // Admins ven todos los tracks por defecto; el resto solo los disponibles
+    const effectiveIsAvailable = isAvailable ?? (hasGlobalAccess ? undefined : true);
+
     // 2. Construcción limpia del Query Object
     const where: FindOptionsWhere<Track> = {
-      isAvailable,
+      ...(effectiveIsAvailable !== undefined && { isAvailable: effectiveIsAvailable }),
       ...(isGospel !== undefined && { isGospel }),
       ...(language && { language }),
       ...(subGenre && { subGenre }),
       ...(genreId && { genre: { id: genreId } }),
+      ...(title && { title: ILike(`%${title}%`) }),
       // 3. Restricción de propietario: Si NO tiene acceso global, filtra por su ID
       ...(!hasGlobalAccess && user && { authors: { id: user.id } }),
     };

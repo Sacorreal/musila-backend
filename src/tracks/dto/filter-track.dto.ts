@@ -1,9 +1,14 @@
 import { IsBoolean, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
-import { PaginationDto } from 'src/shared/dto/pagination.dto'; 
+import { PaginationDto } from 'src/shared/dto/pagination.dto';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class FilterTrackDto extends PaginationDto {
+  @ApiPropertyOptional({ description: 'Buscar por título (búsqueda parcial)', example: 'amor', type: String })
+  @IsString()
+  @IsOptional()
+  title?: string;
+
   @ApiPropertyOptional({ description: 'Filtrar por género gospel', example: true, type: Boolean })
   @IsBoolean()
   @IsOptional()
