@@ -1,35 +1,38 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsBoolean, IsNumber, IsOptional } from 'class-validator';
-export class FilterTrackDto {
-  @IsNumber()
-  @IsOptional()
-  @ApiProperty({
-    description: 'The number of items to return',
-    example: 10,
-  })
-  limit: number;
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
+import { PaginationDto } from 'src/shared/dto/pagination.dto';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
-  @IsNumber()
+export class FilterTrackDto extends PaginationDto {
+  @ApiPropertyOptional({ description: 'Buscar por título (búsqueda parcial)', example: 'amor', type: String })
+  @IsString()
   @IsOptional()
-  @ApiProperty({
-    description: 'The number of items to skip',
-    example: 0,
-  })
-  offset: number;
+  title?: string;
 
+  @ApiPropertyOptional({ description: 'Filtrar por género gospel', example: true, type: Boolean })
   @IsBoolean()
   @IsOptional()
-  isGospel: boolean;
+  @Transform(({ value }) => value === 'true' || value === true)
+  isGospel?: boolean;
 
+  @ApiPropertyOptional({ description: 'Filtrar por ID de género musical', example: '123e4567-e89b-12d3-a456-426614174000', type: String })
+  @IsString()
   @IsOptional()
-  genreId: string;
+  genreId?: string;
 
+  @ApiPropertyOptional({ description: 'Filtrar por subgénero musical', example: 'Rock alternativo', type: String })
+  @IsString()
   @IsOptional()
-  subGenre: string;
+  subGenre?: string;
 
+  @ApiPropertyOptional({ description: 'Filtrar por idioma', example: 'es', type: String })
+  @IsString()
   @IsOptional()
-  language: string;
+  language?: string;
 
+  @ApiPropertyOptional({ description: 'Filtrar por estado de disponibilidad', example: true, type: Boolean })
+  @IsBoolean()
   @IsOptional()
-  isAvailable: boolean;
+  @Transform(({ value }) => value === 'true' || value === true)
+  isAvailable?: boolean;
 }

@@ -1,12 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Track } from 'src/tracks/entities/track.entity';
-import { ILike, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { CreateMusicalGenreInput } from './dto/create-musical-genre.input';
 import { UpdateMusicalGenreInput } from './dto/update-musical-genre.input';
 import { MusicalGenre } from './entities/musical-genre.entity';
+import { PaginationDto } from '../shared/dto/pagination.dto'
 
-const musicalGenreRelations: string[] = ['tracks'];
+const musicalGenreRelations: string[] = ['tracks', 'tracks.authors'];
 
 @Injectable()
 export class MusicalGenreService {
@@ -15,7 +16,7 @@ export class MusicalGenreService {
     private readonly musicalGenreRepository: Repository<MusicalGenre>,
     @InjectRepository(Track)
     private readonly trackRepository: Repository<Track>,
-  ) {}
+  ) { }
 
   private async findMusicalGenreWithRelations(
     identifier: string,
@@ -31,7 +32,7 @@ export class MusicalGenreService {
       });
     } else {
       genre = await this.musicalGenreRepository.findOne({
-        where: { genre: ILike(identifier) },
+        where: { slug: identifier },
         relations: musicalGenreRelations,
       });
     }
@@ -56,9 +57,18 @@ export class MusicalGenreService {
     return await this.saveAndReturnGenreWithRelations(newMusicalGenre);
   }
 
-  async findAllMusicalGenreService() {
-    
-    return await this.musicalGenreRepository.find();
+  async findAllMusicalGenreService(
+    paginationDto: PaginationDto
+  ) {
+    const { limit, offset } = paginationDto
+
+    const [data, total] = await this.musicalGenreRepository.findAndCount({
+      take: limit,
+      skip: offset,
+      order: { createdAt: 'DESC' },
+    });
+
+    return { data, total };
   }
 
   async findOneMusicalGenreService(id: string) {

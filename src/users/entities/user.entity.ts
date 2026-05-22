@@ -3,6 +3,7 @@ import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Playlist } from 'src/playlists/entities/playlist.entity';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { Track } from 'src/tracks/entities/track.entity';
+import { Notification } from 'src/notifications/entities/notification.entity';
 import {
   Column,
   CreateDateColumn,
@@ -59,7 +60,10 @@ export class User {
   role: UserRole;
 
   @Column('varchar', { name: 'avatar', nullable: true })
-  avatar?: string;
+  avatarUrl?: string;
+
+  @Column('varchar', { nullable: true, name: 'avatar_key' })
+  avatarKey?: string
 
   @Column('boolean', { default: false, name: 'is_verified' })
   isVerified: boolean;
@@ -86,7 +90,6 @@ export class User {
 
   @OneToMany(() => Playlist, (playlist) => playlist.owner, {
     nullable: true,
-    lazy: true,
   })
   playlists?: Playlist[];
 
@@ -97,8 +100,26 @@ export class User {
   )
   requestSent?: RequestedTrack[];
 
+  @OneToMany(
+    () => RequestedTrack,
+    (requestedTrack) => requestedTrack.owner,
+    { nullable: true }
+  )
+  requestReceived?: RequestedTrack[]
+
+  @OneToMany(() => Notification, (notification) => notification.recipient, {
+    nullable: true,
+  })
+  notifications?: Notification[];
+
   @Column('boolean', { default: true, name: 'is_user_free' })
   isUserFree: boolean;
+
+  @Column('varchar', { nullable: true, name: 'reset_token', select: false })
+  resetToken?: string;
+
+  @Column('timestamp', { nullable: true, name: 'reset_token_expires' })
+  resetTokenExpires?: Date;
 
   @CreateDateColumn({
     name: 'created_at',

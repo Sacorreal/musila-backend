@@ -33,6 +33,7 @@ export class SearchController {
     })
     @ApiResponse({ status: 400, description: 'Parámetro de búsqueda no proporcionado' })
     async searchController(@Query('q') query: string) {
+
         return await this.searchService.searchService(query);
     }
 }

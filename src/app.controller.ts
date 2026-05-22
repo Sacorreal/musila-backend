@@ -4,6 +4,10 @@ import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 @ApiTags('Health')
 @Controller()
 export class AppController {
+
+  constructor(
+  ) { }
+
   @Get()
   @ApiOperation({
     summary: 'Verificar estado de la API',
@@ -22,6 +26,9 @@ export class AppController {
     },
   })
   getHealth() {
+
+
+
     return {
       status: 'ok',
       message: 'API is running correctly 🎉',

@@ -1,4 +1,3 @@
-
 import { Track } from 'src/tracks/entities/track.entity';
 import { User } from 'src/users/entities/user.entity';
 import {
@@ -6,12 +5,16 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  JoinColumn,
   ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { LicenseType } from './license-type.enum';
 import { RequestsStatus } from './requests-status.enum';
+import { Chat } from 'src/chat/entities/chat.entity';
+
 
 @Entity({ name: 'requested_track' })
 export class RequestedTrack {
@@ -21,6 +24,13 @@ export class RequestedTrack {
 
   @ManyToOne(() => User, (user) => user.requestSent)
   requester: User;
+
+  @ManyToOne(() => User, (user) => user.requestReceived)
+  @JoinColumn()
+  owner: User;
+
+  @OneToOne(() => Chat, (chat) => chat.request)
+  chat?: Chat
 
   @ManyToOne(() => Track, (track) => track.requestedTrack)
   track: Track;
@@ -37,6 +47,9 @@ export class RequestedTrack {
 
   @Column({ name: 'approved_by_requester', default: false })
   approvedByRequester: boolean;
+
+  @Column({ name: 'approved_by_owner', default: false })
+  approvedByOwner: boolean;
 
   @Column({ type: 'text', nullable: true })
   documentUrl?: string | null;

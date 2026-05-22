@@ -1,40 +1,52 @@
 import { GuestsService } from './guests.service';
-import { CreateGuestInput } from './dto/create-guest.input';
+
 import { UpdateGuestInput } from './dto/update-guest.input';
-import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { RegisterGuestDto } from './dto/register-guest.dto';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { PaginationDto } from 'src/shared/dto/pagination.dto';
+import { PaginatedGuestsResponseDto } from './dto/guest-pagination.dto';
+import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { CurrentUser } from 'src/users/decorators/current-user.decorator';
+import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
 @ApiTags('Invitados')
 @Controller('guests')
 export class GuestsController {
   constructor(private readonly guestsService: GuestsService) { }
 
-
-  @Post()
+  // ─── POST /guests/register-from-invite ─────────────────────────────────────
+  @Post('register-from-invite')
   @ApiOperation({
-    summary: 'Crear nuevo invitado',
-    description: 'Crea un nuevo registro de invitado en el sistema.',
+    summary: 'Registrar un nuevo invitado desde un token',
+    description: 'Endpoint público. Valida el token, crea el guest y lo marca como usado.',
   })
-  @ApiResponse({
-    status: 201,
-    description: 'Invitado creado exitosamente',
-  })
-  @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  async createGuestController(@Body() createGuestInput: CreateGuestInput) {
-    return await this.guestsService.createGuestsService(createGuestInput);
+  @ApiBody({ type: RegisterGuestDto })
+  @ApiResponse({ status: 201, description: 'Invitado registrado exitosamente' })
+  @ApiResponse({ status: 400, description: 'Token ya utilizado' })
+  @ApiResponse({ status: 404, description: 'Token no encontrado' })
+  @ApiResponse({ status: 409, description: 'El número de documento ya está registrado' })
+  @ApiResponse({ status: 410, description: 'Token expirado' })
+  async registerFromInviteController(@Body() dto: RegisterGuestDto) {
+    return await this.guestsService.registerFromInvite(dto);
   }
 
   @Get()
+  @UseGuards(JWTAuthGuard)
   @ApiOperation({
     summary: 'Obtener todos los invitados',
-    description: 'Obtiene la lista completa de invitados registrados en el sistema.',
+    description: 'Retorna los invitados del usuario logueado. Si el usuario es ADMIN, retorna todos los invitados del sistema.',
   })
   @ApiResponse({
     status: 200,
     description: 'Lista de invitados obtenida exitosamente',
+    type: PaginatedGuestsResponseDto
   })
-  async findAllGuestsController() {
-    return await this.guestsService.findAllGuestsService();
+  async findAllGuestsController(
+    @Query() paginationDto: PaginationDto,
+    @CurrentUser() currentUser: JwtPayload,
+  ) {
+    return await this.guestsService.findAllGuestsService(paginationDto, currentUser);
   }
 
   @Get(':id')

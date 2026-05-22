@@ -35,7 +35,7 @@ describe('AuthController', () => {
 
   describe('loginController', () => {
     it('Debe llamar a loginService con el dto recibido', async () => {
-      const dto: LoginAuthDto = { email: 'test@test.com', password: '123456' };
+      const dto: LoginAuthDto = { citizenID: '123456789', password: '123456' };
       (authService.loginService as jest.Mock).mockResolvedValue('mock-token');
 
       const result = await authController.loginController(dto)
@@ -50,7 +50,7 @@ describe('AuthController', () => {
 
     it('Si la contraseña no coincide debe lanzar un BadRequestException', async () => {
 
-      const dto: RegisterAuthDto = { name: 'test', lastName: 'test', email: 'test@test.com', password: '123456', repeatPassword: '1234567' };
+      const dto: RegisterAuthDto = { name: 'test', lastName: 'test', citizenID: '123456789', email: 'test@test.com', password: '123456', repeatPassword: '1234567', countryCode: '+57', phone: '3000000000', typeCitizenID: 'CC', role: 'INVITADO' as any };
       (authService.registerService as jest.Mock).mockResolvedValue('user-created');
 
       await expect(authController.registerController(dto))
@@ -60,7 +60,7 @@ describe('AuthController', () => {
 
     it('Debe llamar a registerService y retornar el resultado si las contraseñas coinciden', async () => {
 
-      const dto: RegisterAuthDto = { name: 'test', lastName: 'test', email: 'test@test.com', password: '123456', repeatPassword: '123456' }
+      const dto: RegisterAuthDto = { name: 'test', lastName: 'test', citizenID: '123456789', email: 'test@test.com', password: '123456', repeatPassword: '123456', countryCode: '+57', phone: '3000000000', typeCitizenID: 'CC', role: 'INVITADO' as any }
       mockAuthService.registerService.mockResolvedValue('user-created')
 
       const result = await authController.registerController(dto)

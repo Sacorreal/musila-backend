@@ -40,23 +40,23 @@ describe('AuthService', () => {
 
       await expect(
         authService.loginService({
-          email: 'test@test.com',
+          citizenID: '123456789',
           password: '123456'
         })
       ).rejects.toThrow(UnauthorizedException)
     })
 
     it('Debe lanzar UnatorizedException si la contraseña es incorrecta', async () => {
-      // eslint-disable-next-line @typescript-eslint/unbound-method
+       
       usersService.findUserByEmailService.mockResolvedValue({
         id: '1',
         email: 'test@test.com',
         password: 'hashedPassword'
       } as any);
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(false)
+      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(false) as any)
 
       await expect(
-        authService.loginService({ email: "test@test.com", password: "wrong" })
+        authService.loginService({ citizenID: "123456789", password: "wrong" })
       ).rejects.toThrow(UnauthorizedException)
     })
 
@@ -66,10 +66,10 @@ describe('AuthService', () => {
         email: "test@test.com",
         password: "hashedPassword"
       } as any)
-      jest.spyOn(bcrypt, 'compare').mockResolvedValue(true)
+      jest.spyOn(bcrypt, 'compare').mockImplementation(() => Promise.resolve(true) as any)
       jwtService.signAsync.mockResolvedValue('fake-jwt-token')
 
-      const result = await authService.loginService({ email: 'test@test.com', password: '123456' })
+      const result = await authService.loginService({ citizenID: '123456789', password: '123456' })
 
       expect(result).toEqual({ token: 'fake-jwt-token' })
     })
@@ -80,6 +80,7 @@ describe('AuthService', () => {
       usersService.findUserByEmailService.mockResolvedValue({} as any)
       await expect(
         authService.registerService({
+          citizenID: '123456789',
           email: 'test@test.com',
           password: '123456',
           repeatPassword: '123456',
@@ -97,14 +98,16 @@ describe('AuthService', () => {
         name: 'test'
       } as any)
 
+      jwtService.signAsync.mockResolvedValue('fake-jwt-token')
+
       const result = await authService.registerService({
+        citizenID: '123456789',
         email: 'test@test.com',
         password: '123456',
         repeatPassword: '123456',
         name: 'test'
       } as any)
-      expect(result).not.toHaveProperty('password')
-      expect(result.email).toBe('test@test.com')
+      expect(result).toEqual({ token: 'fake-jwt-token' })
     })
   })
 });

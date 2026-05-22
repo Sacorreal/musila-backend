@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsUUID } from 'class-validator';
 import { CreateIntellectualPropertyInput } from './create-intellectual-property.input';
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType } from '@nestjs/swagger';
 
 export class UpdateIntellectualPropertyInput extends PartialType(
   CreateIntellectualPropertyInput,

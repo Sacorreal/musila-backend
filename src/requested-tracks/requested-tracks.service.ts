@@ -1,28 +1,38 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { MailService } from 'src/mail/mail.service';
-import { StorageService } from 'src/storage/storage.service';
+
 import { Track } from 'src/tracks/entities/track.entity';
-import { User } from 'src/users/entities/user.entity';
-import { Repository } from 'typeorm';
+import { RequestsStatus } from './entities/requests-status.enum';
+
+import { Repository, FindOptionsWhere, In, DataSource, Not } from 'typeorm';
+import { Message } from 'src/chat/entities/message.entity';
 import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
 import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
 import { RequestedTrack } from './entities/requested-track.entity';
+import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+
+import { UserRole } from '../users/entities/user-role.enum';
+import { PaginationDto } from '../shared/dto/pagination.dto'
+import { Chat } from 'src/chat/entities/chat.entity';
+import { EventBusService } from 'src/shared/events/event-bus.service';
 
 const requestedTracksRelations: string[] = [
   'requester',
   'track',
+  'owner',
+  'chat'
 ]
 
 @Injectable()
 export class RequestedTracksService {
+
   constructor(
     @InjectRepository(RequestedTrack) private readonly requestedTracksRepository: Repository<RequestedTrack>,
     @InjectRepository(Track) private readonly tracksRepository: Repository<Track>,
-    @InjectRepository(User) private readonly usersRepository: Repository<User>,
-    private readonly storageService: StorageService,
-    private readonly mailService: MailService
-
+    @InjectRepository(Chat) private readonly chatRepository: Repository<Chat>,
+    @InjectRepository(Message) private readonly messageRepository: Repository<Message>,
+    private readonly eventBus: EventBusService,
+    private readonly dataSource: DataSource,
   ) { }
 
   private async findRequestedTrackWithRelations(id: string): Promise<RequestedTrack> {
@@ -41,61 +51,121 @@ export class RequestedTracksService {
     return await this.findRequestedTrackWithRelations(savedRequestedTrack.id)
   }
 
-  async createRequestedTracksService(createRequestedTrackInput: CreateRequestedTrackInput) {
-    const { requesterId, trackId, licenseType } = createRequestedTrackInput
-
-    const requester = await this.usersRepository.findOne({ where: { id: requesterId } })
-    if (!requester) throw new NotFoundException('El usuario solicitante no existe')
-
+  async createRequestedTracksService(
+    { trackId, licenseType }: CreateRequestedTrackInput,
+    userRequester: JwtPayload
+  ) {
+    // Cargamos solo el ID de los autores para no saturar memoria
     const track = await this.tracksRepository.findOne({
       where: { id: trackId },
+      select: ['id', 'title'],
       relations: ['authors']
-    })
-    if (!track) throw new NotFoundException('La pista no existe')
+    });
 
-    let documentUrl: string | null = null    
+    if (!track) throw new NotFoundException('La pista no existe');
 
-    const newRequestedTrack = this.requestedTracksRepository.create({
-      requester,
-      track,
-      licenseType,
-      documentUrl,
-    })
+    // Validamos que el solicitante no sea autor de la canción
+    const isAuthor = track.authors.some(author => author.id === userRequester.id);
+    if (isAuthor) throw new BadRequestException('No puedes solicitar una licencia de tu propia canción');
 
-    const savedNewRequestedTrack = await this.saveAndReturnWithRelations(newRequestedTrack)
+    // ❌ Evitar duplicados: solo bloquear si ya existe una solicitud ACTIVA (pendiente o aprobada)
+    // Si fue rechazada, el usuario puede volver a solicitar la misma pista
+    const activeStatuses = [RequestsStatus.PENDIENTE, RequestsStatus.APROBADA];
 
-    const authors = track.authors
-    const authorsNames = authors.map(author => author.name).join(', ')
-    const isMultipleAuthors = authors.length > 1;
+    const existingActive = await this.requestedTracksRepository.findOne({
+      where: {
+        requester: { id: userRequester.id },
+        track: { id: trackId },
+        status: In(activeStatuses),
+      }
+    });
 
-    {/* TODO: configurar servidor para envío de email      
-     
-    for (const author of authors) {
-      await this.mailService.sendAuthorRequestNotificationService(
-        author.email,
-        author.name,
-        track.title,
-        requester.name,
-        licenseType,
-
-      )
+    if (existingActive) {
+      throw new ConflictException({
+        statusCode: 409,
+        error: 'Conflict',
+        message: 'Ya tienes una solicitud activa para esta pista',
+        details: {
+          trackId,
+          currentStatus: existingActive.status,
+          requestId: existingActive.id,
+        }
+      });
     }
 
-    await this.mailService.sendRequestTrackService(
-      requester.email,
-      requester.name,
-      track.title,
-      authorsNames,
-      savedNewRequestedTrack.status,
-      isMultipleAuthors
-    )
-    */}
+    // 🔒 Transacción: RequestedTrack + Chat se crean juntos o ninguno se guarda.
+    // Esto evita registros huérfanos que causarían falsos 409 en solicitudes futuras.
+    const savedId = await this.dataSource.transaction(async (manager) => {
+      const newRequestedTrack = manager.create(RequestedTrack, {
+        requester: { id: userRequester.id },
+        track: { id: trackId },
+        licenseType,
+      });
 
-    return savedNewRequestedTrack
+      const savedRequestedTrack = await manager.save(RequestedTrack, newRequestedTrack);
+      await manager.save(Chat, { request: { id: savedRequestedTrack.id } });
+
+      return savedRequestedTrack.id;
+    });
+
+    const fullTrack = await this.findRequestedTrackWithRelations(savedId);
+
+    this.eventBus.emit('track.request.created', {
+      chatId: fullTrack.chat?.id || '',
+      requesterId: userRequester.id,
+      authorIds: track.authors.map(a => a.id),
+      trackTitle: track.title,
+      licenseType: fullTrack.licenseType,
+    });
+
+    return fullTrack;
   }
 
-  async findAllRequestedTracksService() {
-    return await this.requestedTracksRepository.find()
+  async findAllRequestedTracksService(
+    user: JwtPayload,
+    paginationDto: PaginationDto,
+  ) {
+    const { limit, offset } = paginationDto;
+
+    const isAdmin = user?.role === UserRole.ADMIN;
+
+    // Si no es Admin, filtramos para que vea:
+    // 1. Solicitudes que él mismo hizo (requester)
+    // 2. Solicitudes hacia sus canciones (autor)
+    // 3. Solicitudes donde es un invitado (guest)
+    const where: FindOptionsWhere<RequestedTrack> | FindOptionsWhere<RequestedTrack>[] = isAdmin
+      ? {}
+      : [
+          { requester: { id: user.id } },
+          { track: { authors: { id: user.id } } },
+          { chat: { guests: { id: user.id } } }
+        ];
+
+    const [data, total] = await this.requestedTracksRepository.findAndCount({
+      where,
+      take: limit,
+      skip: offset,
+      relations: ['track', 'track.authors', 'requester', 'chat']
+    });
+
+    const dataWithCounts = await Promise.all(data.map(async (req) => {
+      if (!req.chat) return { ...req, unreadCount: 0 };
+      
+      const unreadCount = await this.messageRepository.count({
+        where: {
+          chat: { id: req.chat.id },
+          isRead: false,
+          sender: { id: Not(user.id) }
+        }
+      });
+      
+      return { ...req, unreadCount };
+    }));
+
+    return {
+      data: dataWithCounts,
+      total
+    };
   }
 
   async findOneRequestedTracksService(id: string) {
@@ -107,7 +177,19 @@ export class RequestedTracksService {
 
     Object.assign(existingRequestedTrack, updateRequestedTrackInput)
 
-    return await this.saveAndReturnWithRelations(existingRequestedTrack)
+    const updatedRequestedTrack = await this.saveAndReturnWithRelations(existingRequestedTrack)
+
+    this.eventBus.emit('track.request.updated', {
+      requestId: updatedRequestedTrack.id,
+      chatId: updatedRequestedTrack.chat?.id || '',
+      trackTitle: updatedRequestedTrack.track.title,
+      status: updatedRequestedTrack.status,
+      requesterId: updatedRequestedTrack.requester.id,
+      requesterEmail: updatedRequestedTrack.requester.email,
+      requesterName: updatedRequestedTrack.requester.name,
+    });
+
+    return updatedRequestedTrack;
   }
 
   async removeRequestedTracksService(id: string) {

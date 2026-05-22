@@ -6,7 +6,7 @@ export class ForgotPasswordDto {
 
     @ApiProperty({
         example: 'example@example.com',
-        description: 'Email del usuario a recuperar la password'
+        description: 'Email del usuario a recuperar password'
     })
     @IsNotEmpty({})
     @IsEmail(

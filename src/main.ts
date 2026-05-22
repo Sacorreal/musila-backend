@@ -2,6 +2,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import * as dotenv from 'dotenv';
+import helmet from 'helmet';
 
 if (process.env.NODE_ENV === 'local') {
   dotenv.config({ path: '.env.local' });
@@ -11,9 +12,15 @@ if (process.env.NODE_ENV === 'local') {
 import { AppModule } from './app.module';
 import { RequestsStatusDto } from './requested-tracks/dto/requests-status.dto';
 import * as cookieParser from 'cookie-parser';
+import { GlobalExceptionFilter } from './shared/filters/global-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }));
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -24,6 +31,7 @@ async function bootstrap() {
       },
     }),
   );
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   const allowedOrigins = [
     process.env.WEB_APP_PRODUCTION,
@@ -64,6 +72,6 @@ async function bootstrap() {
   });
   SwaggerModule.setup('api', app, document);
 
-  await app.listen(process.env.PORT || 3000);
+  await app.listen(process.env.PORT || 3001);
 }
 bootstrap();

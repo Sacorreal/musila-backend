@@ -7,14 +7,6 @@ import { ApiProperty } from '@nestjs/swagger';
 export class CreateRequestedTrackInput {
 
   @ApiProperty({
-    example: '550e8400-e29b-41d4-a716-446655440000',
-    description: 'Identificador único (UUID v4) del usuario que solicita el track.'
-  })
-  @IsUUID('4', { message: 'El requesterId debe ser un UUID v4 válido' })
-  @IsNotEmpty({ message: 'El requesterId es obligatorio' })
-  requesterId: string;
-
-  @ApiProperty({
     example: '660e8400-e29b-41d4-a716-446655440000',
     description: 'Identificador único (UUID v4) del track solicitado.'
   })

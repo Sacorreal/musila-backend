@@ -1,8 +1,8 @@
 
 
 export enum LicenseType {
-    LICENCIA_DE_PRIMER_USO = 'licencia_de_primer_uso',
-    LICENCIA_TRADUCCION = 'licencia_traduccion',
-    LICENCIA_REPRODUCCION = 'licencia_reproduccion',
-    LICENCIA_SINCRONIZACION = 'licencia_sincronizacion'
+    LICENCIA_DE_PRIMER_USO = 'licencia de primer uso',
+    LICENCIA_TRADUCCION = 'licencia traduccion',
+    LICENCIA_REPRODUCCION = 'licencia reproduccion',
+    LICENCIA_SINCRONIZACION = 'licencia sincronizacion'
 }

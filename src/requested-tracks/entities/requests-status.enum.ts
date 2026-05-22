@@ -3,6 +3,7 @@
 export enum RequestsStatus {
     APROBADA = 'aprobada',
     RECHAZADA = 'rechazada',
-    PENDIENTE = 'pendiente'
+    PENDIENTE = 'pendiente',
+    CANCELADA = 'cancelada'
 }
 

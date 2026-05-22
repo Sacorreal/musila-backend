@@ -19,6 +19,7 @@ export class CreateMusicalGenreInput {
   @IsOptional()
   subGenre?: string[];
 
+  @ApiPropertyOptional({ description: 'Slug del género musical (auto-generado si se omite)', example: 'rock' })
   @IsString()
   @IsOptional()
   slug?: string;

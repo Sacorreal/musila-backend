@@ -1,7 +1,7 @@
-import { Guest } from 'src/guests/entities/guest.entity';
+import { PlaylistCollaborator } from 'src/playlist-collaborators/entities/playlist-collaborator.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { User } from 'src/users/entities/user.entity';
-import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, DeleteDateColumn, Entity, JoinColumn, JoinTable, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 @Entity({ name: 'playlist' })
 export class Playlist {
@@ -12,19 +12,17 @@ export class Playlist {
   @Column({ type: 'varchar' })
   title: string;
 
-  @ManyToOne(() => User, (user) => user.playlists)
-  @JoinColumn()
   @ManyToOne(() => User, user => user.playlists, {
     onDelete: 'CASCADE' // Borra el playlists al borrar el user
   })
+  @JoinColumn()
   owner: User
 
   @Column({ type: 'varchar', nullable: true })
   cover?: string
 
-  @ManyToMany(() => Guest, guest => guest.playlists, { cascade: true })
-  @JoinTable({ name: 'playlist_guests' })
-  guests?: Guest[]
+  @OneToMany(() => PlaylistCollaborator, collaborator => collaborator.playlist, { cascade: true })
+  collaborators?: PlaylistCollaborator[]
 
   @ManyToMany(() => Track, track => track.playlists, { cascade: true })
   @JoinTable({ name: 'playlist_tracks' })
@@ -35,16 +33,17 @@ export class Playlist {
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP'
   })
+  createdAt: Date
 
   @UpdateDateColumn({
-    name: 'update_at',
+    name: 'updated_at',
     type: 'timestamp',
     default: () => 'CURRENT_TIMESTAMP'
   })
   updatedAt: Date
 
   @DeleteDateColumn({
-    name: 'delete_at',
+    name: 'deleted_at',
     type: 'timestamp',
     nullable: true
   })

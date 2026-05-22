@@ -13,23 +13,31 @@ import {
 
 @Entity({ name: 'intellectual_property' })
 export class IntellectualProperty {
-  @ApiProperty({ example: '' , description: '' })
+  @ApiProperty({ example: '123e4567-e89b-12d3-a456-426614174000', description: 'ID único de la propiedad intelectual' })
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ApiProperty({ example: '' , description: '' })
+  @ApiProperty({ example: 'cmo', description: 'Tipo de propiedad intelectual (copyrightOffice o cmo).' })
   @Column('varchar', { nullable: false })
-  title: string;
+  type: string;
 
-  @ApiProperty({ example: '' , description: '' })
-  @ManyToOne(() => Track, (track) => track.intellectualProperties)
+  @ApiProperty({ example: 'SAYCO', description: 'Código del país o acrónimo de la CMO.' })
+  @Column('varchar', { nullable: false })
+  key: string;
+
+  @ApiProperty({ type: () => Track, description: 'La pista musical a la que está asociada esta propiedad intelectual' })
+  @ManyToOne(() => Track, (track) => track.intellectualProperties, { onDelete: 'CASCADE' })
   track: Track;
 
-  @ApiProperty({ example: '' , description: '' })
+  @ApiProperty({ example: 'intellectual-property/doc123.pdf', description: 'Llave de almacenamiento para el documento PDF.' })
+  @Column('varchar', { nullable: true, name: 'document_key' })
+  documentKey: string;
+
+  @ApiProperty({ example: 'https://docs.google.com/...', description: 'URL del documento legal respaldatorio' })
   @Column('varchar', { nullable: false, name: 'document_url' })
   documentUrl: string;
 
-  @ApiProperty({ example: '' , description: '' })
+  @ApiProperty({ example: '2026-04-08T02:00:00Z', description: 'Fecha de creación' })
   @CreateDateColumn({
     name: 'created_at',
     type: 'timestamp',
@@ -37,7 +45,7 @@ export class IntellectualProperty {
   })
   createdAt: Date;
 
-  @ApiProperty({ example: '' , description: '' })
+  @ApiProperty({ example: '2026-04-08T02:00:00Z', description: 'Fecha de última actualización' })
   @UpdateDateColumn({
     name: 'updated_at',
     type: 'timestamp',
@@ -45,7 +53,7 @@ export class IntellectualProperty {
   })
   updatedAt: Date;
 
-  @ApiProperty({ example: '' , description: '' })  
+  @ApiProperty({ example: null, description: 'Fecha de eliminación lógica' })  
   @DeleteDateColumn({
     name: 'deleted_at',
     type: 'timestamp',

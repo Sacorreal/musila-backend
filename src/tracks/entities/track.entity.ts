@@ -1,5 +1,3 @@
-//TODO: Agregar como atributos los metadatos que vienen como respuesta del servicio de alojamiento "Digital Ocean Spaces"
-
 import { IntellectualProperty } from 'src/intellectual-property/entities/intellectual-property.entity';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Playlist } from 'src/playlists/entities/playlist.entity';
@@ -31,21 +29,22 @@ export class Track {
   @ManyToOne(() => MusicalGenre, (musicalGenre) => musicalGenre.tracks, {
     onDelete: 'CASCADE',
     nullable: false,
+    eager: true,
   })
   genre: MusicalGenre;
 
   @Column('varchar', { name: 'sub_genre', nullable: true })
   subGenre?: string;
 
-  @Column({ type: 'varchar', default: 'https://musila.sfo3.cdn.digitaloceanspaces.com/musila-logo.jpeg', nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   coverUrl?: string;
 
-  @Column('varchar', { nullable: true, name: 'audio_url'})
+  @Column('varchar', { nullable: true, name: 'audio_url' })
   audioUrl?: string;
 
   @Column('int', { nullable: true })
   year?: number;
-  
+
   @Column('varchar', { name: 'audio_key', default: 'sin-audio-key' })
   audioKey: string;
 
@@ -58,7 +57,10 @@ export class Track {
   @Column('jsonb', { name: 'externals_ids', nullable: true })
   externalsIds?: ExternalId[]
 
-  @OneToMany(() => IntellectualProperty, (it) => it.track)
+  @Column('varchar', { nullable: true, name: 'iswc' })
+  iswc?: string;
+
+  @OneToMany(() => IntellectualProperty, (it) => it.track, { cascade: true })
   intellectualProperties?: IntellectualProperty[];
 
   @Column('boolean', { default: true, name: 'is_available' })
@@ -70,7 +72,6 @@ export class Track {
 
   @ManyToMany(() => Playlist, (playlist) => playlist.tracks, {
     nullable: true,
-    lazy: true,
   })
   playlists?: Playlist[];
 
@@ -79,7 +80,6 @@ export class Track {
 
   @OneToMany(() => RequestedTrack, (requestedTrack) => requestedTrack.track, {
     nullable: true,
-    lazy: true,
   })
   requestedTrack?: RequestedTrack[];
 

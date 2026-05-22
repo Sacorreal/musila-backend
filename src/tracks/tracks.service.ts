@@ -1,26 +1,26 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
-import { StorageService } from 'src/storage/storage.service';
+import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { UserRole } from 'src/users/entities/user-role.enum';
 import { User } from 'src/users/entities/user.entity';
-import { FindOptionsWhere, In, Repository } from 'typeorm';
+import { FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { Track } from './entities/track.entity';
-
+import { TrackResponseDto, PaginatedTracksResponseDto } from './dto/track-response.dto';
 import { FindAllTracksOptions } from './interface/tracks-options.interface';
-import { PutObjectDto } from 'src/storage/dto/put-object.dto';
+import { PaginationDto } from 'src/shared/dto/pagination.dto';
 
 const tracksRelations: string[] = [
   'genre',
   'intellectualProperties',
   'authors',
-  'tracks.authors',
   'playlists',
   'requestedTrack',
 ];
@@ -33,8 +33,8 @@ export class TracksService {
     @InjectRepository(MusicalGenre)
     private readonly genreRepository: Repository<MusicalGenre>,
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
-    private readonly storageService: StorageService,
-  ) {}
+
+  ) { }
 
   private async findTrackWithRelations(id: string): Promise<Track> {
     const track = await this.tracksRepository.findOne({
@@ -54,7 +54,7 @@ export class TracksService {
 
   async createTrackService(
     createTrackInput: CreateTrackInput,
-  ): Promise<Track> {
+  ): Promise<TrackResponseDto> {
     const {
       genreId,
       subGenre,
@@ -66,15 +66,15 @@ export class TracksService {
       externalsIds,
       ...rest
     } = createTrackInput;
-  
+
     // =============================
     // 1️⃣ Validar género
     // =============================
-  
+
     const genre = await this.genreRepository.findOne({
       where: { id: genreId },
     });
-  
+
     if (!genre)
       throw new NotFoundException(
         'El género musical no existe',
@@ -91,7 +91,7 @@ export class TracksService {
         if (!isValidSubGenre) {
           throw new BadRequestException(
             `El subgénero "${subGenre}" no pertenece al género "${genre.genre}". ` +
-              `Los subgéneros válidos son: ${genre.subGenre.join(', ')}.`,
+            `Los subgéneros válidos son: ${genre.subGenre.join(', ')}.`,
           );
         }
       } else {
@@ -100,35 +100,46 @@ export class TracksService {
         );
       }
     }
-  
+
     // =============================
     // 2️⃣ Validar autores
     // =============================
-  
+
     const authors = await this.usersRepository.find({
       where: { id: In(authorsIds) },
     });
-  
+
     if (authors.length !== authorsIds.length) {
       throw new NotFoundException(
         'Uno o más autores no existen',
       );
     }
-  
+
     // =============================
     // 3️⃣ Validar que venga audio
     // =============================
-  
+
     if (!audioKey || !audioUrl) {
       throw new BadRequestException(
         'El archivo de audio es obligatorio',
       );
     }
-  
+
+    // =============================
+    // 3.5️⃣ Validar Propiedades Intelectuales
+    // =============================
+
+    if (rest.intellectualProperties) {
+      const splitSheets = rest.intellectualProperties.filter(ip => ip.type === 'splitSheet');
+      if (splitSheets.length > 1) {
+        throw new BadRequestException('Solo se permite un documento Split Sheet por canción');
+      }
+    }
+
     // =============================
     // 4️⃣ Crear entidad
     // =============================
-  
+
     const newTrack = this.tracksRepository.create({
       ...rest,
       genre,
@@ -141,43 +152,103 @@ export class TracksService {
       year: new Date().getFullYear(),
       coverUrl: coverUrl ?? null,
     } as any);
-  
-    return await this.saveAndReturnWithRelations(newTrack as unknown as Track);
+
+    const saved = await this.saveAndReturnWithRelations(newTrack as unknown as Track);
+    return TrackResponseDto.fromEntity(saved);
   }
+
+  async findMyTracksService(user: JwtPayload, paginationDto: PaginationDto): Promise<PaginatedTracksResponseDto> {
+    const { limit, offset } = paginationDto;
+    const [tracks, total] = await this.tracksRepository.findAndCount({
+      where: {
+        authors: { id: user.id },
+      },
+      take: limit,
+      skip: offset,
+      order: { createdAt: 'DESC' },
+    });
+    return {
+      data: tracks.map((t) => TrackResponseDto.fromEntity(t)),
+      total,
+    };
+  }
+
+
+
+
 
   async findAllTracksService(
     options: FindAllTracksOptions = {},
-  ): Promise<Track[]> {
-    const { user, params } = options;
-    // Admin ve todo sin filtros
-    if (user?.role === UserRole.ADMIN) {
-      return this.tracksRepository.find();
-    }
+    user: JwtPayload
+  ): Promise<PaginatedTracksResponseDto> {
+    const {
+      limit,
+      offset,
+      isGospel,
+      language,
+      subGenre,
+      genreId,
+      isAvailable,
+      title,
+    } = options.params ?? {};
 
-    const { limit, offset, isGospel, language, subGenre } = params ?? {};
+    // 1. Determinar si el usuario tiene acceso a todas las canciones (RBAC)
+    const hasGlobalAccess = [
+      UserRole.ADMIN,
+      UserRole.INTERPRETE,
+      UserRole.CANTAUTOR,
+      UserRole.INVITADO
+    ].includes(user?.role);
 
+    // Admins ven todos los tracks por defecto; el resto solo los disponibles
+    const effectiveIsAvailable = isAvailable ?? (hasGlobalAccess ? undefined : true);
+
+    // 2. Construcción limpia del Query Object
     const where: FindOptionsWhere<Track> = {
-      ...(user && { authors: { id: user.id } }),
+      ...(effectiveIsAvailable !== undefined && { isAvailable: effectiveIsAvailable }),
       ...(isGospel !== undefined && { isGospel }),
       ...(language && { language }),
       ...(subGenre && { subGenre }),
+      ...(genreId && { genre: { id: genreId } }),
+      ...(title && { title: ILike(`%${title}%`) }),
+      // 3. Restricción de propietario: Si NO tiene acceso global, filtra por su ID
+      ...(!hasGlobalAccess && user && { authors: { id: user.id } }),
     };
 
-    return this.tracksRepository.find({
+    // 4. Ejecución de la consulta
+    const [tracks, total] = await this.tracksRepository.findAndCount({
       where,
-      take: limit,
+      take: Math.min(limit ?? 10, 200),
       skip: offset,
     });
+
+    return {
+      data: tracks.map((t) => TrackResponseDto.fromEntity(t)),
+      total,
+    };
   }
 
-  async findOneTrackService(id: string) {
-    return await this.findTrackWithRelations(id);
+  async findOneTrackService(id: string): Promise<TrackResponseDto> {
+    const track = await this.findTrackWithRelations(id);
+    return TrackResponseDto.fromEntity(track);
   }
 
-  async updateTrackService(id: string, updateTrackInput: UpdateTrackInput) {
+  async updateTrackService(id: string, updateTrackInput: UpdateTrackInput, requesterId?: string) {
     const existingTrack = await this.findTrackWithRelations(id);
 
+    if (requesterId) {
+      const isAuthor = existingTrack.authors?.some((a) => a.id === requesterId);
+      if (!isAuthor) throw new ForbiddenException('No tienes permiso para editar este track');
+    }
+
     const { genreId, authorsIds, ...rest } = updateTrackInput;
+
+    if (rest.intellectualProperties) {
+      const splitSheets = rest.intellectualProperties.filter(ip => ip.type === 'splitSheet');
+      if (splitSheets.length > 1) {
+        throw new BadRequestException('Solo se permite un documento Split Sheet por canción');
+      }
+    }
 
     Object.assign(existingTrack, rest);
 
@@ -199,31 +270,25 @@ export class TracksService {
       existingTrack.authors = authors;
     }
 
-    return await this.saveAndReturnWithRelations(existingTrack);
+    const updated = await this.saveAndReturnWithRelations(existingTrack);
+    return TrackResponseDto.fromEntity(updated);
   }
 
-  async removeTrackService(id: string) {
-    const trackToRemove = await this.findTrackWithRelations(id);
+  async removeTrackService(id: string, requesterId?: string) {
+    const track = await this.tracksRepository.findOne({
+      where: { id },
+      relations: ['authors'],
+    });
+    if (!track) throw new NotFoundException('El track no existe');
 
-    await this.tracksRepository.softRemove(trackToRemove);
-
-    return trackToRemove;
-  }
-
-  async findTracksByUserPreferredGenresService(user: User): Promise<Track[]> {
-    if (!user.preferredGenres || user.preferredGenres.length === 0) {
-      throw new NotFoundException(
-        'El usuario no tiene géneros preferidos configurados.',
-      );
+    if (requesterId) {
+      const isAuthor = track.authors?.some((a) => a.id === requesterId);
+      if (!isAuthor) throw new ForbiddenException('No tienes permiso para eliminar este track');
     }
 
-    const preferredGenreIds = user.preferredGenres.map((genre) => genre.id);
-
-    return await this.tracksRepository.find({
-      where: {
-        genre: { id: In(preferredGenreIds) },
-        isAvailable: true,
-      },
-    });
+    await this.tracksRepository.softDelete(id);
+    return { id, message: 'Track eliminado correctamente' };
   }
+
+
 }

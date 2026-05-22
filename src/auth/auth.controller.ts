@@ -1,11 +1,14 @@
-import { BadRequestException, Body, Controller, Post, UploadedFile, UseInterceptors } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { ForgotPasswordDto } from './dto/forgotPassword.dto';
+
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
-import { ResetPasswordDto } from './dto/resetPassword.dto';
+
+import {RegisterGuestDto } from '../guests/dto/register-guest.dto'
+import { RequestResetPasswordDto } from './dto/request-reset-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+
 
 @ApiTags('Autenticación')
 @Controller('auth')
@@ -34,7 +37,6 @@ export class AuthController {
   }
 
   @Post('register')
-  @UseInterceptors(FileInterceptor('avatar'))
   @ApiOperation({
     summary: 'Registrar nuevo usuario',
     description: 'Crea una nueva cuenta de usuario en el sistema. Permite subir un avatar opcional.',
@@ -56,49 +58,40 @@ export class AuthController {
   async registerController(@Body() user: RegisterAuthDto) {
     if (user.password !== user.repeatPassword)
       throw new BadRequestException('Las contraseñas no coinciden');
-
-
     return this.authService.registerService(user);
+  }
+
+  @Post('register/guest')
+  async registerGuestController(
+    @Body() guest: RegisterGuestDto
+  ){
+    return this.authService.registerGuestService(guest)
   }
 
   @Post('forgot-password')
   @ApiOperation({
     summary: 'Solicitar recuperación de contraseña',
-    description: 'Envía un correo electrónico con un enlace para restablecer la contraseña del usuario.',
+    description: 'Envía un enlace de recuperación al correo electrónico si existe.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Correo de recuperación enviado exitosamente',
-    schema: {
-      type: 'object',
-      properties: {
-        message: { type: 'string', example: 'Correo de recuperación enviado' },
-      },
-    },
+    description: 'Solicitud procesada correctamente',
   })
-  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
-  async forgotPasswordController(@Body() forgotPassword: ForgotPasswordDto) {
-
-    return await this.authService.sendResetPasswordEmailService(forgotPassword)
+  async requestPasswordReset(@Body() dto: RequestResetPasswordDto) {
+    return this.authService.requestPasswordResetService(dto);
   }
 
   @Post('reset-password')
   @ApiOperation({
     summary: 'Restablecer contraseña',
-    description: 'Restablece la contraseña del usuario usando el token recibido por correo electrónico.',
+    description: 'Restablece la contraseña utilizando el token enviado al correo electrónico.',
   })
   @ApiResponse({
     status: 200,
-    description: 'Contraseña restablecida exitosamente',
-    schema: {
-      type: 'object',
-      properties: {
-        message: { type: 'string', example: 'Contraseña restablecida correctamente' },
-      },
-    },
+    description: 'Contraseña actualizada correctamente',
   })
-  @ApiResponse({ status: 400, description: 'Token inválido o expirado' })
-  async resetPasswordController(@Body() resetPassword: ResetPasswordDto) {
-    return this.authService.resetPasswordService(resetPassword)
+  @ApiResponse({ status: 400, description: 'Datos inválidos o token expirado/inexistente' })
+  async resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPasswordService(dto);
   }
 }
