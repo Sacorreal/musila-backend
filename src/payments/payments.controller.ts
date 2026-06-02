@@ -7,16 +7,28 @@ import {
   Param,
   Post,
   Logger,
+  UseGuards,
+  Req,
+  Res,
+  StreamableFile,
+  NotFoundException,
 } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Response, Request } from 'express';
+import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { CreatePreferenceDto } from './dto/create-preference.dto';
 import { PaymentsService } from './payments.service';
+import { ReceiptService } from './receipt.service';
 
 @ApiTags('payments')
 @Controller('payments')
 export class PaymentsController {
   private readonly logger = new Logger(PaymentsController.name);
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(
+    private readonly paymentsService: PaymentsService,
+    private readonly receiptService: ReceiptService,
+  ) {}
 
   @Post('create-preference')
   @ApiOperation({ summary: 'Crear preferencia de pago en Mercado Pago' })
@@ -47,5 +59,51 @@ export class PaymentsController {
   @ApiResponse({ status: 200, description: 'Estado del pago' })
   async getPaymentStatus(@Param('reference') reference: string) {
     return this.paymentsService.getPaymentStatus(reference);
+  }
+
+  @Get(':id')
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener detalle de un pago propio' })
+  @ApiResponse({ status: 200 })
+  @ApiResponse({ status: 404, description: 'No encontrado o no pertenece al usuario' })
+  async getPaymentById(@Param('id') id: string, @Req() req: Request) {
+    const user = req['user'] as JwtPayload;
+    const payment = await this.paymentsService.getPaymentById(id, user.id);
+    if (!payment) throw new NotFoundException('Pago no encontrado');
+    return payment;
+  }
+
+  @Post('payment-methods/tokenize')
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @HttpCode(503)
+  @ApiOperation({ summary: 'Tokenizar método de pago (próximamente)' })
+  tokenize() {
+    return { message: 'Funcionalidad no disponible aún' };
+  }
+
+  @Get(':id/receipt')
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Descargar comprobante de pago en PDF' })
+  @ApiResponse({ status: 200, description: 'PDF del comprobante', content: { 'application/pdf': {} } })
+  @ApiResponse({ status: 404, description: 'Pago no encontrado o no pertenece al usuario' })
+  @ApiResponse({ status: 422, description: 'El pago no está aprobado' })
+  async downloadReceipt(
+    @Param('id') id: string,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<StreamableFile> {
+    const user = req['user'] as JwtPayload;
+    const pdfBuffer = await this.receiptService.generateReceipt(id, user.id);
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="comprobante-musila-${id.substring(0, 8)}.pdf"`,
+      'Content-Length': pdfBuffer.length,
+    });
+
+    return new StreamableFile(pdfBuffer);
   }
 }

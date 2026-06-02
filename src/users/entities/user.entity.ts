@@ -116,6 +116,18 @@ export class User {
   @Column({ type: 'enum', enum: UserPlan, default: UserPlan.FREE })
   plan: UserPlan;
 
+  @Column('timestamptz', { nullable: true, name: 'plan_expires_at' })
+  planExpiresAt?: Date;
+
+  @Column('varchar', { nullable: true, name: 'fiscal_name' })
+  fiscalName?: string;
+
+  @Column('varchar', { nullable: true, name: 'tax_id' })
+  taxId?: string;
+
+  @Column('varchar', { nullable: true, name: 'fiscal_address' })
+  fiscalAddress?: string;
+
   @Column('varchar', { nullable: true, name: 'reset_token', select: false })
   resetToken?: string;
 

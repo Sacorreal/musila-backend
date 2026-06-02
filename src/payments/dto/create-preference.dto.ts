@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEnum } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsEnum, IsOptional } from 'class-validator';
 import { UserPlan } from 'src/users/entities/user-plan.enum';
 import { UserRole } from 'src/users/entities/user-role.enum';
 
@@ -11,4 +11,9 @@ export class CreatePreferenceDto {
   @ApiProperty({ enum: [UserPlan.PRO] })
   @IsEnum([UserPlan.PRO])
   plan: UserPlan.PRO;
+
+  @ApiPropertyOptional({ enum: ['monthly', 'annual'], default: 'monthly' })
+  @IsOptional()
+  @IsEnum(['monthly', 'annual'])
+  billingPeriod?: 'monthly' | 'annual';
 }

@@ -17,6 +17,7 @@ jest.mock('mercadopago', () => {
     })),
     Payment: jest.fn().mockImplementation(() => ({
       get: jest.fn(),
+      search: jest.fn().mockResolvedValue({ results: [] }),
     })),
   };
 });
@@ -99,8 +100,15 @@ describe('PaymentsService', () => {
 
   describe('handleWebhook', () => {
     it('debe lanzar UnauthorizedException si la firma es inválida', async () => {
+      // NODE_ENV distinto de 'local' para activar la validación de firma
+      (configService.get as jest.Mock).mockImplementation((key: string, fallback?: string) => {
+        if (key === 'NODE_ENV') return 'production';
+        if (key === 'MP_WEBHOOK_SECRET') return 'secret123';
+        return fallback ?? '';
+      });
+
       await expect(
-        service.handleWebhook({ type: 'payment', data: { id: '123' } }, 'firma-incorrecta'),
+        service.handleWebhook({ type: 'payment', data: { id: '123' } }, 'firma-incorrecta', 'req-id'),
       ).rejects.toThrow(UnauthorizedException);
     });
 
@@ -125,7 +133,7 @@ describe('PaymentsService', () => {
 
       pendingRepo.findOne.mockResolvedValue(mockPending);
 
-      await service.handleWebhook({ type: 'payment', data: { id: '999' } }, 'secret123');
+      await service.handleWebhook({ type: 'payment', data: { id: '999' } }, 'secret123', 'req-id');
 
       expect(paymentRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ status: PaymentStatus.APPROVED }),
@@ -148,7 +156,7 @@ describe('PaymentsService', () => {
 
       pendingRepo.findOne.mockResolvedValue(null);
 
-      await service.handleWebhook({ type: 'payment', data: { id: '888' } }, 'secret123');
+      await service.handleWebhook({ type: 'payment', data: { id: '888' } }, 'secret123', 'req-id');
 
       expect(paymentRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({ status: PaymentStatus.REJECTED }),
@@ -170,6 +178,7 @@ describe('PaymentsService', () => {
           data: { status: 'cancelled', payer_id: 'user-42' },
         },
         'secret123',
+        'req-id',
       );
 
       expect(userRepo.update).toHaveBeenCalledWith('user-42', { plan: UserPlan.FREE });
@@ -189,6 +198,7 @@ describe('PaymentsService', () => {
           data: { status: 'authorized', payer_id: 'user-1' },
         },
         'secret123',
+        'req-id',
       );
 
       expect(userRepo.update).not.toHaveBeenCalled();

@@ -55,4 +55,11 @@ export interface EmailTemplateMap {
     status: string;
     urlTrackRequest: string;
   };
+
+  'plan-expiry-warning': {
+    userName: string;
+    daysRemaining: number;
+    planName: string;
+    renewUrl: string;
+  };
 }

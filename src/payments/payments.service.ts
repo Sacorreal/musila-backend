@@ -15,6 +15,7 @@ import { v4 as uuid } from 'uuid';
 import * as crypto from 'crypto';
 import { CreatePreferenceDto } from './dto/create-preference.dto';
 import {
+  BillingPeriod,
   Payment,
   PaymentStatus,
   PaymentType,
@@ -28,6 +29,15 @@ const PLAN_PRICES: Record<UserRole, number> = {
   [UserRole.AUTOR]: 39900,
   [UserRole.CANTAUTOR]: 59900,
   [UserRole.INTERPRETE]: 249900,
+  [UserRole.ADMIN]: 0,
+  [UserRole.INVITADO]: 0,
+  [UserRole.EDITOR]: 0,
+};
+
+const ANNUAL_PLAN_PRICES: Record<UserRole, number> = {
+  [UserRole.AUTOR]: 359100,
+  [UserRole.CANTAUTOR]: 539100,
+  [UserRole.INTERPRETE]: 249900, // pago único, sin variación
   [UserRole.ADMIN]: 0,
   [UserRole.INVITADO]: 0,
   [UserRole.EDITOR]: 0,
@@ -71,6 +81,11 @@ export class PaymentsService {
       'http://localhost:3000',
     );
     const isLifetime = dto.role === UserRole.INTERPRETE;
+    const isAnnual = dto.billingPeriod === 'annual' && !isLifetime;
+    const unitPrice = isAnnual ? ANNUAL_PLAN_PRICES[dto.role] : PLAN_PRICES[dto.role];
+    const itemTitle = isAnnual
+      ? `${PLAN_NAMES[dto.role]} — Plan Anual`
+      : PLAN_NAMES[dto.role];
 
     try {
       const preference = new Preference(this.mp);
@@ -78,11 +93,11 @@ export class PaymentsService {
         body: {
           items: [
             {
-              id: `${dto.role}-pro`,
-              title: PLAN_NAMES[dto.role],
+              id: `${dto.role}-pro${isAnnual ? '-annual' : ''}`,
+              title: itemTitle,
               quantity: 1,
               currency_id: 'COP',
-              unit_price: PLAN_PRICES[dto.role],
+              unit_price: unitPrice,
             },
           ],
           external_reference: externalReference,
@@ -96,7 +111,7 @@ export class PaymentsService {
           payment_methods: {
             excluded_payment_types: [],
           },
-          metadata: { role: dto.role, plan: dto.plan, isLifetime },
+          metadata: { role: dto.role, plan: dto.plan, isLifetime, billingPeriod: dto.billingPeriod ?? 'monthly' },
         },
       });
 
@@ -161,25 +176,34 @@ export class PaymentsService {
   }
 
   private async processPaymentEvent(mpPaymentId: string) {
+    this.logger.log(`[processPaymentEvent] iniciando para paymentId=${mpPaymentId}`);
     try {
       const mpPayment = new MPPayment(this.mp);
       const paymentData = await mpPayment.get({ id: mpPaymentId });
       const externalRef = paymentData.external_reference;
       const status = paymentData.status as string;
 
+      this.logger.log(`[processPaymentEvent] MP status=${status} external_reference=${externalRef}`);
+
       const pending = externalRef
         ? await this.pendingRepo.findOne({ where: { externalReference: externalRef } })
         : null;
+
+      this.logger.log(`[processPaymentEvent] PendingRegistration encontrado=${!!pending} id=${pending?.id}`);
 
       const paymentStatus = status === 'approved' ? PaymentStatus.APPROVED
         : status === 'rejected' ? PaymentStatus.REJECTED
         : PaymentStatus.PENDING;
 
       const isLifetime = pending?.role === UserRole.INTERPRETE;
+      const billingPeriodRaw: string = paymentData?.metadata?.billingPeriod ?? 'monthly';
+      const isAnnual = billingPeriodRaw === 'annual' && !isLifetime;
+      const billingPeriod = isLifetime ? undefined : (isAnnual ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY);
+
       let expiresAt: Date | undefined;
       if (!isLifetime && paymentStatus === PaymentStatus.APPROVED) {
         expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 30);
+        expiresAt.setDate(expiresAt.getDate() + (isAnnual ? 365 : 30));
       }
 
       await this.paymentRepo.save({
@@ -191,6 +215,7 @@ export class PaymentsService {
         planType: UserPlan.PRO,
         roleType: pending?.role ?? UserRole.INVITADO,
         paymentType: isLifetime ? PaymentType.ONE_TIME : PaymentType.SUBSCRIPTION,
+        billingPeriod,
         externalReference: externalRef ?? undefined,
         expiresAt,
       });
@@ -199,13 +224,19 @@ export class PaymentsService {
         await this.pendingRepo.update(pending.id, {
           status: PendingRegistrationStatus.PAYMENT_CONFIRMED,
         });
+        this.logger.log(`[processPaymentEvent] PendingRegistration actualizado a PAYMENT_CONFIRMED`);
 
         if (pending.userId) {
-          await this.userRepo.update(pending.userId, { plan: UserPlan.PRO });
+          await this.userRepo.update(pending.userId, {
+            plan: UserPlan.PRO,
+            planExpiresAt: expiresAt,
+          });
         }
+      } else {
+        this.logger.warn(`[processPaymentEvent] NO se confirmó: paymentStatus=${paymentStatus} pending=${!!pending}`);
       }
     } catch (err) {
-      this.logger.error(`Error procesando pago ${mpPaymentId}`, err);
+      this.logger.error(`[processPaymentEvent] error para paymentId=${mpPaymentId}: ${(err as any)?.message}`, (err as any)?.stack);
     }
   }
 
@@ -310,6 +341,38 @@ export class PaymentsService {
 
     await this.pendingRepo.update(pending.id, { userId });
     await this.userRepo.update(userId, { plan: UserPlan.PRO });
+  }
+
+  async getHistory(
+    userId: string,
+    page = 1,
+    limit = 10,
+    status?: PaymentStatus,
+    from?: string,
+    to?: string,
+  ) {
+    const take = Math.min(limit, 50);
+    const skip = (page - 1) * take;
+
+    const qb = this.paymentRepo
+      .createQueryBuilder('p')
+      .where('p.userId = :userId', { userId })
+      .orderBy('p.created_at', 'DESC')
+      .take(take)
+      .skip(skip);
+
+    if (status) qb.andWhere('p.status = :status', { status });
+    if (from) qb.andWhere('p.created_at >= :from', { from: new Date(from) });
+    if (to) qb.andWhere('p.created_at <= :to', { to: new Date(to) });
+
+    const [data, total] = await qb.getManyAndCount();
+    return { data, total, page, limit: take };
+  }
+
+  async getPaymentById(paymentId: string, userId: string) {
+    const payment = await this.paymentRepo.findOne({ where: { id: paymentId } });
+    if (!payment || payment.userId !== userId) return null;
+    return payment;
   }
 
   async cleanupExpiredPendingRegistrations() {

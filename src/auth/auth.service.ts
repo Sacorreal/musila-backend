@@ -107,6 +107,7 @@ export class AuthService {
       email: account.email,
       role: account.role,
       name: account.name,
+      plan: 'plan' in account ? (account as User).plan : undefined,
     };
     return this.jwtService.signAsync(payload);
   }

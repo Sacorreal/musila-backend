@@ -5,9 +5,15 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   ManyToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+
+export enum BillingPeriod {
+  MONTHLY = 'monthly',
+  ANNUAL = 'annual',
+}
 
 export enum PaymentStatus {
   APPROVED = 'approved',
@@ -21,6 +27,7 @@ export enum PaymentType {
   ONE_TIME = 'one_time',
 }
 
+@Index(['userId', 'createdAt'])
 @Entity({ name: 'payments' })
 export class Payment {
   @PrimaryGeneratedColumn('uuid')
@@ -52,6 +59,9 @@ export class Payment {
 
   @Column({ type: 'enum', enum: PaymentType, name: 'payment_type' })
   paymentType: PaymentType;
+
+  @Column({ type: 'enum', enum: BillingPeriod, name: 'billing_period', nullable: true })
+  billingPeriod?: BillingPeriod;
 
   @Column('varchar', { name: 'external_reference', nullable: true })
   externalReference?: string;
