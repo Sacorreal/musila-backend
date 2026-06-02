@@ -16,6 +16,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { UserRole } from './user-role.enum';
+import { UserPlan } from './user-plan.enum';
 
 @Entity({ name: 'users' })
 export class User {
@@ -112,8 +113,8 @@ export class User {
   })
   notifications?: Notification[];
 
-  @Column('boolean', { default: true, name: 'is_user_free' })
-  isUserFree: boolean;
+  @Column({ type: 'enum', enum: UserPlan, default: UserPlan.FREE })
+  plan: UserPlan;
 
   @Column('varchar', { nullable: true, name: 'reset_token', select: false })
   resetToken?: string;

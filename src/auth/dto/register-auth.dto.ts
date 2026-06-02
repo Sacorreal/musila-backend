@@ -143,4 +143,8 @@ export class RegisterAuthDto {
     @ArrayMaxSize(3, { message: 'El array de preferredGenres debe tener un máximo de 3 elementos' })
     preferredGenres?: string[]
 
+    @ApiPropertyOptional({ description: 'Referencia externa del pago de Mercado Pago para activar plan Pro.' })
+    @IsOptional()
+    @IsString()
+    externalReference?: string;
 }

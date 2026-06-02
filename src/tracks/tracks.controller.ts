@@ -34,6 +34,7 @@ import { UserRole } from '../users/entities/user-role.enum';
 import { PaginatedTracksResponseDto, TrackResponseDto } from './dto/track-response.dto'
 import { RolesGuard } from 'src/users/guards/roles.guard';
 import { Roles } from 'src/users/decorators/roles.decorator';
+import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
 
 @ApiTags('Tracks')
 @UseGuards(JWTAuthGuard, RolesGuard)
@@ -46,6 +47,7 @@ export class TracksController {
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.AUTOR, UserRole.CANTAUTOR)
+  @PlanLimit('tracks')
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: CreateTrackInput })  
     @ApiOperation({

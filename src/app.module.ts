@@ -24,6 +24,9 @@ import { EventBusModule } from './shared/events/event-bus.module';
 import { RealtimeModule} from './shared/realtime/realtime.module'
 import { ChatModule } from './chat/chat.module';
 import { AppNotificationsModule } from './notifications/notifications.module';
+import { PaymentsModule } from './payments/payments.module';
+import { PlanLimitsModule } from './shared/plan-limits/plan-limits.module';
+import { PlanLimitsGuard } from './shared/guards/plan-limits.guard';
 
 @Module({
   imports: [
@@ -51,12 +54,15 @@ import { AppNotificationsModule } from './notifications/notifications.module';
     StorageModule.forRootAsync(),
     SearchModule,   
     EmailModule.forRootAsync(), 
-    ChatModule, 
-    AppNotificationsModule
+    ChatModule,
+    AppNotificationsModule,
+    PaymentsModule,
+    PlanLimitsModule,
   ],
   controllers: [AppController],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useExisting: PlanLimitsGuard },
   ],
 })
 export class AppModule {}

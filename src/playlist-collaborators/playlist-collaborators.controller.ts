@@ -22,6 +22,7 @@ import { UserRole } from 'src/users/entities/user-role.enum';
 import { RolesGuard } from 'src/users/guards/roles.guard';
 import { AddCollaboratorDto } from './dto/add-collaborator.dto';
 import { PlaylistCollaboratorsService } from './playlist-collaborators.service';
+import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
 
 @ApiTags('Colaboradores de Playlist')
 @UseGuards(JWTAuthGuard, RolesGuard)
@@ -35,6 +36,7 @@ export class PlaylistCollaboratorsController {
 
   // ─── POST /playlists/:playlistId/collaborators ─────────────────────────────
   @Post()
+  @PlanLimit('collaborators')
   @ApiOperation({
     summary: 'Agregar colaborador a playlist',
     description:
