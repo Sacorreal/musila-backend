@@ -257,14 +257,16 @@ export class ReceiptService {
   }
 
   private async renderPdf(html: string): Promise<Buffer> {
+    // CHROME_PATH permite sobreescribir el ejecutable (útil en dev Windows).
+    // En producción/Railway (Linux) se omite para que puppeteer use su propio
+    // Chromium bundleado, que ya sabe dónde está en cada plataforma.
     const executablePath =
-      this.configService.get<string>('CHROME_PATH') ||
-      'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe';
+      this.configService.get<string>('CHROME_PATH') || undefined;
 
-    this.logger.log(`Generando PDF con Chrome en: ${executablePath}`);
+    this.logger.log(`Generando PDF con Chrome en: ${executablePath ?? '(puppeteer default)'}`);
 
     const browser = await puppeteer.launch({
-      executablePath,
+      ...(executablePath ? { executablePath } : {}),
       headless: true,
       args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     });
