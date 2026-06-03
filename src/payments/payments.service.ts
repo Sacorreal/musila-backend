@@ -12,14 +12,8 @@ import { UserRole } from 'src/users/entities/user-role.enum';
 import { User } from 'src/users/entities/user.entity';
 import { LessThan, Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
-<<<<<<< HEAD
-import * as crypto from 'crypto';
-import { CreatePreferenceDto } from './dto/create-preference.dto';
-import { CreatePsePaymentDto } from './dto/create-pse-payment.dto';
-=======
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { CreatePaymentSourceDto } from './dto/create-payment-source.dto';
->>>>>>> wompi
 import {
   BillingPeriod,
   Payment,
@@ -417,102 +411,4 @@ export class PaymentsService {
     );
   }
 
-  async getPseBanks(): Promise<{ id: string; name: string }[]> {
-    try {
-      const accessToken = this.configService.get<string>('MP_ACCESS_TOKEN', '');
-      const res = await fetch(
-        'https://api.mercadopago.com/v1/payment_methods?marketplace=NONE&site_id=MCO',
-        { headers: { Authorization: `Bearer ${accessToken}` } },
-      );
-      const data: any[] = await res.json();
-      const pse = data.find((pm) => pm.id === 'pse');
-      if (Array.isArray(pse?.financial_institutions) && pse.financial_institutions.length) {
-        return pse.financial_institutions
-          .map((fi: any) => ({ id: String(fi.id), name: String(fi.description) }))
-          .sort((a: { name: string }, b: { name: string }) => a.name.localeCompare(b.name, 'es'));
-      }
-    } catch (err) {
-      this.logger.warn(`[getPseBanks] No se pudo obtener lista de MP, usando fallback: ${(err as any)?.message}`);
-    }
-    return PSE_BANKS_FALLBACK;
-  }
-
-  async createPsePayment(dto: CreatePsePaymentDto) {
-    const nodeEnv = this.configService.get<string>('NODE_ENV', 'local');
-    const isLocal = nodeEnv === 'local';
-    const apiEndpoint = this.configService.get<string>('API_ENDPOINT', 'http://localhost:3001');
-    const webApp = this.configService.get<string>(
-      isLocal ? 'WEB_APP_LOCAL' : nodeEnv === 'production' ? 'WEB_APP_PRODUCTION' : 'WEB_APP_DEVELOPMENT',
-      'http://localhost:3000',
-    );
-    const isAnnual = dto.billingPeriod === 'annual';
-    const unitPrice = isAnnual ? ANNUAL_PLAN_PRICES[dto.role] : PLAN_PRICES[dto.role];
-    const externalReference = uuid();
-
-    const expiresAt = new Date();
-    expiresAt.setMinutes(expiresAt.getMinutes() + 30);
-
-    try {
-      const mpPayment = new MPPayment(this.mp);
-      const result = await mpPayment.create({
-        body: {
-          transaction_amount: unitPrice,
-          description: isAnnual ? `${PLAN_NAMES[dto.role]} — Plan Anual` : PLAN_NAMES[dto.role],
-          payment_method_id: 'pse',
-          payer: {
-            email: dto.email,
-            entity_type: dto.entityType,
-            identification: { type: dto.identificationType, number: dto.identificationNumber },
-            first_name: dto.firstName,
-            last_name: dto.lastName,
-          },
-          financial_institution: dto.financialInstitution,
-          callback_url: `${webApp}/register/pro/pending?ref=${externalReference}`,
-          external_reference: externalReference,
-          notification_url: `${apiEndpoint}/payments/mercadopago/webhook`,
-        } as any,
-      });
-
-      await this.pendingRepo.save({
-        externalReference,
-        role: dto.role,
-        plan: UserPlan.PRO,
-        status: PendingRegistrationStatus.PENDING,
-        expiresAt,
-      });
-
-      const redirectUrl = (result as any).transaction_details?.external_resource_url as string | undefined;
-      if (!redirectUrl) throw new Error('MercadoPago no devolvió URL de redirección para PSE');
-
-      return { redirectUrl, externalReference };
-    } catch (err: any) {
-      this.logger.error(`[createPsePayment] error: ${err?.message ?? err}`, err?.stack);
-      this.logger.error(`MP cause: ${JSON.stringify(err?.cause ?? err)}`);
-      throw new ServiceUnavailableException('No se pudo iniciar el pago PSE. Intenta nuevamente.');
-    }
-  }
 }
-
-const PSE_BANKS_FALLBACK: { id: string; name: string }[] = [
-  { id: '1007', name: 'Bancolombia' },
-  { id: '1151', name: 'Nequi' },
-  { id: '1022', name: 'Banco de Bogotá' },
-  { id: '1023', name: 'Banco de Occidente' },
-  { id: '1032', name: 'Banco Caja Social BCSC' },
-  { id: '1040', name: 'Banco Agrario de Colombia' },
-  { id: '1051', name: 'Davivienda' },
-  { id: '1052', name: 'Banco AV Villas' },
-  { id: '1058', name: 'Banco Procredit' },
-  { id: '1059', name: 'Bancamía' },
-  { id: '1060', name: 'Banco Pichincha' },
-  { id: '1061', name: 'Bancoomeva' },
-  { id: '1062', name: 'Banco Falabella' },
-  { id: '1063', name: 'Banco Finandina' },
-  { id: '1066', name: 'Banco Cooperativo Coopcentral' },
-  { id: '1069', name: 'Banco Serfinanza' },
-  { id: '1006', name: 'Banco Corpbanca' },
-  { id: '1019', name: 'Citibank' },
-  { id: '1283', name: 'CFA Cooperativa Financiera' },
-  { id: '1291', name: 'Confiar Cooperativa Financiera' },
-  { id: '1292', name: 'Juriscoop Cooperativa Financiera' },
-].sort((a, b) => a.name.localeCompare(b.name, 'es'));

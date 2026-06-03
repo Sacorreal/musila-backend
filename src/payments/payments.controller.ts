@@ -16,13 +16,8 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { Response, Request } from 'express';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-<<<<<<< HEAD
-import { CreatePreferenceDto } from './dto/create-preference.dto';
-import { CreatePsePaymentDto } from './dto/create-pse-payment.dto';
-=======
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { CreatePaymentSourceDto } from './dto/create-payment-source.dto';
->>>>>>> wompi
 import { PaymentsService } from './payments.service';
 import { ReceiptService } from './receipt.service';
 import { ProviderEvent } from './domain/payment-provider.types';
@@ -63,21 +58,6 @@ export class PaymentsController {
     return this.paymentsService.getPaymentStatus(reference);
   }
 
-<<<<<<< HEAD
-  @Get('pse/banks')
-  @ApiOperation({ summary: 'Obtener entidades bancarias disponibles para PSE' })
-  @ApiResponse({ status: 200, description: 'Lista de bancos PSE' })
-  async getPseBanks() {
-    return this.paymentsService.getPseBanks();
-  }
-
-  @Post('pse')
-  @ApiOperation({ summary: 'Crear pago PSE — retorna URL de redirección al banco' })
-  @ApiResponse({ status: 201, description: 'URL de redirección al banco y referencia externa' })
-  @ApiResponse({ status: 503, description: 'Mercado Pago no disponible' })
-  async createPsePayment(@Body() dto: CreatePsePaymentDto) {
-    return this.paymentsService.createPsePayment(dto);
-=======
   @Post('payment-sources')
   @UseGuards(JWTAuthGuard)
   @ApiBearerAuth()
@@ -87,7 +67,6 @@ export class PaymentsController {
   async createPaymentSource(@Body() dto: CreatePaymentSourceDto, @Req() req: Request) {
     const user = req['user'] as JwtPayload;
     return this.paymentsService.createPaymentSource(user.id, dto);
->>>>>>> wompi
   }
 
   @Get(':id')
