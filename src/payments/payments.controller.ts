@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Get,
-  Headers,
   HttpCode,
   Param,
   Post,
@@ -17,9 +16,11 @@ import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagg
 import { Response, Request } from 'express';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { CreatePreferenceDto } from './dto/create-preference.dto';
+import { CreateCheckoutDto } from './dto/create-checkout.dto';
+import { CreatePaymentSourceDto } from './dto/create-payment-source.dto';
 import { PaymentsService } from './payments.service';
 import { ReceiptService } from './receipt.service';
+import { ProviderEvent } from './domain/payment-provider.types';
 
 @ApiTags('payments')
 @Controller('payments')
@@ -30,35 +31,42 @@ export class PaymentsController {
     private readonly receiptService: ReceiptService,
   ) {}
 
-  @Post('create-preference')
-  @ApiOperation({ summary: 'Crear preferencia de pago en Mercado Pago' })
-  @ApiResponse({ status: 201, description: 'Preferencia creada — retorna initPoint y externalReference' })
+  @Post('checkout')
+  @ApiOperation({ summary: 'Crear transacción y obtener parámetros del Widget de Wompi' })
+  @ApiResponse({ status: 201, description: 'Parámetros del Widget (incluida la firma de integridad) y externalReference' })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  @ApiResponse({ status: 503, description: 'Mercado Pago no disponible' })
-  async createPreference(@Body() dto: CreatePreferenceDto) {
-    return this.paymentsService.createPreference(dto);
+  @ApiResponse({ status: 503, description: 'Wompi no disponible' })
+  async createCheckout(@Body() dto: CreateCheckoutDto) {
+    return this.paymentsService.createCheckout(dto);
   }
 
-  @Post('mercadopago/webhook')
+  @Post('wompi/webhook')
   @HttpCode(200)
-  @ApiOperation({ summary: 'Webhook de notificación de Mercado Pago' })
+  @ApiOperation({ summary: 'Webhook de eventos de Wompi (transaction.updated)' })
   @ApiResponse({ status: 200, description: 'Evento procesado' })
-  @ApiResponse({ status: 401, description: 'Firma inválida' })
-  async handleWebhook(
-    @Body() body: Record<string, any>,
-    @Headers('x-signature') signature: string,
-    @Headers('x-request-id') requestId: string,
-  ) {
-    this.logger.log(`[Webhook MP] recibido — type=${body?.type} data.id=${body?.data?.id} requestId=${requestId}`);
-    await this.paymentsService.handleWebhook(body, signature, requestId);
+  @ApiResponse({ status: 401, description: 'Firma de evento inválida' })
+  async handleWebhook(@Body() event: ProviderEvent) {
+    this.logger.log(`[Webhook Wompi] recibido — event=${event?.event}`);
+    await this.paymentsService.handleWebhook(event);
     return { received: true };
   }
 
   @Get('status/:reference')
-  @ApiOperation({ summary: 'Consultar estado de pago pendiente' })
+  @ApiOperation({ summary: 'Consultar estado de pago pendiente por referencia' })
   @ApiResponse({ status: 200, description: 'Estado del pago' })
   async getPaymentStatus(@Param('reference') reference: string) {
     return this.paymentsService.getPaymentStatus(reference);
+  }
+
+  @Post('payment-sources')
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Tokenizar tarjeta y crear fuente de pago para cobros recurrentes' })
+  @ApiResponse({ status: 201, description: 'Fuente de pago creada (solo marca y últimos 4 dígitos)' })
+  @ApiResponse({ status: 503, description: 'Wompi no disponible' })
+  async createPaymentSource(@Body() dto: CreatePaymentSourceDto, @Req() req: Request) {
+    const user = req['user'] as JwtPayload;
+    return this.paymentsService.createPaymentSource(user.id, dto);
   }
 
   @Get(':id')
@@ -72,15 +80,6 @@ export class PaymentsController {
     const payment = await this.paymentsService.getPaymentById(id, user.id);
     if (!payment) throw new NotFoundException('Pago no encontrado');
     return payment;
-  }
-
-  @Post('payment-methods/tokenize')
-  @UseGuards(JWTAuthGuard)
-  @ApiBearerAuth()
-  @HttpCode(503)
-  @ApiOperation({ summary: 'Tokenizar método de pago (próximamente)' })
-  tokenize() {
-    return { message: 'Funcionalidad no disponible aún' };
   }
 
   @Get(':id/receipt')
