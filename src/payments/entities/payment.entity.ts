@@ -27,6 +27,10 @@ export enum PaymentType {
   ONE_TIME = 'one_time',
 }
 
+export enum PaymentProviderName {
+  WOMPI = 'wompi',
+}
+
 @Index(['userId', 'createdAt'])
 @Entity({ name: 'payments' })
 export class Payment {
@@ -39,8 +43,19 @@ export class Payment {
   @Column('varchar', { name: 'user_id', nullable: true })
   userId?: string;
 
-  @Column('varchar', { name: 'mp_payment_id', nullable: true })
-  mercadoPagoPaymentId?: string;
+  @Column({
+    type: 'enum',
+    enum: PaymentProviderName,
+    default: PaymentProviderName.WOMPI,
+  })
+  provider: PaymentProviderName;
+
+  @Index({ unique: true, where: '"wompi_transaction_id" IS NOT NULL' })
+  @Column('varchar', { name: 'wompi_transaction_id', nullable: true })
+  wompiTransactionId?: string;
+
+  @Column('uuid', { name: 'payment_source_id', nullable: true })
+  paymentSourceId?: string;
 
   @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
   status: PaymentStatus;

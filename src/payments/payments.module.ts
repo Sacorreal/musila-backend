@@ -5,20 +5,37 @@ import { User } from 'src/users/entities/user.entity';
 import { Notification } from 'src/notifications/entities/notification.entity';
 import { EmailModule } from 'src/shared/mail/email.module';
 import { Payment } from './entities/payment.entity';
+import { PaymentSource } from './entities/payment-source.entity';
 import { PendingRegistration } from './entities/pending-registration.entity';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { ReceiptService } from './receipt.service';
 import { PlanExpiryNotificationsService } from './plan-expiry-notifications.service';
+import { PAYMENT_PROVIDER } from './domain/payment-provider.interface';
+import { WompiProvider } from './providers/wompi/wompi.provider';
+import { WompiSignatureService } from './providers/wompi/wompi-signature.service';
 
 @Module({
   imports: [
     ScheduleModule.forRoot(),
-    TypeOrmModule.forFeature([Payment, PendingRegistration, User, Notification]),
+    TypeOrmModule.forFeature([
+      Payment,
+      PaymentSource,
+      PendingRegistration,
+      User,
+      Notification,
+    ]),
     EmailModule.forRootAsync(),
   ],
   controllers: [PaymentsController],
-  providers: [PaymentsService, ReceiptService, PlanExpiryNotificationsService],
+  providers: [
+    PaymentsService,
+    ReceiptService,
+    PlanExpiryNotificationsService,
+    WompiSignatureService,
+    // Proveedor de pago activo. Sustituir aquí para cambiar de pasarela.
+    { provide: PAYMENT_PROVIDER, useClass: WompiProvider },
+  ],
   exports: [PaymentsService],
 })
 export class PaymentsModule {}

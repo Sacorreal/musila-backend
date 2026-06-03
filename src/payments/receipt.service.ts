@@ -233,16 +233,16 @@ export class ReceiptService {
       <span class="val">${ref}</span>
     </div>
     ${
-      payment.mercadoPagoPaymentId
+      payment.wompiTransactionId
         ? `<div class="row">
-      <span class="lbl">ID Mercado Pago</span>
-      <span class="val">#${payment.mercadoPagoPaymentId}</span>
+      <span class="lbl">ID Wompi</span>
+      <span class="val">#${payment.wompiTransactionId}</span>
     </div>`
         : ''
     }
     <div class="row">
       <span class="lbl">Procesado por</span>
-      <span class="val">Mercado Pago</span>
+      <span class="val">Wompi</span>
     </div>
   </div>
 
