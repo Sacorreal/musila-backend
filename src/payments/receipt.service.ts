@@ -36,6 +36,7 @@ export class ReceiptService {
 
     this.logger.log(`Generando comprobante PDF para pago ${paymentId}`);
     const element = React.createElement(ReceiptDoc, { payment, user });
-    return pdf(element).toBuffer();
+    // pdf() types target the browser API; in Node.js toBuffer() returns Buffer
+    return await (pdf(element as any).toBuffer() as unknown as Promise<Buffer>);
   }
 }
