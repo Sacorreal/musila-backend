@@ -35,7 +35,7 @@ export class PlanService {
 
     const now = new Date();
     const expiresAt = user.planExpiresAt ?? null;
-    const isLifetime = user.plan === UserPlan.PRO && !expiresAt;
+    const isLifetime = user.plan === UserPlan.PRO && user.role === UserRole.INTERPRETE;
     const isExpired = expiresAt ? now > expiresAt : false;
 
     // Auto-degrade if expired
