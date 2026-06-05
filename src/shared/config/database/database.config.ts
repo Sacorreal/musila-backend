@@ -1,5 +1,6 @@
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import * as dotenv from 'dotenv';
+import { join } from 'path';
 
 const nodeEnv = process.env.NODE_ENV;
 
@@ -8,6 +9,9 @@ if (nodeEnv === 'local') {
 } else if (nodeEnv === 'production') {
   dotenv.config({ path: '.env.production' });
 }
+
+// Ruta a los archivos de migración compilados (dist/migrations/) o fuente (src/migrations/)
+const migrationsPath = join(__dirname, '../../../migrations/*.{ts,js}');
 
 export let databaseConfig: TypeOrmModuleOptions;
 
@@ -23,6 +27,8 @@ switch (nodeEnv) {
       autoLoadEntities: true,
       synchronize: false,
       dropSchema: false,
+      migrations: [migrationsPath],
+      migrationsTableName: 'typeorm_migrations',
     };
     break;
 
@@ -32,6 +38,9 @@ switch (nodeEnv) {
       url: process.env.DATABASE_URL,
       autoLoadEntities: true,
       synchronize: false,
+      migrations: [migrationsPath],
+      migrationsTableName: 'typeorm_migrations',
+      migrationsRun: true,
     };
     break;
 
@@ -41,6 +50,9 @@ switch (nodeEnv) {
       url: process.env.DB_URL,
       autoLoadEntities: true,
       synchronize: false,
+      migrations: [migrationsPath],
+      migrationsTableName: 'typeorm_migrations',
+      migrationsRun: true,
     };
     break;
 

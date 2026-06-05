@@ -23,7 +23,12 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed:admin": "cross-env NODE_ENV=local ts-node -r tsconfig-paths/register scripts/seed-admin.ts"
+    "seed:admin": "cross-env NODE_ENV=local ts-node -r tsconfig-paths/register scripts/seed-admin.ts",
+    "migration:generate": "cross-env NODE_ENV=local typeorm-ts-node-commonjs migration:generate -d src/shared/config/database/data-source.ts",
+    "migration:run": "cross-env NODE_ENV=local typeorm-ts-node-commonjs migration:run -d src/shared/config/database/data-source.ts",
+    "migration:revert": "cross-env NODE_ENV=local typeorm-ts-node-commonjs migration:revert -d src/shared/config/database/data-source.ts",
+    "migration:show": "cross-env NODE_ENV=local typeorm-ts-node-commonjs migration:show -d src/shared/config/database/data-source.ts",
+    "migration:run:prod": "cross-env NODE_ENV=production typeorm-ts-node-commonjs migration:run -d src/shared/config/database/data-source.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.879.0",
