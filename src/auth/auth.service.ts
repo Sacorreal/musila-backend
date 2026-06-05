@@ -13,12 +13,12 @@ import { LoginAuthDto } from './dto/login-auth.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { Guest } from 'src/guests/entities/guest.entity';
-//Guest
 import { RegisterGuestDto } from '../guests/dto/register-guest.dto';
 import * as crypto from 'crypto';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { RequestResetPasswordDto } from './dto/request-reset-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { PaymentsService } from 'src/payments/payments.service';
 
 @Injectable()
 export class AuthService {
@@ -27,6 +27,7 @@ export class AuthService {
     private readonly guestsService: GuestsService,
     private readonly jwtService: JwtService,
     private readonly eventBus: EventBusService,
+    private readonly paymentsService: PaymentsService,
   ) {}
 
   /**
@@ -73,11 +74,16 @@ export class AuthService {
     if (userExists) throw new UnauthorizedException('El usuario ya existe');
 
     const hashedPassword = await bcrypt.hash(user.password, 10);
+    const { externalReference, ...userFields } = user;
 
     const newUser = await this.usersService.createUserService({
-      ...user,
+      ...userFields,
       password: hashedPassword,
     });
+
+    if (externalReference) {
+      await this.paymentsService.linkUserToPayment(externalReference, newUser.id);
+    }
 
     const token = await this.createToken(newUser);
 
@@ -101,6 +107,7 @@ export class AuthService {
       email: account.email,
       role: account.role,
       name: account.name,
+      plan: 'plan' in account ? (account).plan : undefined,
     };
     return this.jwtService.signAsync(payload);
   }

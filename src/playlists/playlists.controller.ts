@@ -22,6 +22,7 @@ import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/users/guards/roles.guard';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
 import { PaginatedPlaylistsResponseDto } from './dto/playlist-pagination.dto';
+import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
 import { PlaylistPermissionGuard } from 'src/playlist-collaborators/guards/playlist-permission.guard';
 import { RequirePlaylistPermission } from 'src/playlist-collaborators/decorators/require-permission.decorator';
 import { CollaboratorPermission } from 'src/playlist-collaborators/entities/collaborator-permission.enum';
@@ -34,6 +35,7 @@ export class PlaylistsController {
   constructor(private readonly playlistsService: PlaylistsService) {}
 
   @Post()
+  @PlanLimit('playlists')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Crear nueva lista de reproducción',

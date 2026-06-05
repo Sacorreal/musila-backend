@@ -1,3 +1,4 @@
+import { UserPlan } from 'src/users/entities/user-plan.enum';
 import { UserRole } from 'src/users/entities/user-role.enum';
 
 export interface JwtPayload {
@@ -5,6 +6,7 @@ export interface JwtPayload {
   email: string;
   role: UserRole;
   name: string;
+  plan?: UserPlan;
   iat?: number;
   exp?: number;
 }

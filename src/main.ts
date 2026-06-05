@@ -33,17 +33,31 @@ async function bootstrap() {
   );
   app.useGlobalFilters(new GlobalExceptionFilter());
 
-  const allowedOrigins = [
-    process.env.WEB_APP_PRODUCTION,
-    process.env.WEB_APP_DEVELOPMENT, 
-    process.env.WEB_APP_LOCAL,
-  ].filter(Boolean); 
+  const isLocal = process.env.NODE_ENV === 'local';
+  const allowedOrigins = new Set(
+    [
+      process.env.WEB_APP_PRODUCTION,
+      process.env.WEB_APP_DEVELOPMENT,
+      process.env.WEB_APP_LOCAL,
+      // Siempre permite localhost en modo local para desarrollo sin dev tunnel
+      ...(isLocal ? ['http://localhost:3000', 'http://localhost:3001'] : []),
+    ].filter(Boolean) as string[],
+  );
 
+  // Permite preview deployments de Vercel para este proyecto
+  const vercelPreviewRe = /^https:\/\/musila-web-app[^.]*\.vercel\.app$/;
 
   app.use(cookieParser.default());
 
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin, callback) => {
+      // Peticiones sin origin (curl, Postman, mismo servidor)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.has(origin) || vercelPreviewRe.test(origin)) {
+        return callback(null, true);
+      }
+      callback(new Error(`Origin no permitido: ${origin}`));
+    },
     credentials: true,
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
   });

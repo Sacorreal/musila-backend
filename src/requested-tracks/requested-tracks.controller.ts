@@ -14,6 +14,7 @@ import { PaginationDto} from '../shared/dto/pagination.dto'
 import { PaginatedRequestedTracksResponseDto } from './dto/requested-track-pagination.dto';
 import { Roles } from 'src/users/decorators/roles.decorator';
 import { UserRole } from 'src/users/entities/user-role.enum';
+import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
 
 @ApiTags('Pistas Solicitadas')
 @UseGuards(JWTAuthGuard, RolesGuard)
@@ -26,6 +27,7 @@ export class RequestedTracksController {
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.INTERPRETE, UserRole.INVITADO)
+  @PlanLimit('requests')
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Crear solicitud de pista',
