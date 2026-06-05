@@ -7,7 +7,8 @@
     "webpack": true,
     "webpackConfigPath": "webpack.config.js",
     "assets": [
-      {"include": "**/*.hbs", "outDir": "dist"}
+      {"include": "**/*.hbs", "outDir": "dist"},
+      {"include": "payments/assets/**", "outDir": "dist"}
     ]
   }
 }

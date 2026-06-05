@@ -2,6 +2,7 @@ import {
   Inject,
   Injectable,
   Logger,
+  NotFoundException,
   ServiceUnavailableException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -276,8 +277,12 @@ export class PaymentsService {
   /**
    * Tokeniza la tarjeta y crea una fuente de pago en Wompi, almacenando solo el
    * payment_source_id y datos no sensibles (marca, últimos 4 dígitos).
+   * Modelo una-tarjeta-activa: elimina fuentes AVAILABLE previas del usuario.
    */
   async createPaymentSource(userId: string, dto: CreatePaymentSourceDto) {
+    // One-card model: remove previous available sources before creating
+    await this.paymentSourceRepo.delete({ userId, status: PaymentSourceStatus.AVAILABLE });
+
     const acceptanceToken = await this.provider.getAcceptanceToken();
 
     const token = await this.provider.tokenizeCard({
@@ -316,11 +321,33 @@ export class PaymentsService {
     };
   }
 
+  /** Devuelve la fuente de pago activa del usuario, o null si no tiene. */
+  async getActivePaymentSource(userId: string) {
+    const source = await this.paymentSourceRepo.findOne({
+      where: { userId, status: PaymentSourceStatus.AVAILABLE },
+      order: { createdAt: 'DESC' },
+    });
+    if (!source) return null;
+    return { id: source.id, brand: source.brand, last4: source.last4 };
+  }
+
+  /** Elimina una fuente de pago verificando que pertenezca al usuario. */
+  async deletePaymentSource(userId: string, id: string) {
+    const source = await this.paymentSourceRepo.findOne({ where: { id, userId } });
+    if (!source) throw new NotFoundException('Fuente de pago no encontrada');
+    await this.paymentSourceRepo.delete(id);
+  }
+
   /**
    * Cobra una suscripción recurrente usando una fuente de pago previamente
-   * tokenizada. La orquestación periódica (cron) queda fuera de este change.
+   * tokenizada. Actualiza planExpiresAt del usuario si el cobro es aprobado.
    */
-  async chargeRecurring(userId: string, paymentSourceId: string, role: UserRole, billingPeriod?: string) {
+  async chargeRecurring(
+    userId: string,
+    paymentSourceId: string,
+    role: UserRole,
+    billingPeriod: BillingPeriod = BillingPeriod.MONTHLY,
+  ) {
     const source = await this.paymentSourceRepo.findOne({
       where: { id: paymentSourceId, userId },
     });
@@ -340,21 +367,36 @@ export class PaymentsService {
       paymentSourceId: source.wompiPaymentSourceId,
     });
 
+    const paymentStatus = this.mapStatus(result.status);
+    const isApproved = paymentStatus === PaymentStatus.APPROVED;
+
+    const days = billingPeriod === BillingPeriod.ANNUAL ? 365 : 30;
+    const baseDate =
+      user?.planExpiresAt && user.planExpiresAt > new Date() ? user.planExpiresAt : new Date();
+    const newExpiry = new Date(baseDate);
+    newExpiry.setDate(newExpiry.getDate() + days);
+
     await this.paymentRepo.save({
       provider: PaymentProviderName.WOMPI,
       wompiTransactionId: result.transactionId,
       paymentSourceId: source.id,
       userId,
-      status: this.mapStatus(result.status),
+      status: paymentStatus,
       amount: amountInCents / 100,
       currency: CURRENCY,
       planType: UserPlan.PRO,
       roleType: role,
       paymentType: PaymentType.SUBSCRIPTION,
+      billingPeriod,
       externalReference: reference,
+      expiresAt: isApproved ? newExpiry : undefined,
     });
 
-    return { transactionId: result.transactionId, status: result.status };
+    if (isApproved) {
+      await this.userRepo.update(userId, { plan: UserPlan.PRO, planExpiresAt: newExpiry });
+    }
+
+    return { transactionId: result.transactionId, status: result.status, isApproved, newExpiry };
   }
 
   // ─── Resto del ciclo de vida (sin cambios funcionales) ─────────────────────────
@@ -365,8 +407,19 @@ export class PaymentsService {
     });
     if (!pending) return;
 
+    // Vincular el registro de pago al usuario para que aparezca en el historial
+    await this.paymentRepo.update({ externalReference }, { userId });
     await this.pendingRepo.update(pending.id, { userId });
-    await this.userRepo.update(userId, { plan: UserPlan.PRO });
+
+    // Tomar la fecha de expiración del pago aprobado
+    const payment = await this.paymentRepo.findOne({
+      where: { externalReference, status: PaymentStatus.APPROVED },
+    });
+
+    await this.userRepo.update(userId, {
+      plan: UserPlan.PRO,
+      planExpiresAt: payment?.expiresAt ?? undefined,
+    });
   }
 
   async getHistory(

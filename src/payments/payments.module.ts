@@ -11,6 +11,7 @@ import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { ReceiptService } from './receipt.service';
 import { PlanExpiryNotificationsService } from './plan-expiry-notifications.service';
+import { SubscriptionRenewalService } from './subscription-renewal.service';
 import { PAYMENT_PROVIDER } from './domain/payment-provider.interface';
 import { WompiProvider } from './providers/wompi/wompi.provider';
 import { WompiSignatureService } from './providers/wompi/wompi-signature.service';
@@ -32,6 +33,7 @@ import { WompiSignatureService } from './providers/wompi/wompi-signature.service
     PaymentsService,
     ReceiptService,
     PlanExpiryNotificationsService,
+    SubscriptionRenewalService,
     WompiSignatureService,
     // Proveedor de pago activo. Sustituir aquí para cambiar de pasarela.
     { provide: PAYMENT_PROVIDER, useClass: WompiProvider },

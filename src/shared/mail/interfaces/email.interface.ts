@@ -62,4 +62,16 @@ export interface EmailTemplateMap {
     planName: string;
     renewUrl: string;
   };
+
+  'subscription-renewed': {
+    userName: string;
+    periodLabel: string;
+    newExpiry?: string;
+    accountUrl: string;
+  };
+
+  'subscription-renewal-failed': {
+    userName: string;
+    billingUrl: string;
+  };
 }

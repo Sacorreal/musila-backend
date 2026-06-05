@@ -21,7 +21,7 @@ switch (nodeEnv) {
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,
       dropSchema: false,
     };
     break;
@@ -31,7 +31,7 @@ switch (nodeEnv) {
       type: 'postgres',
       url: process.env.DATABASE_URL,
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,
     };
     break;
 
@@ -40,7 +40,7 @@ switch (nodeEnv) {
       type: 'postgres',
       url: process.env.DB_URL,
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: false,
     };
     break;
 

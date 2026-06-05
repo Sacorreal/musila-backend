@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, View, Text, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 import { Payment, PaymentType } from './entities/payment.entity';
 import { User } from 'src/users/entities/user.entity';
 import { UserRole } from 'src/users/entities/user-role.enum';
@@ -21,7 +21,7 @@ const S = StyleSheet.create({
     borderBottomColor: '#7c3aed',
     marginBottom: 28,
   },
-  logo: {
+  logoFallback: {
     fontSize: 28,
     fontFamily: 'Helvetica-Bold',
     color: '#7c3aed',
@@ -162,9 +162,10 @@ function formatDate(date: Date): string {
 interface ReceiptDocProps {
   payment: Payment;
   user: User;
+  logoSrc?: string;
 }
 
-export function ReceiptDoc({ payment, user }: ReceiptDocProps) {
+export function ReceiptDoc({ payment, user, logoSrc }: ReceiptDocProps) {
   const ref = payment.id.substring(0, 8).toUpperCase();
   const planLabel = getPlanLabel(payment);
   const dateStr = formatDate(payment.createdAt);
@@ -179,8 +180,10 @@ export function ReceiptDoc({ payment, user }: ReceiptDocProps) {
       <Page size="A4" style={S.page}>
         <View style={S.header}>
           <View>
-            <Text style={S.logo}>musila</Text>
-            <Text style={S.logoSub}>Plataforma de Licencias Musicales</Text>
+            {logoSrc
+              ? <Image src={logoSrc} style={{ width: 110, height: 44, objectFit: 'contain' }} />
+              : <Text style={S.logoFallback}>musila</Text>}
+            <Text style={S.logoSub}>!Dale vida a la música!</Text>
           </View>
           <View style={S.receiptMeta}>
             <Text style={S.receiptTitle}>Comprobante de Pago</Text>
@@ -246,11 +249,8 @@ export function ReceiptDoc({ payment, user }: ReceiptDocProps) {
         </View>
 
         <View style={S.footer}>
-          <Text style={S.footerText}>musila.com — Plataforma de Licencias Musicales</Text>
-          <Text style={S.footerText}>
-            Este comprobante es generado automáticamente y tiene validez como constancia de pago.
-          </Text>
-          <Text style={S.footerText}>Para soporte escríbenos a soporte@musila.com</Text>
+          <Text style={S.footerText}>musila.co — !Dale vida a la música!</Text>          
+          <Text style={S.footerText}>Para soporte escríbenos a soporte@musila.co</Text>
         </View>
       </Page>
     </Document>

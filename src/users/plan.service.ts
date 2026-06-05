@@ -28,13 +28,25 @@ export class PlanService {
     const user = await this.userRepo.findOne({ where: { id: userId } });
     if (!user) throw new NotFoundException('Usuario no encontrado');
 
-    const latestPayment = await this.paymentRepo.findOne({
-      where: { userId, status: PaymentStatus.APPROVED },
-      order: { createdAt: 'DESC' },
-    });
+    // Busca el pago más reciente aprobado: primero por userId directo, con fallback
+    // via pending_registrations para pagos previos al fix de linkUserToPayment.
+    const latestPayment = await this.paymentRepo
+      .createQueryBuilder('p')
+      .where(
+        `(p.user_id = :userId OR EXISTS (
+          SELECT 1 FROM pending_registrations pr
+          WHERE pr.external_reference = p.external_reference
+            AND pr.user_id = :userId
+        ))`,
+        { userId },
+      )
+      .andWhere('p.status = :status', { status: PaymentStatus.APPROVED })
+      .orderBy('p.created_at', 'DESC')
+      .getOne();
 
     const now = new Date();
-    const expiresAt = user.planExpiresAt ?? null;
+    // Preferir expiresAt del pago si el usuario no tiene planExpiresAt actualizado
+    const expiresAt = user.planExpiresAt ?? latestPayment?.expiresAt ?? null;
     const isLifetime = user.plan === UserPlan.PRO && user.role === UserRole.INTERPRETE;
     const isExpired = expiresAt ? now > expiresAt : false;
 
@@ -56,7 +68,8 @@ export class PlanService {
       plan: user.plan,
       role: user.role,
       startDate: latestPayment?.createdAt ?? null,
-      expiresAt: expiresAt,
+      expiresAt,
+      billingPeriod: latestPayment?.billingPeriod ?? null,
       isLifetime,
       isExpired,
       daysRemaining,
@@ -77,7 +90,14 @@ export class PlanService {
 
     const qb = this.paymentRepo
       .createQueryBuilder('p')
-      .where('p.userId = :userId', { userId })
+      .where(
+        `(p.user_id = :userId OR EXISTS (
+          SELECT 1 FROM pending_registrations pr
+          WHERE pr.external_reference = p.external_reference
+            AND pr.user_id = :userId
+        ))`,
+        { userId },
+      )
       .orderBy('p.created_at', 'DESC')
       .take(take)
       .skip(skip);

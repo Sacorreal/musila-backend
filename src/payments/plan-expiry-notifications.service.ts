@@ -103,7 +103,7 @@ export class PlanExpiryNotificationsService {
         },
       });
     } catch (err) {
-      this.logger.error(`[PlanExpiry] error enviando email a ${user.email}: ${(err as any)?.message}`);
+      this.logger.error(`[PlanExpiry] error enviando email a ${user.email}: ${(err)?.message}`);
     }
   }
 }

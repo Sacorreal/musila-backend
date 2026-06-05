@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   Param,
@@ -67,6 +68,28 @@ export class PaymentsController {
   async createPaymentSource(@Body() dto: CreatePaymentSourceDto, @Req() req: Request) {
     const user = req['user'] as JwtPayload;
     return this.paymentsService.createPaymentSource(user.id, dto);
+  }
+
+  @Get('payment-sources/me')
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Obtener fuente de pago activa del usuario autenticado' })
+  @ApiResponse({ status: 200, description: 'Fuente de pago activa o null' })
+  async getActivePaymentSource(@Req() req: Request) {
+    const user = req['user'] as JwtPayload;
+    return this.paymentsService.getActivePaymentSource(user.id);
+  }
+
+  @Delete('payment-sources/:id')
+  @HttpCode(204)
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Eliminar fuente de pago del usuario autenticado' })
+  @ApiResponse({ status: 204, description: 'Eliminada' })
+  @ApiResponse({ status: 404, description: 'No encontrada o no pertenece al usuario' })
+  async deletePaymentSource(@Param('id') id: string, @Req() req: Request) {
+    const user = req['user'] as JwtPayload;
+    await this.paymentsService.deletePaymentSource(user.id, id);
   }
 
   @Get(':id')
