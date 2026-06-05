@@ -1,6 +1,7 @@
 import {
   Inject,
   Injectable,
+  InternalServerErrorException,
   Logger,
   NotFoundException,
   ServiceUnavailableException,
@@ -137,13 +138,21 @@ export class PaymentsService {
     const expiresAt = new Date();
     expiresAt.setMinutes(expiresAt.getMinutes() + 30);
 
-    await this.pendingRepo.save({
-      externalReference: reference,
-      role: dto.role,
-      plan: UserPlan.PRO,
-      status: PendingRegistrationStatus.PENDING,
-      expiresAt,
-    });
+    try {
+      await this.pendingRepo.save({
+        externalReference: reference,
+        role: dto.role,
+        plan: UserPlan.PRO,
+        status: PendingRegistrationStatus.PENDING,
+        expiresAt,
+      });
+    } catch (err: any) {
+      this.logger.error(
+        `[createCheckout] error guardando pending registration: ${err?.message ?? err}`,
+        err?.stack,
+      );
+      throw new InternalServerErrorException('Error al iniciar el proceso de pago. Por favor intenta de nuevo.');
+    }
 
     return {
       widget: {

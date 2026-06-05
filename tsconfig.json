@@ -26,6 +26,7 @@
     "types": ["jest", "node", "multer"]
   },
   "ts-node": {
+    "require": ["tsconfig-paths/register"],
     "compilerOptions": {
       "module": "commonjs",
       "moduleResolution": "node10"
