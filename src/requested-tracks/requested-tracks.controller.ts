@@ -64,7 +64,7 @@ export class RequestedTracksController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.AUTOR)
+  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.AUTOR, UserRole.INTERPRETE)
   @ApiOperation({
     summary: 'Obtener todas las solicitudes de pistas',
     description: 'Obtiene la lista completa de solicitudes de pistas musicales en el sistema.',
