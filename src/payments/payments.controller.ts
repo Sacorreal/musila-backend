@@ -18,6 +18,7 @@ import { Response, Request } from 'express';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
+import { CreateLicenseCheckoutDto } from './dto/create-license-checkout.dto';
 import { CreatePaymentSourceDto } from './dto/create-payment-source.dto';
 import { PaymentsService } from './payments.service';
 import { ReceiptService } from './receipt.service';
@@ -39,6 +40,25 @@ export class PaymentsController {
   @ApiResponse({ status: 503, description: 'Wompi no disponible' })
   async createCheckout(@Body() dto: CreateCheckoutDto) {
     return this.paymentsService.createCheckout(dto);
+  }
+
+  @Post('license-checkout')
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Iniciar pago de licencia para una solicitud aprobada con precio' })
+  @ApiResponse({ status: 201, description: 'Parámetros del Widget de Wompi para el pago de licencia' })
+  @ApiResponse({ status: 400, description: 'Solicitud inválida o sin precio establecido' })
+  @ApiResponse({ status: 404, description: 'Solicitud no encontrada' })
+  async createLicenseCheckout(@Body() dto: CreateLicenseCheckoutDto, @Req() req: Request) {
+    const user = req['user'] as JwtPayload;
+    return this.paymentsService.createLicenseCheckout(dto, user.id);
+  }
+
+  @Get('license-status/:reference')
+  @ApiOperation({ summary: 'Consultar estado de pago de licencia por referencia' })
+  @ApiResponse({ status: 200, description: 'Estado del pago de licencia' })
+  async getLicensePaymentStatus(@Param('reference') reference: string) {
+    return this.paymentsService.getLicensePaymentStatus(reference);
   }
 
   @Post('wompi/webhook')

@@ -112,5 +112,20 @@ export interface AppEventMap {
     requesterName: string;
   }
 
+  'track.request.price.set': {
+    requestId: string;
+    chatId: string;
+    trackTitle: string;
+    priceInCOP: number;
+    requesterId: string;
+  }
+
+  'track.request.license.approved': {
+    requestId: string;
+    chatId: string;
+    trackTitle: string;
+    requesterId: string;
+    ownerId: string;
+  }
 
 }

@@ -61,6 +61,47 @@ export class NotificationListener {
   }
 
   @EventListener({
+    event: 'track.request.price.set',
+    channel: 'in-app',
+  })
+  async handleTrackRequestPriceSet(payload: AppEventMap['track.request.price.set']) {
+    try {
+      const formatted = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: 0 }).format(payload.priceInCOP);
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.requesterId } as any,
+        type: 'track.request.price.set',
+        title: 'Precio de licencia establecido',
+        message: `El propietario de "${payload.trackTitle}" estableció un precio de ${formatted} para tu solicitud. Entra para aceptar y pagar.`,
+        link: `/music/solicitudes`,
+        data: payload,
+      });
+      this.notificationsGateway.emitToUser(payload.requesterId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de track.request.price.set', error);
+    }
+  }
+
+  @EventListener({
+    event: 'track.request.license.approved',
+    channel: 'in-app',
+  })
+  async handleTrackRequestLicenseApproved(payload: AppEventMap['track.request.license.approved']) {
+    try {
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.requesterId } as any,
+        type: 'track.request.license.approved',
+        title: 'Licencia aprobada',
+        message: `Tu pago fue procesado exitosamente. La licencia de "${payload.trackTitle}" ha sido aprobada.`,
+        link: `/music/solicitudes`,
+        data: payload,
+      });
+      this.notificationsGateway.emitToUser(payload.requesterId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de track.request.license.approved', error);
+    }
+  }
+
+  @EventListener({
     event: 'playlist.user.added',
     channel: 'in-app',
   })

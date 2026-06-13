@@ -3,6 +3,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { Notification } from 'src/notifications/entities/notification.entity';
+import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { EmailModule } from 'src/shared/mail/email.module';
 import { Payment } from './entities/payment.entity';
 import { PaymentSource } from './entities/payment-source.entity';
@@ -25,6 +26,7 @@ import { WompiSignatureService } from './providers/wompi/wompi-signature.service
       PendingRegistration,
       User,
       Notification,
+      RequestedTrack,
     ]),
     EmailModule.forRootAsync(),
   ],

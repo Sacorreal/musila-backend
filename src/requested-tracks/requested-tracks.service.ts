@@ -192,6 +192,33 @@ export class RequestedTracksService {
     return updatedRequestedTrack;
   }
 
+  async setLicensePrice(id: string, priceInCOP: number, userId: string): Promise<RequestedTrack> {
+    const requestedTrack = await this.findRequestedTrackWithRelations(id);
+
+    if (requestedTrack.owner.id !== userId) {
+      throw new BadRequestException('Solo el propietario puede establecer el precio de la licencia');
+    }
+
+    if (requestedTrack.status !== RequestsStatus.PENDIENTE) {
+      throw new BadRequestException('Solo se puede establecer precio en solicitudes pendientes');
+    }
+
+    requestedTrack.licensePrice = priceInCOP;
+    requestedTrack.licensePriceSetAt = new Date();
+
+    const updated = await this.saveAndReturnWithRelations(requestedTrack);
+
+    this.eventBus.emit('track.request.price.set', {
+      requestId: updated.id,
+      chatId: updated.chat?.id || '',
+      trackTitle: updated.track.title,
+      priceInCOP,
+      requesterId: updated.requester.id,
+    });
+
+    return updated;
+  }
+
   async removeRequestedTracksService(id: string) {
     const requestedTrackToRemove = await this.findRequestedTrackWithRelations(id)
 

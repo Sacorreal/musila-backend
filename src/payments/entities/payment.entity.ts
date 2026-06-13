@@ -25,6 +25,7 @@ export enum PaymentStatus {
 export enum PaymentType {
   SUBSCRIPTION = 'subscription',
   ONE_TIME = 'one_time',
+  LICENSE = 'license',
 }
 
 export enum PaymentProviderName {
@@ -83,6 +84,9 @@ export class Payment {
 
   @Column('timestamptz', { name: 'expires_at', nullable: true })
   expiresAt?: Date;
+
+  @Column('uuid', { name: 'requested_track_id', nullable: true })
+  requestedTrackId?: string;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

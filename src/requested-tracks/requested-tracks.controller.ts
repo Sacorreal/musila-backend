@@ -2,7 +2,8 @@
 import { RequestedTracksService } from './requested-tracks.service';
 import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
 import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
-import { Body, Controller, Delete, Get, Param, Post, Put, UseGuards, Query } from '@nestjs/common';
+import { SetLicensePriceDto } from './dto/set-license-price.dto';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards, Query } from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { LicenseType } from './entities/license-type.enum';
@@ -114,6 +115,23 @@ export class RequestedTracksController {
     return await this.requestedTracksService.updateRequestedTracksService(id, updateRequestedTrackInput);
   }
 
+
+  @Patch(':id/price')
+  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.AUTOR)
+  @ApiOperation({
+    summary: 'Establecer precio de licencia',
+    description: 'Permite al propietario de la pista establecer el precio de la licencia en COP.',
+  })
+  @ApiParam({ name: 'id', description: 'ID de la solicitud (UUID)' })
+  @ApiResponse({ status: 200, description: 'Precio establecido exitosamente' })
+  @ApiResponse({ status: 400, description: 'Solo el propietario puede establecer el precio o la solicitud no está pendiente' })
+  async setLicensePriceController(
+    @Param('id') id: string,
+    @Body() dto: SetLicensePriceDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.requestedTracksService.setLicensePrice(id, dto.priceInCOP, user.id);
+  }
 
   @Delete(':id')
   @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.AUTOR)
