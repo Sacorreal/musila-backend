@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -15,6 +16,7 @@ import { User } from 'src/users/entities/user.entity';
 import { LessThan, Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
+import { CreateLicenseCheckoutDto } from './dto/create-license-checkout.dto';
 import { CreatePaymentSourceDto } from './dto/create-payment-source.dto';
 import {
   BillingPeriod,
@@ -23,6 +25,10 @@ import {
   PaymentStatus,
   PaymentType,
 } from './entities/payment.entity';
+import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
+import { LicensePaymentStatus } from 'src/requested-tracks/entities/license-payment-status.enum';
+import { RequestsStatus } from 'src/requested-tracks/entities/requests-status.enum';
+import { EventBusService } from 'src/shared/events/event-bus.service';
 import {
   PaymentSource,
   PaymentSourceStatus,
@@ -36,17 +42,19 @@ import {
   PaymentProvider,
 } from './domain/payment-provider.interface';
 import {
+  ParsedTransactionEvent,
   ProviderEvent,
   ProviderPaymentSourceStatus,
   ProviderTransactionStatus,
 } from './domain/payment-provider.types';
 
 const CURRENCY = 'COP';
+const LICENSE_COMMISSION_RATE = 0.10;
 
 const PLAN_PRICES: Record<UserRole, number> = {
   [UserRole.AUTOR]: 39900,
   [UserRole.CANTAUTOR]: 59900,
-  [UserRole.INTERPRETE]: 249900,
+  [UserRole.INTERPRETE]: 39900,
   [UserRole.ADMIN]: 0,
   [UserRole.INVITADO]: 0,
   [UserRole.EDITOR]: 0,
@@ -55,7 +63,7 @@ const PLAN_PRICES: Record<UserRole, number> = {
 const ANNUAL_PLAN_PRICES: Record<UserRole, number> = {
   [UserRole.AUTOR]: 359100,
   [UserRole.CANTAUTOR]: 539100,
-  [UserRole.INTERPRETE]: 249900, // pago único, sin variación
+  [UserRole.INTERPRETE]: 39900, // pago único, sin variación
   [UserRole.ADMIN]: 0,
   [UserRole.INVITADO]: 0,
   [UserRole.EDITOR]: 0,
@@ -77,6 +85,9 @@ export class PaymentsService {
     private readonly paymentSourceRepo: Repository<PaymentSource>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(RequestedTrack)
+    private readonly requestedTrackRepo: Repository<RequestedTrack>,
+    private readonly eventBus: EventBusService,
   ) {}
 
   private webAppUrl(): string {
@@ -167,6 +178,83 @@ export class PaymentsService {
     };
   }
 
+  // ─── Checkout de licencia ─────────────────────────────────────────────────────
+
+  async createLicenseCheckout(dto: CreateLicenseCheckoutDto, userId: string) {
+    const track = await this.requestedTrackRepo.findOne({
+      where: { id: dto.requestedTrackId },
+      relations: ['requester', 'owner', 'track', 'chat'],
+    });
+
+    if (!track) throw new NotFoundException('Solicitud de licencia no encontrada');
+    if (track.requester.id !== userId) throw new BadRequestException('Solo el solicitante puede iniciar el pago');
+    if (!track.licensePrice) throw new BadRequestException('El propietario aún no ha establecido un precio');
+    if (track.status !== RequestsStatus.PENDIENTE) throw new BadRequestException('Esta solicitud no está en estado pendiente');
+    if (track.licensePaymentStatus === LicensePaymentStatus.APPROVED) throw new BadRequestException('Esta licencia ya fue pagada');
+
+    const licensePriceInCents = Math.round(Number(track.licensePrice) * 100);
+    const commissionInCents = Math.round(licensePriceInCents * LICENSE_COMMISSION_RATE);
+    const amountInCents = licensePriceInCents + commissionInCents;
+    const reference = uuid();
+
+    let signature: string;
+    try {
+      signature = this.provider.generateIntegritySignature({ reference, amountInCents, currency: CURRENCY });
+    } catch (err: any) {
+      this.logger.error(`[createLicenseCheckout] error generando firma: ${err?.message}`);
+      throw new ServiceUnavailableException('No se pudo iniciar el proceso de pago.');
+    }
+
+    const publicKey = this.configService.get<string>('WOMPI_PUBLIC_KEY', '');
+    if (!publicKey) throw new ServiceUnavailableException('No se pudo iniciar el proceso de pago.');
+
+    const redirectUrl = `${this.webAppUrl()}/music/solicitudes?ref=${reference}`;
+
+    track.licensePaymentReference = reference;
+    track.licensePaymentStatus = LicensePaymentStatus.PENDING;
+    await this.requestedTrackRepo.save(track);
+
+    await this.paymentRepo.save({
+      provider: PaymentProviderName.WOMPI,
+      userId,
+      status: PaymentStatus.PENDING,
+      amount: amountInCents / 100,
+      currency: CURRENCY,
+      planType: UserPlan.FREE,
+      roleType: UserRole.INVITADO,
+      paymentType: PaymentType.LICENSE,
+      externalReference: reference,
+      requestedTrackId: track.id,
+    });
+
+    return {
+      widget: { publicKey, currency: CURRENCY, amountInCents, reference, signature, redirectUrl },
+      externalReference: reference,
+      licensePrice: Number(track.licensePrice),
+      commission: commissionInCents / 100,
+      total: amountInCents / 100,
+    };
+  }
+
+  async getLicensePaymentStatus(reference: string) {
+    const track = await this.requestedTrackRepo.findOne({
+      where: { licensePaymentReference: reference },
+    });
+
+    if (!track) return { status: 'not_found' };
+
+    switch (track.licensePaymentStatus) {
+      case LicensePaymentStatus.APPROVED:
+        return { status: 'approved', requestedTrackId: track.id };
+      case LicensePaymentStatus.FAILED:
+        return { status: 'failed', requestedTrackId: track.id };
+      case LicensePaymentStatus.PENDING:
+        return { status: 'pending' };
+      default:
+        return { status: 'not_found' };
+    }
+  }
+
   // ─── Webhook ───────────────────────────────────────────────────────────────────
 
   /**
@@ -196,6 +284,20 @@ export class PaymentsService {
     const pending = await this.pendingRepo.findOne({
       where: { externalReference: parsed.reference },
     });
+
+    // Si no hay PendingRegistration, puede ser un pago de licencia
+    if (!pending) {
+      const licenseTrack = await this.requestedTrackRepo.findOne({
+        where: { licensePaymentReference: parsed.reference },
+        relations: ['requester', 'owner', 'track', 'chat'],
+      });
+      if (licenseTrack) {
+        await this.handleLicensePayment(parsed, licenseTrack);
+        return;
+      }
+      this.logger.warn(`[Webhook Wompi] no se encontró pending ni licencia para ref=${parsed.reference}`);
+      return;
+    }
 
     const paymentStatus = this.mapStatus(parsed.status);
     const isLifetime = pending?.role === UserRole.INTERPRETE;
@@ -244,6 +346,59 @@ export class PaymentsService {
         });
       }
       this.logger.log(`[Webhook Wompi] registro ${pending.id} confirmado`);
+    }
+  }
+
+  private async handleLicensePayment(
+    parsed: ParsedTransactionEvent,
+    track: RequestedTrack,
+  ): Promise<void> {
+    const paymentStatus = this.mapStatus(parsed.status);
+
+    const existingPayment = await this.paymentRepo.findOne({
+      where: { wompiTransactionId: parsed.transactionId },
+    });
+    if (existingPayment && existingPayment.status === PaymentStatus.APPROVED) {
+      this.logger.log(`[Webhook License] evento duplicado tx=${parsed.transactionId}, ignorado`);
+      return;
+    }
+
+    const paymentData: Partial<Payment> = {
+      provider: PaymentProviderName.WOMPI,
+      wompiTransactionId: parsed.transactionId,
+      userId: track.requester?.id,
+      status: paymentStatus,
+      amount: parsed.amountInCents != null ? parsed.amountInCents / 100 : undefined,
+      currency: CURRENCY,
+      planType: UserPlan.FREE,
+      roleType: UserRole.INVITADO,
+      paymentType: PaymentType.LICENSE,
+      externalReference: parsed.reference,
+      requestedTrackId: track.id,
+    };
+
+    if (existingPayment) {
+      await this.paymentRepo.update(existingPayment.id, paymentData);
+    } else {
+      await this.paymentRepo.save(paymentData);
+    }
+
+    if (paymentStatus === PaymentStatus.APPROVED) {
+      track.licensePaymentStatus = LicensePaymentStatus.APPROVED;
+      track.status = RequestsStatus.APROBADA;
+      await this.requestedTrackRepo.save(track);
+      this.logger.log(`[Webhook License] licencia aprobada para solicitud ${track.id}`);
+      this.eventBus.emit('track.request.license.approved', {
+        requestId: track.id,
+        chatId: track.chat?.id || '',
+        trackTitle: track.track?.title || '',
+        requesterId: track.requester?.id || '',
+        ownerId: track.owner?.id || '',
+      });
+    } else if (paymentStatus === PaymentStatus.REJECTED || paymentStatus === PaymentStatus.CANCELLED) {
+      track.licensePaymentStatus = LicensePaymentStatus.FAILED;
+      await this.requestedTrackRepo.save(track);
+      this.logger.log(`[Webhook License] pago fallido para solicitud ${track.id}`);
     }
   }
 

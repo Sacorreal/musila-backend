@@ -12,6 +12,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { LicenseType } from './license-type.enum';
+import { LicensePaymentStatus } from './license-payment-status.enum';
 import { RequestsStatus } from './requests-status.enum';
 import { Chat } from 'src/chat/entities/chat.entity';
 
@@ -53,6 +54,23 @@ export class RequestedTrack {
 
   @Column({ type: 'text', nullable: true })
   documentUrl?: string | null;
+
+  @Column({ type: 'numeric', precision: 12, scale: 2, nullable: true, name: 'license_price' })
+  licensePrice: number | null;
+
+  @Column({ type: 'timestamptz', nullable: true, name: 'license_price_set_at' })
+  licensePriceSetAt: Date | null;
+
+  @Column({ type: 'varchar', nullable: true, name: 'license_payment_reference' })
+  licensePaymentReference: string | null;
+
+  @Column({
+    type: 'enum',
+    enum: LicensePaymentStatus,
+    default: LicensePaymentStatus.NONE,
+    name: 'license_payment_status',
+  })
+  licensePaymentStatus: LicensePaymentStatus;
 
   @CreateDateColumn({
     name: 'created_at',
