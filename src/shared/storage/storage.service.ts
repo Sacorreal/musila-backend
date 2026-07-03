@@ -150,7 +150,12 @@ export class StorageService {
       'audio/wav',
       'audio/mp3',
       'audio/x-wav',
-  
+      'audio/mp4', // .m4a (tipo IANA)
+      'audio/x-m4a', // .m4a (alias Apple, muy común)
+      'audio/m4a', // .m4a (variante rara, red de seguridad)
+      'audio/3gpp', // .3gp (tipo IANA para audio-only)
+      'video/3gpp', // .3gp (lo que realmente reporta Android para .3gp de audio)
+
       // IMAGES
       'image/jpeg',
       'image/png',
@@ -177,7 +182,12 @@ export class StorageService {
       'audio/mp3': 'mp3',
       'audio/wav': 'wav',
       'audio/x-wav': 'wav',
-  
+      'audio/mp4': 'm4a',
+      'audio/x-m4a': 'm4a',
+      'audio/m4a': 'm4a',
+      'audio/3gpp': '3gp',
+      'video/3gpp': '3gp',
+
       // IMAGES
       'image/jpeg': 'jpg',
       'image/png': 'png',

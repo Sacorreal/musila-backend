@@ -10,7 +10,7 @@ describe('StorageService', () => {
 
   // 1. Mock de las opciones de configuración inyectadas
   const mockStorageOptions = {
-    endpoint: 'nyc3.digitaloceanspaces.com',
+    endpoint: 'https://nyc3.digitaloceanspaces.com',
     region: 'nyc3',
     accessKeyId: 'fake-access-key',
     secretAccessKey: 'fake-secret-key',
@@ -54,6 +54,50 @@ describe('StorageService', () => {
       expect(result.uploadUrl).toBeDefined();
       expect(result.key).toContain('develop/tracks/audio/');
       expect(result.publicUrl).toContain('https://mi-bucket-test.nyc3.digitaloceanspaces.com/');
+    });
+
+    it('debería generar una URL de carga correctamente para un archivo .m4a (audio/mp4)', async () => {
+      const params = {
+        folder: StorageFolder.TRACK_AUDIO,
+        fileType: 'audio/mp4',
+      };
+
+      const result = await service.generateUploadUrl(params);
+
+      expect(result.key).toMatch(/\.m4a$/);
+    });
+
+    it('debería generar una URL de carga correctamente para un archivo .m4a (audio/x-m4a)', async () => {
+      const params = {
+        folder: StorageFolder.TRACK_AUDIO,
+        fileType: 'audio/x-m4a',
+      };
+
+      const result = await service.generateUploadUrl(params);
+
+      expect(result.key).toMatch(/\.m4a$/);
+    });
+
+    it('debería generar una URL de carga correctamente para un archivo .3gp (audio/3gpp)', async () => {
+      const params = {
+        folder: StorageFolder.TRACK_AUDIO,
+        fileType: 'audio/3gpp',
+      };
+
+      const result = await service.generateUploadUrl(params);
+
+      expect(result.key).toMatch(/\.3gp$/);
+    });
+
+    it('debería generar una URL de carga correctamente para un archivo .3gp reportado como video/3gpp (Android)', async () => {
+      const params = {
+        folder: StorageFolder.TRACK_AUDIO,
+        fileType: 'video/3gpp',
+      };
+
+      const result = await service.generateUploadUrl(params);
+
+      expect(result.key).toMatch(/\.3gp$/);
     });
 
     it('debería lanzar BadRequestException para tipos de archivo no soportados', async () => {
