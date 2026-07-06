@@ -1,5 +1,7 @@
 import { Controller, Get, Query } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { SearchQueryDto } from './dto/search-query.dto';
+import { SearchResponseDto } from './dto/search-response.dto';
 import { SearchService } from './search.service';
 
 @ApiTags('Búsqueda')
@@ -10,30 +12,15 @@ export class SearchController {
     @Get()
     @ApiOperation({
         summary: 'Buscar en el sistema',
-        description: 'Realiza una búsqueda general en el sistema que incluye usuarios, pistas musicales, géneros y otros elementos.',
-    })
-    @ApiQuery({
-        name: 'q',
-        required: true,
-        description: 'Término de búsqueda',
-        example: 'rock',
-        type: String,
+        description: 'Realiza una búsqueda general en el sistema que incluye usuarios, pistas musicales, géneros y otros elementos. El parámetro "limit" acota la cantidad de resultados por categoría (tracks, géneros, autores), no el total global.',
     })
     @ApiResponse({
         status: 200,
         description: 'Resultados de búsqueda obtenidos exitosamente',
-        schema: {
-            type: 'object',
-            properties: {
-                tracks: { type: 'array', description: 'Pistas musicales encontradas' },
-                users: { type: 'array', description: 'Usuarios encontrados' },
-                genres: { type: 'array', description: 'Géneros musicales encontrados' },
-            },
-        },
+        type: SearchResponseDto,
     })
-    @ApiResponse({ status: 400, description: 'Parámetro de búsqueda no proporcionado' })
-    async searchController(@Query('q') query: string) {
-
+    @ApiResponse({ status: 400, description: 'Parámetro de búsqueda "q" no proporcionado o inválido' })
+    async searchController(@Query() query: SearchQueryDto): Promise<SearchResponseDto> {
         return await this.searchService.searchService(query);
     }
 }
