@@ -2,26 +2,15 @@ import { ExecutionContext, HttpException, HttpStatus } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { PlaylistCollaborator } from 'src/playlist-collaborators/entities/playlist-collaborator.entity';
-import { Playlist } from 'src/playlists/entities/playlist.entity';
-import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
-import { Track } from 'src/tracks/entities/track.entity';
+import { User } from 'src/users/entities/user.entity';
 import { UserPlan } from 'src/users/entities/user-plan.enum';
 import { UserRole } from 'src/users/entities/user-role.enum';
-import { User } from 'src/users/entities/user.entity';
-import { PLAN_LIMIT_KEY } from '../plan-limits/plan-limit.decorator';
+import { getLimit } from '../plan-limits/plan-limits.config';
+import { PlanLimitsService } from '../plan-limits/plan-limits.service';
 import { PlanLimitsGuard } from './plan-limits.guard';
 
-const makeMockRepo = (overrides: Record<string, jest.Mock> = {}) => ({
+const makeMockUserRepo = () => ({
   findOne: jest.fn().mockResolvedValue(null),
-  count: jest.fn().mockResolvedValue(0),
-  find: jest.fn().mockResolvedValue([]),
-  createQueryBuilder: jest.fn().mockReturnValue({
-    innerJoin: jest.fn().mockReturnThis(),
-    where: jest.fn().mockReturnThis(),
-    getCount: jest.fn().mockResolvedValue(0),
-  }),
-  ...overrides,
 });
 
 function buildContext(userId: string, resource: string | undefined): ExecutionContext {
@@ -37,28 +26,19 @@ function buildContext(userId: string, resource: string | undefined): ExecutionCo
 describe('PlanLimitsGuard', () => {
   let guard: PlanLimitsGuard;
   let reflector: Reflector;
-  let userRepo: ReturnType<typeof makeMockRepo>;
-  let trackRepo: ReturnType<typeof makeMockRepo>;
-  let requestRepo: ReturnType<typeof makeMockRepo>;
-  let playlistRepo: ReturnType<typeof makeMockRepo>;
-  let collaboratorRepo: ReturnType<typeof makeMockRepo>;
+  let userRepo: ReturnType<typeof makeMockUserRepo>;
+  let planLimitsService: { countResource: jest.Mock };
 
   beforeEach(async () => {
-    userRepo = makeMockRepo();
-    trackRepo = makeMockRepo();
-    requestRepo = makeMockRepo();
-    playlistRepo = makeMockRepo();
-    collaboratorRepo = makeMockRepo();
+    userRepo = makeMockUserRepo();
+    planLimitsService = { countResource: jest.fn().mockResolvedValue(0) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         PlanLimitsGuard,
         Reflector,
         { provide: getRepositoryToken(User), useValue: userRepo },
-        { provide: getRepositoryToken(Track), useValue: trackRepo },
-        { provide: getRepositoryToken(RequestedTrack), useValue: requestRepo },
-        { provide: getRepositoryToken(Playlist), useValue: playlistRepo },
-        { provide: getRepositoryToken(PlaylistCollaborator), useValue: collaboratorRepo },
+        { provide: PlanLimitsService, useValue: planLimitsService },
       ],
     }).compile();
 
@@ -84,25 +64,21 @@ describe('PlanLimitsGuard', () => {
 
   // ─── Autor Free — tracks ─────────────────────────────────────────────────────
 
-  it('debe bloquear al Autor Free que ya tiene 3 tracks', async () => {
+  it('debe bloquear al Autor Free que ya alcanzó el límite de tracks', async () => {
+    const limit = getLimit(UserRole.AUTOR, UserPlan.FREE, 'tracks') as number;
     setupReflector('tracks');
     setupUser(UserRole.AUTOR, UserPlan.FREE);
-    trackRepo.createQueryBuilder.mockReturnValue({
-      innerJoin: jest.fn().mockReturnThis(),
-      getCount: jest.fn().mockResolvedValue(3),
-    });
+    planLimitsService.countResource.mockResolvedValue(limit);
 
     const ctx = buildContext('user-1', 'tracks');
     await expect(guard.canActivate(ctx)).rejects.toThrow(HttpException);
   });
 
-  it('debe permitir al Autor Free con menos de 3 tracks', async () => {
+  it('debe permitir al Autor Free con menos tracks que el límite', async () => {
+    const limit = getLimit(UserRole.AUTOR, UserPlan.FREE, 'tracks') as number;
     setupReflector('tracks');
     setupUser(UserRole.AUTOR, UserPlan.FREE);
-    trackRepo.createQueryBuilder.mockReturnValue({
-      innerJoin: jest.fn().mockReturnThis(),
-      getCount: jest.fn().mockResolvedValue(2),
-    });
+    planLimitsService.countResource.mockResolvedValue(limit - 1);
 
     const ctx = buildContext('user-1', 'tracks');
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
@@ -111,10 +87,7 @@ describe('PlanLimitsGuard', () => {
   it('debe permitir al Autor Pro publicar sin límite de tracks', async () => {
     setupReflector('tracks');
     setupUser(UserRole.AUTOR, UserPlan.PRO);
-    trackRepo.createQueryBuilder.mockReturnValue({
-      innerJoin: jest.fn().mockReturnThis(),
-      getCount: jest.fn().mockResolvedValue(100),
-    });
+    planLimitsService.countResource.mockResolvedValue(100);
 
     const ctx = buildContext('user-1', 'tracks');
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
@@ -122,10 +95,11 @@ describe('PlanLimitsGuard', () => {
 
   // ─── Cantautor Free — requests ───────────────────────────────────────────────
 
-  it('debe bloquear al Cantautor Free con 3 solicitudes activas', async () => {
+  it('debe bloquear al Cantautor Free que ya alcanzó el límite de solicitudes', async () => {
+    const limit = getLimit(UserRole.CANTAUTOR, UserPlan.FREE, 'requests') as number;
     setupReflector('requests');
     setupUser(UserRole.CANTAUTOR, UserPlan.FREE);
-    requestRepo.count.mockResolvedValue(3);
+    planLimitsService.countResource.mockResolvedValue(limit);
 
     const ctx = buildContext('user-1', 'requests');
     await expect(guard.canActivate(ctx)).rejects.toThrow(HttpException);
@@ -134,7 +108,7 @@ describe('PlanLimitsGuard', () => {
   it('debe permitir al Cantautor Pro enviar solicitudes sin límite', async () => {
     setupReflector('requests');
     setupUser(UserRole.CANTAUTOR, UserPlan.PRO);
-    requestRepo.count.mockResolvedValue(50);
+    planLimitsService.countResource.mockResolvedValue(50);
 
     const ctx = buildContext('user-1', 'requests');
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
@@ -142,10 +116,11 @@ describe('PlanLimitsGuard', () => {
 
   // ─── Intérprete Free — playlists ────────────────────────────────────────────
 
-  it('debe bloquear al Intérprete Free con 1 playlist', async () => {
+  it('debe bloquear al Intérprete Free que ya alcanzó el límite de playlists', async () => {
+    const limit = getLimit(UserRole.INTERPRETE, UserPlan.FREE, 'playlists') as number;
     setupReflector('playlists');
     setupUser(UserRole.INTERPRETE, UserPlan.FREE);
-    playlistRepo.count.mockResolvedValue(1);
+    planLimitsService.countResource.mockResolvedValue(limit);
 
     const ctx = buildContext('user-1', 'playlists');
     await expect(guard.canActivate(ctx)).rejects.toThrow(HttpException);
@@ -154,7 +129,7 @@ describe('PlanLimitsGuard', () => {
   it('debe permitir al Intérprete Pro playlists ilimitadas', async () => {
     setupReflector('playlists');
     setupUser(UserRole.INTERPRETE, UserPlan.PRO);
-    playlistRepo.count.mockResolvedValue(99);
+    planLimitsService.countResource.mockResolvedValue(99);
 
     const ctx = buildContext('user-1', 'playlists');
     await expect(guard.canActivate(ctx)).resolves.toBe(true);
@@ -162,27 +137,21 @@ describe('PlanLimitsGuard', () => {
 
   // ─── Colaboradores ───────────────────────────────────────────────────────────
 
-  it('debe bloquear al Cantautor Free con 2 colaboradores', async () => {
+  it('debe bloquear al Cantautor Free que ya alcanzó el límite de colaboradores', async () => {
+    const limit = getLimit(UserRole.CANTAUTOR, UserPlan.FREE, 'collaborators') as number;
     setupReflector('collaborators');
     setupUser(UserRole.CANTAUTOR, UserPlan.FREE);
-    playlistRepo.find.mockResolvedValue([{ id: 'pl-1' }]);
-    collaboratorRepo.createQueryBuilder.mockReturnValue({
-      where: jest.fn().mockReturnThis(),
-      getCount: jest.fn().mockResolvedValue(2),
-    });
+    planLimitsService.countResource.mockResolvedValue(limit);
 
     const ctx = buildContext('user-1', 'collaborators');
     await expect(guard.canActivate(ctx)).rejects.toThrow(HttpException);
   });
 
-  it('debe bloquear al Cantautor Pro con más de 5 colaboradores', async () => {
+  it('debe bloquear al Cantautor Pro que ya alcanzó el límite de colaboradores', async () => {
+    const limit = getLimit(UserRole.CANTAUTOR, UserPlan.PRO, 'collaborators') as number;
     setupReflector('collaborators');
     setupUser(UserRole.CANTAUTOR, UserPlan.PRO);
-    playlistRepo.find.mockResolvedValue([{ id: 'pl-1' }]);
-    collaboratorRepo.createQueryBuilder.mockReturnValue({
-      where: jest.fn().mockReturnThis(),
-      getCount: jest.fn().mockResolvedValue(5),
-    });
+    planLimitsService.countResource.mockResolvedValue(limit);
 
     const ctx = buildContext('user-1', 'collaborators');
     await expect(guard.canActivate(ctx)).rejects.toThrow(HttpException);
@@ -191,12 +160,10 @@ describe('PlanLimitsGuard', () => {
   // ─── Respuesta 402 con payload correcto ─────────────────────────────────────
 
   it('debe retornar HTTP 402 con PLAN_LIMIT_REACHED en el body', async () => {
+    const limit = getLimit(UserRole.AUTOR, UserPlan.FREE, 'tracks') as number;
     setupReflector('tracks');
     setupUser(UserRole.AUTOR, UserPlan.FREE);
-    trackRepo.createQueryBuilder.mockReturnValue({
-      innerJoin: jest.fn().mockReturnThis(),
-      getCount: jest.fn().mockResolvedValue(3),
-    });
+    planLimitsService.countResource.mockResolvedValue(limit);
 
     const ctx = buildContext('user-1', 'tracks');
 
@@ -208,7 +175,7 @@ describe('PlanLimitsGuard', () => {
       const response = (e as HttpException).getResponse() as Record<string, unknown>;
       expect(response.error).toBe('PLAN_LIMIT_REACHED');
       expect(response.resource).toBe('tracks');
-      expect(response.limit).toBe(3);
+      expect(response.limit).toBe(limit);
       expect(response.upgradeRequired).toBe('pro');
       expect((e as HttpException).getStatus()).toBe(HttpStatus.PAYMENT_REQUIRED);
     }

@@ -1,17 +1,18 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { PlanLimitsService } from 'src/shared/plan-limits/plan-limits.service';
 import { UserPlan } from './entities/user-plan.enum';
 import { UserRole } from './entities/user-role.enum';
 import { User } from './entities/user.entity';
 import { Payment, PaymentStatus } from 'src/payments/entities/payment.entity';
 
 const PLAN_FEATURES: Record<string, string[]> = {
-  [`${UserRole.AUTOR}_${UserPlan.FREE}`]: ['Hasta 3 canciones'],
+  [`${UserRole.AUTOR}_${UserPlan.FREE}`]: ['Hasta 5 canciones'],
   [`${UserRole.AUTOR}_${UserPlan.PRO}`]: ['Canciones ilimitadas', 'Solicitudes ilimitadas recibidas'],
-  [`${UserRole.CANTAUTOR}_${UserPlan.FREE}`]: ['Hasta 3 canciones', 'Hasta 3 solicitudes', 'Hasta 2 colaboradores', 'Hasta 1 playlist', 'Búsqueda ilimitada'],
+  [`${UserRole.CANTAUTOR}_${UserPlan.FREE}`]: ['Hasta 5 canciones', 'Hasta 3 solicitudes', 'Hasta 2 colaboradores', 'Hasta 1 playlist', 'Búsqueda ilimitada'],
   [`${UserRole.CANTAUTOR}_${UserPlan.PRO}`]: ['Canciones ilimitadas', 'Solicitudes ilimitadas', 'Hasta 5 colaboradores', 'Playlists ilimitadas', 'Búsqueda ilimitada'],
-  [`${UserRole.INTERPRETE}_${UserPlan.FREE}`]: ['Hasta 3 solicitudes', 'Hasta 2 colaboradores', 'Hasta 1 playlist', 'Búsqueda ilimitada'],
+  [`${UserRole.INTERPRETE}_${UserPlan.FREE}`]: ['Hasta 5 solicitudes', 'Hasta 2 colaboradores', 'Hasta 1 playlist', 'Búsqueda ilimitada'],
   [`${UserRole.INTERPRETE}_${UserPlan.PRO}`]: ['Solicitudes ilimitadas', 'Hasta 5 colaboradores', 'Playlists ilimitadas', 'Búsqueda ilimitada', 'Acceso de por vida'],
 };
 
@@ -22,6 +23,7 @@ export class PlanService {
     private readonly userRepo: Repository<User>,
     @InjectRepository(Payment)
     private readonly paymentRepo: Repository<Payment>,
+    private readonly planLimitsService: PlanLimitsService,
   ) {}
 
   async getPlanStatus(userId: string) {
@@ -63,6 +65,7 @@ export class PlanService {
     }
 
     const features = PLAN_FEATURES[`${user.role}_${user.plan}`] ?? [];
+    const usage = await this.planLimitsService.getUsageForRole(user.role, user.plan, userId);
 
     return {
       plan: user.plan,
@@ -74,6 +77,7 @@ export class PlanService {
       isExpired,
       daysRemaining,
       features,
+      usage,
     };
   }
 
