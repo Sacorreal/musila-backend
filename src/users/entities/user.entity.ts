@@ -134,6 +134,12 @@ export class User {
   @Column('timestamp', { nullable: true, name: 'reset_token_expires' })
   resetTokenExpires?: Date;
 
+  @Column('uuid', { nullable: true, name: 'referred_by_affiliate_id' })
+  referredByAffiliateId?: string;
+
+  @Column('timestamptz', { nullable: true, name: 'referred_at' })
+  referredAt?: Date;
+
   @CreateDateColumn({
     name: 'created_at',
     type: 'timestamptz',

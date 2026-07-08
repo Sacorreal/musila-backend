@@ -1,4 +1,7 @@
 import { LicenseType } from "src/requested-tracks/entities/license-type.enum";
+import { UserRole } from "src/users/entities/user-role.enum";
+import { UserPlan } from "src/users/entities/user-plan.enum";
+import { BillingPeriod, PaymentType } from "src/payments/entities/payment.entity";
 
 export interface AppEventMap {
   // 👥 INVITES
@@ -126,6 +129,20 @@ export interface AppEventMap {
     trackTitle: string;
     requesterId: string;
     ownerId: string;
+  }
+
+  // 💳 PAGOS / SUSCRIPCIONES
+
+  'payment.subscription.approved': {
+    userId: string;
+    role: UserRole;
+    plan: UserPlan;
+    paymentId: string;
+    paymentType: PaymentType;
+    billingPeriod?: BillingPeriod;
+    amount: number;
+    isFirstPurchase: boolean;
+    occurredAt: Date;
   }
 
 }

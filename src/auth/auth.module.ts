@@ -5,9 +5,10 @@ import { UsersModule } from 'src/users/users.module';
 import { SharedModule } from '../shared/shared-module-jwt/shared-module.module';
 import { GuestsModule } from 'src/guests/guests.module';
 import { PaymentsModule } from 'src/payments/payments.module';
+import { AffiliatesModule } from 'src/affiliates/affiliates.module';
 
 @Module({
-  imports: [UsersModule, SharedModule, GuestsModule, PaymentsModule],
+  imports: [UsersModule, SharedModule, GuestsModule, PaymentsModule, AffiliatesModule],
   controllers: [AuthController],
   providers: [AuthService],
 })

@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Logger,
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
@@ -19,15 +20,19 @@ import { EventBusService } from 'src/shared/events/event-bus.service';
 import { RequestResetPasswordDto } from './dto/request-reset-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { PaymentsService } from 'src/payments/payments.service';
+import { AffiliatesService } from 'src/affiliates/affiliates.service';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly guestsService: GuestsService,
     private readonly jwtService: JwtService,
     private readonly eventBus: EventBusService,
     private readonly paymentsService: PaymentsService,
+    private readonly affiliatesService: AffiliatesService,
   ) {}
 
   /**
@@ -74,7 +79,7 @@ export class AuthService {
     if (userExists) throw new UnauthorizedException('El usuario ya existe');
 
     const hashedPassword = await bcrypt.hash(user.password, 10);
-    const { externalReference, ...userFields } = user;
+    const { externalReference, referralCode, ...userFields } = user;
 
     const newUser = await this.usersService.createUserService({
       ...userFields,
@@ -83,6 +88,14 @@ export class AuthService {
 
     if (externalReference) {
       await this.paymentsService.linkUserToPayment(externalReference, newUser.id);
+    }
+
+    if (referralCode) {
+      try {
+        await this.affiliatesService.attributeReferral(newUser.id, referralCode);
+      } catch (err: any) {
+        this.logger.warn(`No se pudo atribuir el referido: ${err?.message}`);
+      }
     }
 
     const token = await this.createToken(newUser);

@@ -27,6 +27,7 @@ import { AppNotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PlanLimitsModule } from './shared/plan-limits/plan-limits.module';
 import { PlanLimitsGuard } from './shared/guards/plan-limits.guard';
+import { AffiliatesModule } from './affiliates/affiliates.module';
 
 @Module({
   imports: [
@@ -58,6 +59,7 @@ import { PlanLimitsGuard } from './shared/guards/plan-limits.guard';
     AppNotificationsModule,
     PaymentsModule,
     PlanLimitsModule,
+    AffiliatesModule,
   ],
   controllers: [AppController],
   providers: [

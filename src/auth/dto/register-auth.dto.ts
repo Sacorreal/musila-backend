@@ -147,4 +147,9 @@ export class RegisterAuthDto {
     @IsOptional()
     @IsString()
     externalReference?: string;
+
+    @ApiPropertyOptional({ description: 'Código de referido de un afiliado (programa de afiliados).' })
+    @IsOptional()
+    @IsString()
+    referralCode?: string;
 }

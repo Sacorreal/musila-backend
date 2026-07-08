@@ -329,10 +329,13 @@ export class PaymentsService {
       expiresAt,
     };
 
+    let paymentId: string;
     if (existing) {
       await this.paymentRepo.update(existing.id, paymentData);
+      paymentId = existing.id;
     } else {
-      await this.paymentRepo.save(paymentData);
+      const saved = await this.paymentRepo.save(paymentData);
+      paymentId = saved.id;
     }
 
     if (paymentStatus === PaymentStatus.APPROVED && pending) {
@@ -343,6 +346,21 @@ export class PaymentsService {
         await this.userRepo.update(pending.userId, {
           plan: UserPlan.PRO,
           planExpiresAt: expiresAt,
+        });
+
+        const previousApprovedCount = await this.paymentRepo.count({
+          where: { userId: pending.userId, status: PaymentStatus.APPROVED },
+        });
+        this.eventBus.emit('payment.subscription.approved', {
+          userId: pending.userId,
+          role: pending.role ?? UserRole.INVITADO,
+          plan: UserPlan.PRO,
+          paymentId,
+          paymentType: isLifetime ? PaymentType.ONE_TIME : PaymentType.SUBSCRIPTION,
+          billingPeriod,
+          amount: paymentData.amount ?? 0,
+          isFirstPurchase: previousApprovedCount <= 1,
+          occurredAt: new Date(),
         });
       }
       this.logger.log(`[Webhook Wompi] registro ${pending.id} confirmado`);
@@ -540,7 +558,7 @@ export class PaymentsService {
     const newExpiry = new Date(baseDate);
     newExpiry.setDate(newExpiry.getDate() + days);
 
-    await this.paymentRepo.save({
+    const savedPayment = await this.paymentRepo.save({
       provider: PaymentProviderName.WOMPI,
       wompiTransactionId: result.transactionId,
       paymentSourceId: source.id,
@@ -558,6 +576,17 @@ export class PaymentsService {
 
     if (isApproved) {
       await this.userRepo.update(userId, { plan: UserPlan.PRO, planExpiresAt: newExpiry });
+      this.eventBus.emit('payment.subscription.approved', {
+        userId,
+        role,
+        plan: UserPlan.PRO,
+        paymentId: savedPayment.id,
+        paymentType: PaymentType.SUBSCRIPTION,
+        billingPeriod,
+        amount: amountInCents / 100,
+        isFirstPurchase: false,
+        occurredAt: new Date(),
+      });
     }
 
     return { transactionId: result.transactionId, status: result.status, isApproved, newExpiry };
@@ -584,6 +613,20 @@ export class PaymentsService {
       plan: UserPlan.PRO,
       planExpiresAt: payment?.expiresAt ?? undefined,
     });
+
+    if (payment && payment.status === PaymentStatus.APPROVED) {
+      this.eventBus.emit('payment.subscription.approved', {
+        userId,
+        role: payment.roleType,
+        plan: UserPlan.PRO,
+        paymentId: payment.id,
+        paymentType: payment.paymentType,
+        billingPeriod: payment.billingPeriod,
+        amount: Number(payment.amount ?? 0),
+        isFirstPurchase: true,
+        occurredAt: new Date(),
+      });
+    }
   }
 
   async getHistory(
