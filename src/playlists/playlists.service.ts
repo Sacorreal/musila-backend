@@ -46,31 +46,36 @@ export class PlaylistsService {
     return this.findPlaylistWithRelations(savedPlaylist.id);
   }
 
-  async createPlaylistsService(createPlaylistInput: CreatePlaylistInput, user: JwtPayload): Promise<Playlist> {  
+  async createPlaylistsService(createPlaylistInput: CreatePlaylistInput, user: JwtPayload): Promise<Playlist> {
+    const ownerId =
+      user.role === UserRole.ADMIN && createPlaylistInput.ownerId
+        ? createPlaylistInput.ownerId
+        : user.id;
 
     const owner = await this.usersRepository.findOne({
-      where: { id: user.id },
+      where: { id: ownerId },
     });
     if (!owner)
-      throw new NotFoundException('Usuario propietario no encontrado');  
+      throw new NotFoundException('Usuario propietario no encontrado');
 
     const newPlaylist = this.playlistRepository.create({
       title: createPlaylistInput.title,
-      owner: user
+      owner,
     });
 
     return await this.saveAndReturnWithRelations(newPlaylist);
   }
 
-  //TODO: retornar solo mis playlist ksi tengo rol de admin me retorna todas
   async findAllPlaylistsService(user: JwtPayload, paginationDto: PaginationDto) {
     const { limit, offset } = paginationDto;
-    
+
     // 1. Construimos la condición de búsqueda dinámicamente según el rol
     const whereCondition =
-      user.role === UserRole.INVITADO
-        ? { collaborators: { guest: { id: user.id } } } // Si es invitado, busca en la tabla intermedia
-        : { owner: { id: user.id } }; // Para el resto, busca por propietario
+      user.role === UserRole.ADMIN
+        ? {} // Un admin ve todas las playlists del sistema
+        : user.role === UserRole.INVITADO
+          ? { collaborators: { guest: { id: user.id } } } // Si es invitado, busca en la tabla intermedia
+          : { owner: { id: user.id } }; // Para el resto, busca por propietario
 
     // 2. Ejecutamos una sola consulta directa a la base de datos
     const [data, total] = await this.playlistRepository.findAndCount({

@@ -1,9 +1,13 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  HttpCode,
+  HttpStatus,
   Param,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import {
@@ -21,6 +25,7 @@ import { UserRole } from 'src/users/entities/user-role.enum';
 import { RolesGuard } from 'src/users/guards/roles.guard';
 import { CreateInviteDto } from './dto/create-invite.dto';
 import { InviteResponseDto } from './dto/invite-response.dto';
+import { InvitePaginationDto } from './dto/invite-pagination.dto';
 import { InvitesService } from './invites.service';
 
 @ApiTags('Invitaciones')
@@ -51,6 +56,26 @@ export class InvitesController {
     @Body() dto: CreateInviteDto,
   ): Promise<InviteResponseDto> {
     return this.invitesService.createInvite(user.id, dto);
+  }
+
+  // ─── Admin routes (deben ir antes de /:token) ────────────────────────────────
+  @Get('admin')
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JWTAuthGuard, RolesGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Listar todas las invitaciones (Admin)' })
+  async findAllAdminController(@Query() pagination: InvitePaginationDto) {
+    return this.invitesService.findAllForAdmin(pagination);
+  }
+
+  @Delete('admin/:id')
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JWTAuthGuard, RolesGuard)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiOperation({ summary: 'Revocar (eliminar) una invitación (Admin)' })
+  async removeAdminController(@Param('id') id: string) {
+    await this.invitesService.removeByAdmin(id);
   }
 
   // ─── GET /invites/:token ─────────────────────────────────────────────────────

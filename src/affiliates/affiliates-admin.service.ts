@@ -3,10 +3,12 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Affiliate } from './entities/affiliate.entity';
 import { AffiliateCommissionsService } from './affiliate-commissions.service';
+import { AffiliatesService } from './affiliates.service';
 import { AffiliatePaginationDto } from './dto/affiliate-pagination.dto';
 import { CommissionPaginationDto } from './dto/commission-pagination.dto';
 import { UpdateAffiliateStatusDto } from './dto/update-affiliate-status.dto';
 import { UpdateAffiliateTierDto } from './dto/update-affiliate-tier.dto';
+import { CreateAffiliateAdminDto } from './dto/create-affiliate-admin.dto';
 
 @Injectable()
 export class AffiliatesAdminService {
@@ -14,7 +16,17 @@ export class AffiliatesAdminService {
     @InjectRepository(Affiliate)
     private readonly affiliateRepo: Repository<Affiliate>,
     private readonly commissionsService: AffiliateCommissionsService,
+    private readonly affiliatesService: AffiliatesService,
   ) {}
+
+  async create(dto: CreateAffiliateAdminDto): Promise<Affiliate> {
+    return this.affiliatesService.createByAdmin(dto);
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.findOne(id);
+    await this.affiliateRepo.softDelete(id);
+  }
 
   async findAll(pagination: AffiliatePaginationDto) {
     const { limit = 10, offset = 0, status, tier, q } = pagination;

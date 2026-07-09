@@ -282,4 +282,31 @@ export class ChatService {
       },
     });
   }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Lectura para el panel de administración (solo lectura: los chats son
+  // conversaciones reales entre usuarios, no se editan/crean a mano).
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async findAllChatsAdmin(pagination: { limit?: number; offset?: number }) {
+    const { limit = 10, offset = 0 } = pagination;
+    const [data, total] = await this.chatRepository.findAndCount({
+      relations: ['request', 'request.requester', 'request.owner', 'request.track', 'guests'],
+      order: { createdAt: 'DESC' },
+      take: limit,
+      skip: offset,
+    });
+    return { data, total, limit, offset };
+  }
+
+  async getChatMessagesAdmin(chatId: string) {
+    const chat = await this.chatRepository.findOne({ where: { id: chatId } });
+    if (!chat) throw new NotFoundException('No existe el chat');
+
+    return this.messageRepository.find({
+      where: { chat: { id: chatId } },
+      relations: ['sender'],
+      order: { createdAt: 'ASC' },
+    });
+  }
 }

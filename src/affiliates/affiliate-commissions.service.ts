@@ -216,6 +216,7 @@ export class AffiliateCommissionsService {
         ...(status ? { status } : {}),
         ...(affiliateId ? { affiliateId } : {}),
       },
+      relations: ['affiliate'],
       order: { createdAt: 'DESC' },
       take: limit,
       skip: offset,

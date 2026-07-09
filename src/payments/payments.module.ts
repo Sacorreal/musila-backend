@@ -9,6 +9,7 @@ import { Payment } from './entities/payment.entity';
 import { PaymentSource } from './entities/payment-source.entity';
 import { PendingRegistration } from './entities/pending-registration.entity';
 import { PaymentsController } from './payments.controller';
+import { PaymentsAdminController } from './payments-admin.controller';
 import { PaymentsService } from './payments.service';
 import { ReceiptService } from './receipt.service';
 import { PlanExpiryNotificationsService } from './plan-expiry-notifications.service';
@@ -30,7 +31,7 @@ import { WompiSignatureService } from './providers/wompi/wompi-signature.service
     ]),
     EmailModule.forRootAsync(),
   ],
-  controllers: [PaymentsController],
+  controllers: [PaymentsController, PaymentsAdminController],
   providers: [
     PaymentsService,
     ReceiptService,

@@ -18,6 +18,7 @@ import { v4 as uuid } from 'uuid';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { CreateLicenseCheckoutDto } from './dto/create-license-checkout.dto';
 import { CreatePaymentSourceDto } from './dto/create-payment-source.dto';
+import { PaymentPaginationDto } from './dto/payment-pagination.dto';
 import {
   BillingPeriod,
   Payment,
@@ -659,6 +660,61 @@ export class PaymentsService {
     const payment = await this.paymentRepo.findOne({ where: { id: paymentId } });
     if (!payment || payment.userId !== userId) return null;
     return payment;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Lectura para el panel de administración (sin mutaciones: los pagos y fuentes
+  // de pago se generan exclusivamente vía Wompi/webhooks, nunca a mano).
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async findAllPaymentsAdmin(pagination: PaymentPaginationDto) {
+    const { limit = 10, offset = 0, status, provider, paymentType, planType, userId } = pagination;
+    const qb = this.paymentRepo
+      .createQueryBuilder('payment')
+      .leftJoinAndSelect('payment.user', 'user')
+      .orderBy('payment.createdAt', 'DESC')
+      .take(limit)
+      .skip(offset);
+
+    if (status) qb.andWhere('payment.status = :status', { status });
+    if (provider) qb.andWhere('payment.provider = :provider', { provider });
+    if (paymentType) qb.andWhere('payment.paymentType = :paymentType', { paymentType });
+    if (planType) qb.andWhere('payment.planType = :planType', { planType });
+    if (userId) qb.andWhere('payment.userId = :userId', { userId });
+
+    const [data, total] = await qb.getManyAndCount();
+    return { data, total, limit, offset };
+  }
+
+  async findOnePaymentAdmin(id: string): Promise<Payment> {
+    const payment = await this.paymentRepo.findOne({ where: { id }, relations: ['user'] });
+    if (!payment) throw new NotFoundException('Pago no encontrado');
+    return payment;
+  }
+
+  async findAllPaymentSourcesAdmin(pagination: { limit?: number; offset?: number; userId?: string }) {
+    const { limit = 10, offset = 0, userId } = pagination;
+    const qb = this.paymentSourceRepo
+      .createQueryBuilder('source')
+      .leftJoinAndSelect('source.user', 'user')
+      .orderBy('source.createdAt', 'DESC')
+      .take(limit)
+      .skip(offset);
+
+    if (userId) qb.andWhere('source.userId = :userId', { userId });
+
+    const [data, total] = await qb.getManyAndCount();
+    return { data, total, limit, offset };
+  }
+
+  async findAllPendingRegistrationsAdmin(pagination: { limit?: number; offset?: number }) {
+    const { limit = 10, offset = 0 } = pagination;
+    const [data, total] = await this.pendingRepo.findAndCount({
+      order: { createdAt: 'DESC' },
+      take: limit,
+      skip: offset,
+    });
+    return { data, total, limit, offset };
   }
 
   async cleanupExpiredPendingRegistrations() {

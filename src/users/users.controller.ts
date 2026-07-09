@@ -24,6 +24,8 @@ import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { UserRole } from './entities/user-role.enum';
 import { UsersService } from './users.service';
 import { AdminService } from './admin.service';
+import { AuditLogService } from './audit-log.service';
+import { AuditLogPaginationDto } from './dto/audit-log-pagination.dto';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 
@@ -33,6 +35,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly adminService: AdminService,
+    private readonly auditLogService: AuditLogService,
   ) {}
 
   @Get()
@@ -82,6 +85,15 @@ export class UsersController {
   @ApiResponse({ status: 409, description: 'El email ya está registrado' })
   async createAdminUserController(@Body() dto: CreateUserInput) {
     return this.usersService.createAdminUserService(dto);
+  }
+
+  @Get('admin/audit-log')
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JWTAuthGuard, RolesGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({ summary: 'Listar registro de auditoría (Admin, solo lectura)' })
+  async findAllAuditLogController(@Query() pagination: AuditLogPaginationDto) {
+    return this.auditLogService.findAllAdmin(pagination);
   }
 
   // ── Authenticated user self-routes ───────────────────────────────────

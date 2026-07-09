@@ -12,6 +12,7 @@ import { User } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { CreateInviteDto } from './dto/create-invite.dto';
 import { InviteResponseDto } from './dto/invite-response.dto';
+import { InvitePaginationDto } from './dto/invite-pagination.dto';
 import { Invite } from './entities/invite.entity';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 
@@ -115,6 +116,30 @@ export class InvitesService {
     this.assertNotExpired(invite);
 
     return invite;
+  }
+
+  /** Listado paginado de todas las invitaciones del sistema (Admin). */
+  async findAllForAdmin(pagination: InvitePaginationDto) {
+    const { limit = 10, offset = 0, isUsed, email } = pagination;
+    const qb = this.inviteRepository
+      .createQueryBuilder('invite')
+      .leftJoinAndSelect('invite.invitedBy', 'invitedBy')
+      .orderBy('invite.createdAt', 'DESC')
+      .take(limit)
+      .skip(offset);
+
+    if (isUsed !== undefined) qb.andWhere('invite.isUsed = :isUsed', { isUsed });
+    if (email) qb.andWhere('invite.email ILIKE :email', { email: `%${email}%` });
+
+    const [data, total] = await qb.getManyAndCount();
+    return { data, total, limit, offset };
+  }
+
+  /** Revoca (elimina) una invitación (Admin). */
+  async removeByAdmin(id: string): Promise<void> {
+    const invite = await this.inviteRepository.findOne({ where: { id } });
+    if (!invite) throw new NotFoundException('Invitación no encontrada');
+    await this.inviteRepository.remove(invite);
   }
 
   // ─────────────────────────────────────────────────────────────────────────────

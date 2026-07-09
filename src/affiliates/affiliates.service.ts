@@ -15,6 +15,7 @@ import { User } from 'src/users/entities/user.entity';
 import { Affiliate } from './entities/affiliate.entity';
 import { AffiliateCommissionsService } from './affiliate-commissions.service';
 import { RegisterAffiliateDto } from './dto/register-affiliate.dto';
+import { CreateAffiliateAdminDto } from './dto/create-affiliate-admin.dto';
 import { LoginAffiliateDto } from './dto/login-affiliate.dto';
 import { UpdateAffiliateProfileDto } from './dto/update-affiliate-profile.dto';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
@@ -101,6 +102,41 @@ export class AffiliatesService {
     this.logger.log(`[Affiliates] nuevo afiliado registrado: ${affiliate.email}`);
     const token = await this.createToken(affiliate);
     return { token };
+  }
+
+  /**
+   * Crea un afiliado directamente desde el panel admin, sin flujo de auto-login
+   * ni aceptación de términos (se asume gestionado fuera del sistema).
+   */
+  async createByAdmin(dto: CreateAffiliateAdminDto): Promise<Affiliate> {
+    const existing = await this.affiliateRepo.findOne({ where: { email: dto.email } });
+    if (existing) throw new ConflictException('Ya existe un afiliado registrado con este correo');
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const referralCode = await this.generateUniqueReferralCode();
+
+    const affiliate = await this.affiliateRepo.save({
+      name: dto.name,
+      lastName: dto.lastName,
+      email: dto.email,
+      password: hashedPassword,
+      phone: dto.phone,
+      countryCode: dto.countryCode,
+      companyOrBrand: dto.companyOrBrand,
+      website: dto.website,
+      audienceDescription: dto.audienceDescription,
+      socialNetworks: dto.socialNetworks,
+      paymentPhone: dto.paymentPhone,
+      bankAccount: dto.bankAccount,
+      referralCode,
+      tier: dto.tier,
+      status: dto.status,
+      acceptedTermsAt: new Date(),
+    });
+
+    this.logger.log(`[Affiliates] afiliado creado por admin: ${affiliate.email}`);
+    // select:false en la entidad no aplica al resultado de .save(); se re-consulta para no filtrar el hash.
+    return this.affiliateRepo.findOneOrFail({ where: { id: affiliate.id } });
   }
 
   async login(dto: LoginAffiliateDto): Promise<{ token: string }> {

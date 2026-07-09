@@ -10,11 +10,12 @@ import { SocketAuthService } from 'src/shared/realtime/socket-auth.service';
 import { Guest } from 'src/guests/entities/guest.entity';
 
 import { ChatController } from './chat.controller';
+import { ChatAdminController } from './chat-admin.controller';
 
 @Module({
   imports: [TypeOrmModule.forFeature([User, Chat, Message, Guest])],
   providers: [ChatService, ChatGateway, ChatListener, SocketAuthService],
-  controllers: [ChatController],
+  controllers: [ChatController, ChatAdminController],
   exports: [ChatService],
 })
 export class ChatModule { }
