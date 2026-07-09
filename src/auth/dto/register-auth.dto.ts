@@ -1,8 +1,19 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { ArrayMaxSize, IsArray, IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength } from "class-validator";
+import { ArrayMaxSize, IsArray, IsEmail, IsEmpty, IsIn, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength, ValidateNested } from "class-validator";
+import { Type } from "class-transformer";
 import { UserRole } from "src/users/entities/user-role.enum";
+import { SocialNetworksInput } from "src/users/dto/social-networks.input";
 
-
+/**
+ * Roles que un usuario puede autoasignarse en el registro público.
+ * ADMIN, EDITOR e INVITADO quedan excluidos deliberadamente: solo se asignan
+ * vía el panel de administración o flujos internos, nunca desde este endpoint.
+ */
+export const PUBLIC_REGISTER_ROLES = [
+    UserRole.AUTOR,
+    UserRole.INTERPRETE,
+    UserRole.CANTAUTOR,
+] as const;
 
 export class RegisterAuthDto {
     @ApiProperty({
@@ -20,6 +31,7 @@ export class RegisterAuthDto {
     })
     @IsString({ message: 'El apellido debe ser un texto válido' })
     @IsNotEmpty({ message: 'El apellido es obligatorio' })
+    @MaxLength(255, { message: 'El apellido no puede superar los 255 caracteres' })
     lastName: string;
 
 
@@ -62,6 +74,7 @@ export class RegisterAuthDto {
     })
     @IsString({ message: 'El apellido debe ser un texto válido' })
     @IsOptional()
+    @MaxLength(255, { message: 'El segundo apellido no puede superar los 255 caracteres' })
     secondLastName?: string;
 
     @ApiProperty({
@@ -70,6 +83,7 @@ export class RegisterAuthDto {
     })
     @IsString({ message: 'El segundo nombre debe ser un texto válido' })
     @IsOptional()
+    @MaxLength(255, { message: 'El segundo nombre no puede superar los 255 caracteres' })
     secondName?: string
 
     @ApiProperty({
@@ -97,13 +111,13 @@ export class RegisterAuthDto {
     citizenID: string;
 
     @ApiProperty({
-        example: UserRole.ADMIN,
-        enum: UserRole,
-        description: 'Rol asignado al usuario dentro del sistema (opcional). Valores posibles definidos en el enum UserRole.'
+        example: UserRole.AUTOR,
+        enum: PUBLIC_REGISTER_ROLES,
+        description: 'Rol que el usuario elige al registrarse. Solo se permiten roles públicos (autor, intérprete, cantautor); admin/editor/invitado se asignan por otras vías.'
     })
     @IsNotEmpty({ message: 'El rol es obligatorio' })
-    @IsEnum(UserRole, { message: 'El rol debe ser un valor válido de UserRole' })
-    role: UserRole;
+    @IsIn(PUBLIC_REGISTER_ROLES, { message: 'El rol debe ser autor, interprete o cantautor' })
+    role: (typeof PUBLIC_REGISTER_ROLES)[number];
 
     @ApiPropertyOptional({
         example: 'https://ejemplo.com/imagenes/avatar.jpg',
@@ -114,27 +128,34 @@ export class RegisterAuthDto {
     avatar?: string;
 
     @ApiPropertyOptional({
-        example: true,
-        description: 'Indica si la cuenta del usuario está verificada (opcional).'
-    })
-    @IsOptional()
-    @IsBoolean({ message: 'isVerified debe ser un valor booleano' })
-    isVerified?: boolean;
-
-    @ApiPropertyOptional({
         example: 'Desarrolladora full stack apasionada por la música.',
         description: 'Breve biografía o descripción personal del usuario (opcional).'
     })
     @IsOptional()
     @IsString({ message: 'La biografía debe ser un texto válido' })
+    @MaxLength(1000, { message: 'La biografía no puede superar los 1000 caracteres' })
     biography?: string;
 
     @ApiPropertyOptional({
-        example: { instagram: 'https://urlderedsocial.com', twitter: 'https://urlderedsocial2.com' },
-        description: 'Redes sociales asociadas al usuario como un objeto clave-valor (opcional).'
+        type: SocialNetworksInput,
+        description: 'Redes sociales asociadas al usuario (opcional). Solo se aceptan claves conocidas con valores URL válidos.'
     })
     @IsOptional()
-    socialNetworks?: Record<string, string>;
+    @ValidateNested()
+    @Type(() => SocialNetworksInput)
+    socialNetworks?: SocialNetworksInput;
+
+    @ApiPropertyOptional({
+        description: 'Campo trampa anti-bot: debe llegar siempre vacío. No mostrar en la UI real.',
+    })
+    @IsOptional()
+    @IsEmpty({ message: 'Solicitud inválida' })
+    companyWebsite?: string;
+
+    @ApiProperty({ description: 'Token resuelto por el widget de Cloudflare Turnstile en el frontend.' })
+    @IsString({ message: 'El token de verificación es inválido' })
+    @IsNotEmpty({ message: 'Debes completar la verificación anti-bot' })
+    turnstileToken: string;
 
     @ApiPropertyOptional({ example: ['uuid1', 'uuid2'], description: 'IDs de géneros preferidos' })
     @IsArray()

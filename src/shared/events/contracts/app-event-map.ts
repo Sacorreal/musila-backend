@@ -53,6 +53,12 @@ export interface AppEventMap {
     name: string;
   };
 
+  'user.email.verification.requested': {
+    email: string;
+    name: string;
+    token: string;
+  };
+
   'event-test': {
     message: string;
   };

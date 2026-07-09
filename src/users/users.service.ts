@@ -171,7 +171,7 @@ export class UsersService {
   async findUserByEmailService(email: string) {
     return await this.usersRepository.findOne({
       where: { email },
-      select: ['id', 'email', 'role', 'name', 'password'],
+      select: ['id', 'email', 'role', 'name', 'password', 'isVerified'],
     });
   }
 
@@ -225,6 +225,28 @@ export class UsersService {
       password: hashedPassword,
       resetToken: null,
       resetTokenExpires: null,
+    } as any);
+  }
+
+  async saveEmailVerificationToken(userId: string, token: string, expires: Date) {
+    await this.usersRepository.update(userId, {
+      emailVerificationToken: token,
+      emailVerificationTokenExpires: expires,
+    });
+  }
+
+  async findUserByEmailVerificationToken(token: string) {
+    return await this.usersRepository.findOne({
+      where: { emailVerificationToken: token },
+      select: ['id', 'email', 'name', 'isVerified', 'emailVerificationTokenExpires'],
+    });
+  }
+
+  async markEmailAsVerified(userId: string) {
+    await this.usersRepository.update(userId, {
+      isVerified: true,
+      emailVerificationToken: null,
+      emailVerificationTokenExpires: null,
     } as any);
   }
 }

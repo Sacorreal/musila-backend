@@ -16,6 +16,7 @@ import { PaginatedRequestedTracksResponseDto } from './dto/requested-track-pagin
 import { Roles } from 'src/users/decorators/roles.decorator';
 import { UserRole } from 'src/users/entities/user-role.enum';
 import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
+import { EmailVerifiedGuard } from 'src/users/guards/email-verified.guard';
 
 @ApiTags('Pistas Solicitadas')
 @UseGuards(JWTAuthGuard, RolesGuard)
@@ -28,6 +29,7 @@ export class RequestedTracksController {
 
   @Post()
   @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.INTERPRETE, UserRole.INVITADO)
+  @UseGuards(EmailVerifiedGuard)
   @PlanLimit('requests')
   @ApiConsumes('multipart/form-data')
   @ApiOperation({

@@ -11,9 +11,12 @@ import {
   IsUrl,
   IsUUID,
   MaxLength,
-  MinLength
+  MinLength,
+  ValidateNested
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { UserRole } from '../entities/user-role.enum';
+import { SocialNetworksInput } from './social-networks.input';
 
 
 export class CreateUserInput {
@@ -139,11 +142,13 @@ export class CreateUserInput {
   biography?: string;
 
   @ApiPropertyOptional({
-    example: { instagram: 'https://urlderedsocial.com', twitter: 'https://urlderedsocial2.com' },
-    description: 'Redes sociales asociadas al usuario como un objeto clave-valor (opcional).'
+    type: SocialNetworksInput,
+    description: 'Redes sociales asociadas al usuario (opcional). Solo se aceptan claves conocidas con valores URL válidos.'
   })
   @IsOptional()
-  socialNetworks?: Record<string, string>;
+  @ValidateNested()
+  @Type(() => SocialNetworksInput)
+  socialNetworks?: SocialNetworksInput;
 
   @ApiPropertyOptional({ example: ['uuid1', 'uuid2'], description: 'IDs de géneros preferidos' })
   @IsArray()

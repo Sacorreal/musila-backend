@@ -93,6 +93,17 @@ export class EmailService {
     });
   }
 
+  async sendVerifyEmailEmail(
+    to: string | string[],
+    data: EmailTemplateMap['verify-email'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'verify-email',
+      variables: data,
+    });
+  }
+
   async sendTrackRequestUpdatedEmail(
     to: string | string[],
     data: EmailTemplateMap['update-request-track-status'],

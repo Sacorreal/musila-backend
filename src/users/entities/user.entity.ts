@@ -17,6 +17,7 @@ import {
 } from 'typeorm';
 import { UserRole } from './user-role.enum';
 import { UserPlan } from './user-plan.enum';
+import { SocialNetworksData } from './social-networks.type';
 
 @Entity({ name: 'users' })
 export class User {
@@ -73,7 +74,7 @@ export class User {
   biography?: string;
 
   @Column('jsonb', { name: 'social_networks', nullable: true })
-  socialNetworks?: Record<string, string>;
+  socialNetworks?: SocialNetworksData;
 
   @ManyToMany(() => Track, (track) => track.authors, { nullable: true })
   tracks?: Track[];
@@ -133,6 +134,12 @@ export class User {
 
   @Column('timestamp', { nullable: true, name: 'reset_token_expires' })
   resetTokenExpires?: Date;
+
+  @Column('varchar', { nullable: true, name: 'email_verification_token', select: false })
+  emailVerificationToken?: string;
+
+  @Column('timestamp', { nullable: true, name: 'email_verification_token_expires' })
+  emailVerificationTokenExpires?: Date;
 
   @Column('uuid', { nullable: true, name: 'referred_by_affiliate_id' })
   referredByAffiliateId?: string;

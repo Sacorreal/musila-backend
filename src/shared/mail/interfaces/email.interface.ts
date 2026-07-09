@@ -40,6 +40,11 @@ export interface EmailTemplateMap {
     name: string;
   };
 
+  'verify-email': {
+    name: string;
+    verifyUrl: string;
+  };
+
   'send-request-track': {
     trackTitle: string,
     ownerEmail: string,

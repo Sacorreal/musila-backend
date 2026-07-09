@@ -50,22 +50,22 @@ describe('AuthController', () => {
 
     it('Si la contraseña no coincide debe lanzar un BadRequestException', async () => {
 
-      const dto: RegisterAuthDto = { name: 'test', lastName: 'test', citizenID: '123456789', email: 'test@test.com', password: '123456', repeatPassword: '1234567', countryCode: '+57', phone: '3000000000', typeCitizenID: 'CC', role: 'INVITADO' as any };
+      const dto: RegisterAuthDto = { name: 'test', lastName: 'test', citizenID: '123456789', email: 'test@test.com', password: '123456', repeatPassword: '1234567', countryCode: '+57', phone: '3000000000', typeCitizenID: 'CC', role: 'INVITADO' as any, turnstileToken: 'fake-token' };
       (authService.registerService as jest.Mock).mockResolvedValue('user-created');
 
-      await expect(authController.registerController(dto))
+      await expect(authController.registerController(dto, '127.0.0.1', 'jest'))
         .rejects.toThrow('Las contraseñas no coinciden')
       expect(mockAuthService.registerService).not.toHaveBeenCalled()
     })
 
     it('Debe llamar a registerService y retornar el resultado si las contraseñas coinciden', async () => {
 
-      const dto: RegisterAuthDto = { name: 'test', lastName: 'test', citizenID: '123456789', email: 'test@test.com', password: '123456', repeatPassword: '123456', countryCode: '+57', phone: '3000000000', typeCitizenID: 'CC', role: 'INVITADO' as any }
+      const dto: RegisterAuthDto = { name: 'test', lastName: 'test', citizenID: '123456789', email: 'test@test.com', password: '123456', repeatPassword: '123456', countryCode: '+57', phone: '3000000000', typeCitizenID: 'CC', role: 'INVITADO' as any, turnstileToken: 'fake-token' }
       mockAuthService.registerService.mockResolvedValue('user-created')
 
-      const result = await authController.registerController(dto)
+      const result = await authController.registerController(dto, '127.0.0.1', 'jest')
 
-      expect(mockAuthService.registerService).toHaveBeenCalledWith(dto)
+      expect(mockAuthService.registerService).toHaveBeenCalledWith(dto, '127.0.0.1', 'jest')
       expect(result).toBe('user-created')
 
     })

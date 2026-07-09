@@ -26,6 +26,7 @@ import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
 import { PlaylistPermissionGuard } from 'src/playlist-collaborators/guards/playlist-permission.guard';
 import { RequirePlaylistPermission } from 'src/playlist-collaborators/decorators/require-permission.decorator';
 import { CollaboratorPermission } from 'src/playlist-collaborators/entities/collaborator-permission.enum';
+import { EmailVerifiedGuard } from 'src/users/guards/email-verified.guard';
 
 @ApiTags('Listas de Reproducción')
 @UseGuards(JWTAuthGuard, RolesGuard)
@@ -35,6 +36,7 @@ export class PlaylistsController {
   constructor(private readonly playlistsService: PlaylistsService) {}
 
   @Post()
+  @UseGuards(EmailVerifiedGuard)
   @PlanLimit('playlists')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({

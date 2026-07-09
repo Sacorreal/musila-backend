@@ -20,6 +20,6 @@ import { Payment } from 'src/payments/entities/payment.entity';
   ],
   controllers: [UsersController, MeController],
   providers: [UsersService, AdminService, MeService, PlanService, AuditLogService],
-  exports: [TypeOrmModule, UsersService, AdminService],
+  exports: [TypeOrmModule, UsersService, AdminService, AuditLogService],
 })
 export class UsersModule {}

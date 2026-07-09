@@ -13,6 +13,17 @@ export class EmailChannel {
     private readonly configService: ConfigService,
   ) { }
 
+  private webAppUrl(): string {
+    const nodeEnv = this.configService.get<string>('NODE_ENV', 'local');
+    const key =
+      nodeEnv === 'production'
+        ? 'WEB_APP_PRODUCTION'
+        : nodeEnv === 'development'
+          ? 'WEB_APP_DEVELOPMENT'
+          : 'WEB_APP_LOCAL';
+    return this.configService.get<string>(key, 'http://localhost:3000');
+  }
+
   /**
    * 👤 USER CREATED → EMAIL
    */
@@ -76,6 +87,26 @@ export class EmailChannel {
 
     await this.emailService.sendPasswordChangedEmail(payload.email, {
       name: payload.name,
+    });
+  }
+
+  /**
+   * ✅ EMAIL VERIFICATION REQUESTED → EMAIL
+   */
+  @EventListener({
+    event: 'user.email.verification.requested',
+    channel: 'email',
+  })
+  async handleEmailVerificationRequested(
+    payload: AppEventMap['user.email.verification.requested'],
+  ) {
+    this.logger.log('📧 evento email verification requested disparado ✅');
+
+    const verifyUrl = `${this.webAppUrl()}/verificar-email?token=${payload.token}`;
+
+    await this.emailService.sendVerifyEmailEmail(payload.email, {
+      name: payload.name,
+      verifyUrl,
     });
   }
 
