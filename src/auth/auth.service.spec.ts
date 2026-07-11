@@ -8,17 +8,19 @@ import { AffiliatesService } from 'src/affiliates/affiliates.service';
 import { AuditLogService } from 'src/users/audit-log.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { ConflictException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, GoneException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import bcrypt from 'bcrypt'
 
 describe('AuthService', () => {
   let authService: AuthService;
   let usersService: jest.Mocked<UsersService>
   let jwtService: jest.Mocked<JwtService>
+  let eventBus: { emit: jest.Mock }
   let guestsService: { findGuestByCitizenIDForAuth: jest.Mock }
 
   beforeEach(async () => {
     guestsService = { findGuestByCitizenIDForAuth: jest.fn() }
+    eventBus = { emit: jest.fn() }
 
     global.fetch = jest.fn().mockResolvedValue({
       json: () => Promise.resolve({ success: true }),
@@ -31,7 +33,10 @@ describe('AuthService', () => {
           useValue: {
             findUserByEmailService: jest.fn(),
             findUserBycitizenIDService: jest.fn(),
-            createUserService: jest.fn()
+            createUserService: jest.fn(),
+            saveEmailVerificationToken: jest.fn(),
+            findUserByEmailVerificationToken: jest.fn(),
+            markEmailAsVerified: jest.fn(),
           }
         },
         {
@@ -41,7 +46,7 @@ describe('AuthService', () => {
           }
         },
         { provide: GuestsService, useValue: guestsService },
-        { provide: EventBusService, useValue: { emit: jest.fn() } },
+        { provide: EventBusService, useValue: eventBus },
         { provide: PaymentsService, useValue: { linkUserToPayment: jest.fn() } },
         { provide: AffiliatesService, useValue: { attributeReferral: jest.fn() } },
         { provide: AuditLogService, useValue: { log: jest.fn() } },
@@ -166,7 +171,88 @@ describe('AuthService', () => {
       expect(usersService.createUserService).toHaveBeenCalledWith(
         expect.objectContaining({ isVerified: false }),
       )
+      expect(usersService.saveEmailVerificationToken).toHaveBeenCalledWith(
+        '1',
+        expect.any(String),
+        expect.any(Date),
+      )
+      expect(eventBus.emit).toHaveBeenCalledWith(
+        'user.email.verification.requested',
+        expect.objectContaining({ email: 'test@test.com', name: 'test' }),
+      )
       expect(result).toEqual({ token: 'fake-jwt-token' })
+    })
+  })
+
+  describe('verifyEmailService', () => {
+    it('Debe lanzar BadRequestException si el token no existe', async () => {
+      usersService.findUserByEmailVerificationToken.mockResolvedValue(null)
+
+      await expect(
+        authService.verifyEmailService({ token: 'no-existe' }),
+      ).rejects.toThrow(BadRequestException)
+    })
+
+    it('Debe lanzar GoneException si el token expiró', async () => {
+      usersService.findUserByEmailVerificationToken.mockResolvedValue({
+        id: '1',
+        isVerified: false,
+        emailVerificationTokenExpires: new Date(Date.now() - 1000),
+      } as any)
+
+      await expect(
+        authService.verifyEmailService({ token: 'expirado' }),
+      ).rejects.toThrow(GoneException)
+      expect(usersService.markEmailAsVerified).not.toHaveBeenCalled()
+    })
+
+    it('Debe marcar el email como verificado con un token válido', async () => {
+      usersService.findUserByEmailVerificationToken.mockResolvedValue({
+        id: '1',
+        isVerified: false,
+        emailVerificationTokenExpires: new Date(Date.now() + 60_000),
+      } as any)
+
+      const result = await authService.verifyEmailService({ token: 'valido' })
+
+      expect(usersService.markEmailAsVerified).toHaveBeenCalledWith('1')
+      expect(result).toEqual({ message: 'Correo verificado correctamente' })
+    })
+  })
+
+  describe('resendVerificationService', () => {
+    it('No debe revelar si el email no existe', async () => {
+      usersService.findUserByEmailService.mockResolvedValue(null)
+
+      const result = await authService.resendVerificationService({ email: 'no-existe@test.com' })
+
+      expect(usersService.saveEmailVerificationToken).not.toHaveBeenCalled()
+      expect(result.message).toMatch(/Si el correo existe/)
+    })
+
+    it('No debe reenviar si el usuario ya está verificado', async () => {
+      usersService.findUserByEmailService.mockResolvedValue({ id: '1', isVerified: true } as any)
+
+      await authService.resendVerificationService({ email: 'verificado@test.com' })
+
+      expect(usersService.saveEmailVerificationToken).not.toHaveBeenCalled()
+    })
+
+    it('Debe reenviar el token si el usuario existe y no está verificado', async () => {
+      usersService.findUserByEmailService.mockResolvedValue({
+        id: '1',
+        email: 'pendiente@test.com',
+        name: 'Pendiente',
+        isVerified: false,
+      } as any)
+
+      await authService.resendVerificationService({ email: 'pendiente@test.com' })
+
+      expect(usersService.saveEmailVerificationToken).toHaveBeenCalledWith(
+        '1',
+        expect.any(String),
+        expect.any(Date),
+      )
     })
   })
 });

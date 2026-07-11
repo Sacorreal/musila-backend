@@ -219,6 +219,7 @@ export class AuthService {
       role: account.role,
       name: account.name,
       plan: 'plan' in account ? (account).plan : undefined,
+      isVerified: account.isVerified,
     };
     return this.jwtService.signAsync(payload);
   }
