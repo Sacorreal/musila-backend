@@ -58,7 +58,7 @@ export class Guest {
   @Column({ type: 'enum', enum: UserRole, default: UserRole.INVITADO })
   role: UserRole;
 
-  @ManyToOne(() => User, (user) => user.guests, { nullable: false })
+  @ManyToOne(() => User, (user) => user.guests, { nullable: false, onDelete: 'CASCADE' })
   invited_by: User;
 
   @OneToMany(() => PlaylistCollaborator, collaborator => collaborator.guest, { nullable: true })

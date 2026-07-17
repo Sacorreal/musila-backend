@@ -28,11 +28,11 @@ export class PaymentSource {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   user?: User;
 
-  @Column('varchar', { name: 'user_id' })
-  userId: string;
+  @Column('varchar', { name: 'user_id', nullable: true })
+  userId?: string;
 
   @Column('varchar', { name: 'wompi_payment_source_id' })
   wompiPaymentSourceId: string;

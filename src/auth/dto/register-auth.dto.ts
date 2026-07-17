@@ -3,6 +3,7 @@ import { ArrayMaxSize, IsArray, IsEmail, IsEmpty, IsIn, IsNotEmpty, IsOptional, 
 import { Type } from "class-transformer";
 import { UserRole } from "src/users/entities/user-role.enum";
 import { SocialNetworksInput } from "src/users/dto/social-networks.input";
+import { IsValidEmail } from "../decorators/is-valid-email.decorator";
 
 /**
  * Roles que un usuario puede autoasignarse en el registro público.
@@ -23,7 +24,7 @@ export class RegisterAuthDto {
     @IsString({ message: 'El nombre debe ser un texto válido' })
     @IsNotEmpty({ message: 'El nombre es obligatorio' })
     @MaxLength(255, { message: 'El nombre no puede superar los 255 caracteres' })
-    name: string;
+    name!: string;
 
     @ApiProperty({
         example: 'Pérez',
@@ -41,6 +42,7 @@ export class RegisterAuthDto {
     })
     @IsEmail({}, { message: 'Debe proporcionar un email válido' })
     @IsNotEmpty({ message: 'El email es obligatorio' })
+    @IsValidEmail({ message: 'No se permiten correos temporales'})
     email: string;
 
     @ApiProperty({

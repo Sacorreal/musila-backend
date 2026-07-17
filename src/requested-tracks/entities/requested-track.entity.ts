@@ -23,17 +23,17 @@ export class RequestedTrack {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (user) => user.requestSent)
+  @ManyToOne(() => User, (user) => user.requestSent, { onDelete: 'CASCADE' })
   requester: User;
 
-  @ManyToOne(() => User, (user) => user.requestReceived)
+  @ManyToOne(() => User, (user) => user.requestReceived, { onDelete: 'CASCADE' })
   @JoinColumn()
   owner: User;
 
   @OneToOne(() => Chat, (chat) => chat.request)
   chat?: Chat
 
-  @ManyToOne(() => Track, (track) => track.requestedTrack)
+  @ManyToOne(() => Track, (track) => track.requestedTrack, { onDelete: 'CASCADE' })
   track: Track;
 
   @Column({

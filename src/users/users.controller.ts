@@ -96,6 +96,21 @@ export class UsersController {
     return this.auditLogService.findAllAdmin(pagination);
   }
 
+  @Delete(':id/hard')
+  @Roles(UserRole.ADMIN)
+  @UseGuards(JWTAuthGuard, RolesGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiParam({ name: 'id', description: 'UUID del usuario' })
+  @ApiOperation({
+    summary:
+      'Eliminar usuario de forma permanente e irreversible junto con toda su data relacionada (Admin)',
+  })
+  @ApiResponse({ status: 200, description: 'Usuario y su data relacionada eliminados' })
+  @ApiResponse({ status: 404, description: 'El usuario no existe' })
+  async hardDeleteUserByIdController(@Param('id', ParseUUIDPipe) id: string) {
+    return await this.adminService.hardDeleteUserService(id);
+  }
+
   // ── Authenticated user self-routes ───────────────────────────────────
 
   @UseGuards(JWTAuthGuard)
