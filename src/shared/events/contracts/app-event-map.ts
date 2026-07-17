@@ -151,4 +151,23 @@ export interface AppEventMap {
     occurredAt: Date;
   }
 
+  // ⚖️ EVIDENCIA LEGAL
+
+  'legal-proof.generated': {
+    legalProofId: string;
+    entityType: string;
+    entityId: string;
+    sha256Hash: string;
+    otsKey: string | null;
+    status: string;
+    occurredAt: Date;
+  }
+
+  'legal-proof.failed': {
+    entityType: string;
+    entityId: string;
+    reason: string;
+    occurredAt: Date;
+  }
+
 }

@@ -28,6 +28,8 @@ import { PaymentsModule } from './payments/payments.module';
 import { PlanLimitsModule } from './shared/plan-limits/plan-limits.module';
 import { PlanLimitsGuard } from './shared/guards/plan-limits.guard';
 import { AffiliatesModule } from './affiliates/affiliates.module';
+import { LegalProofModule } from './shared/legal-proof/legal-proof.module';
+import { PdfModule } from './shared/pdf/pdf.module';
 
 @Module({
   imports: [
@@ -60,6 +62,8 @@ import { AffiliatesModule } from './affiliates/affiliates.module';
     PaymentsModule,
     PlanLimitsModule,
     AffiliatesModule,
+    LegalProofModule,
+    PdfModule,
   ],
   controllers: [AppController],
   providers: [

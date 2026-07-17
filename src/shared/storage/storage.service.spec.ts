@@ -112,6 +112,61 @@ describe('StorageService', () => {
     });
   });
 
+  describe('uploadBuffer', () => {
+    it('debería subir el buffer y devolver la key con el prefijo de stage y la publicUrl', async () => {
+      const s3SendMock = jest.spyOn(S3Client.prototype, 'send').mockImplementation(() => Promise.resolve({})) as any;
+
+      const result = await service.uploadBuffer({
+        key: 'legal-proofs/track/abc/hash.ots',
+        buffer: Buffer.from('contenido-de-prueba'),
+        contentType: 'application/octet-stream',
+      });
+
+      expect(s3SendMock).toHaveBeenCalled();
+      expect(result.key).toBe('develop/legal-proofs/track/abc/hash.ots');
+      expect(result.publicUrl).toBe(
+        'https://mi-bucket-test.nyc3.digitaloceanspaces.com/develop/legal-proofs/track/abc/hash.ots',
+      );
+    });
+
+    it('debería lanzar InternalServerErrorException si S3 falla', async () => {
+      jest.spyOn(S3Client.prototype, 'send').mockImplementation(() => Promise.reject(new Error('S3 down')));
+
+      await expect(
+        service.uploadBuffer({
+          key: 'legal-proofs/track/abc/hash.ots',
+          buffer: Buffer.from('x'),
+          contentType: 'application/octet-stream',
+        }),
+      ).rejects.toThrow('Error uploading file to storage');
+    });
+  });
+
+  describe('downloadObject', () => {
+    it('debería descargar y reconstruir el buffer a partir del stream de S3', async () => {
+      function* fakeBody() {
+        yield Buffer.from('hola ');
+        yield Buffer.from('mundo');
+      }
+
+      jest.spyOn(S3Client.prototype, 'send').mockImplementation(() =>
+        Promise.resolve({ Body: fakeBody() } as any),
+      );
+
+      const result = await service.downloadObject('some-key');
+
+      expect(result.toString()).toBe('hola mundo');
+    });
+
+    it('debería lanzar InternalServerErrorException si S3 falla', async () => {
+      jest.spyOn(S3Client.prototype, 'send').mockImplementation(() => Promise.reject(new Error('S3 down')));
+
+      await expect(service.downloadObject('some-key')).rejects.toThrow(
+        'Error downloading file from storage',
+      );
+    });
+  });
+
   describe('deleteObject', () => {
     it('debería intentar eliminar un objeto sin errores', async () => {
       const s3SendMock = jest.spyOn(S3Client.prototype, 'send').mockImplementation(() => Promise.resolve({})) as any;

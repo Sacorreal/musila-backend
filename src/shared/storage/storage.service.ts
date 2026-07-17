@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -14,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuid } from 'uuid';
+import type { Readable } from 'stream';
 
 import { STORAGE_OPTIONS } from './constants/storage-options.constants';
 import { ACL } from './constants/acl.constants';
@@ -81,6 +83,65 @@ export class StorageService {
       throw new InternalServerErrorException(
         'Error generating upload URL',
       );
+    }
+  }
+
+  // =====================================================
+  // ✅ UPLOAD BUFFER (subida server-side, sin presigned URL)
+  // =====================================================
+
+  async uploadBuffer(params: {
+    key: string;
+    buffer: Buffer;
+    contentType: string;
+  }): Promise<{ key: string; publicUrl: string }> {
+    const stage = this.resolveStage();
+    const fullKey = `${stage}/${params.key}`;
+
+    try {
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket: this.options.bucket,
+          Key: fullKey,
+          Body: params.buffer,
+          ContentType: params.contentType,
+          ACL: ACL.PUBLIC_READ,
+        }),
+      );
+
+      return {
+        key: fullKey,
+        publicUrl: this.buildPublicUrl(fullKey),
+      };
+    } catch (error) {
+      this.logger.error('Error al subir archivo al storage:', error);
+      throw new InternalServerErrorException('Error uploading file to storage');
+    }
+  }
+
+  // =====================================================
+  // ✅ DOWNLOAD OBJECT (lectura server-side)
+  // =====================================================
+
+  async downloadObject(key: string): Promise<Buffer> {
+    try {
+      const response = await this.s3.send(
+        new GetObjectCommand({
+          Bucket: this.options.bucket,
+          Key: key,
+        }),
+      );
+
+      const stream = response.Body as Readable;
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+
+      return Buffer.concat(chunks);
+    } catch (error) {
+      this.logger.error('Error al descargar archivo del storage:', error);
+      throw new InternalServerErrorException('Error downloading file from storage');
     }
   }
 
