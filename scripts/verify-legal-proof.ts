@@ -52,8 +52,15 @@ async function main() {
   const app = await NestFactory.createApplicationContext(VerifyLegalProofBootstrap);
   const legalProofService = app.get(LegalProofService);
 
+  const fileName = path.basename(filePath);
+  const mimeType = guessMimeType(filePath);
+
   const result = await legalProofService.generateProof({
-    file: { buffer, fileName: path.basename(filePath), mimeType: guessMimeType(filePath) },
+    file: { buffer, fileName, mimeType },
+    // En producción este payload lo arma el llamador (p. ej. el frontend con
+    // las APIs nativas de <audio>/<video>). Este script no extrae duración/
+    // bitrate/etc., solo lo básico derivable del propio archivo local.
+    metadataPayload: { size: buffer.length, fileName, mimeType },
     context: {
       entityType: LegalEntityType.TRACK,
       entityId: '00000000-0000-0000-0000-000000000000',

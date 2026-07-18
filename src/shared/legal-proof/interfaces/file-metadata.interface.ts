@@ -1,13 +1,14 @@
-export interface ExtractedFileMetadata {
+export interface FileMetadataPayload {
   size: number;
   mimeType: string;
   fileName: string;
-  /** Los siguientes campos solo están presentes si mimeType es audio/* o video/* (ffprobe corrió). */
+  /** Los siguientes campos solo aplican si mimeType es audio/* o video/*, extraídos por el llamador (p. ej. vía APIs nativas del navegador). */
   durationSeconds?: number;
   format?: string;
   bitRate?: number;
   sampleRate?: number;
   channels?: number;
   codec?: string;
-  raw?: Record<string, any>;
 }
+
+export type ExtractedFileMetadata = FileMetadataPayload;

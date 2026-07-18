@@ -20,6 +20,12 @@ describe('LegalProofService', () => {
       fileName: 'track.mp3',
       mimeType: 'audio/mpeg',
     },
+    metadataPayload: {
+      size: 20,
+      mimeType: 'audio/mpeg',
+      fileName: 'track.mp3',
+      durationSeconds: 123.45,
+    },
     context: {
       entityType: LegalEntityType.TRACK,
       entityId: 'entity-id-1',
@@ -31,7 +37,7 @@ describe('LegalProofService', () => {
       create: jest.fn((data: Partial<LegalProof>) => data as LegalProof),
       save: jest.fn((data: LegalProof) => Promise.resolve({ ...data, id: 'legal-proof-id-1' })),
     };
-    fileMetadataService = { extract: jest.fn().mockResolvedValue({ size: 20, mimeType: 'audio/mpeg', fileName: 'track.mp3' }) };
+    fileMetadataService = { extract: jest.fn().mockReturnValue({ size: 20, mimeType: 'audio/mpeg', fileName: 'track.mp3' }) };
     fileHashService = { computeSha256: jest.fn().mockReturnValue('a'.repeat(64)) };
     openTimestampsService = { stamp: jest.fn().mockResolvedValue({ otsBytes: Buffer.from('ots') }) };
     storageService = {
@@ -52,7 +58,7 @@ describe('LegalProofService', () => {
   it('happy path: genera metadata, hash y .ots, persiste PENDING y emite legal-proof.generated', async () => {
     const result = await service.generateProof(baseInput);
 
-    expect(fileMetadataService.extract).toHaveBeenCalledWith(baseInput.file);
+    expect(fileMetadataService.extract).toHaveBeenCalledWith(baseInput.metadataPayload);
     expect(fileHashService.computeSha256).toHaveBeenCalledWith(baseInput.file.buffer);
     expect(openTimestampsService.stamp).toHaveBeenCalledWith('a'.repeat(64));
     expect(storageService.uploadBuffer).toHaveBeenCalledWith(
@@ -73,7 +79,9 @@ describe('LegalProofService', () => {
   });
 
   it('aborta con UnprocessableEntityException y emite legal-proof.failed si la extracción de metadata falla', async () => {
-    fileMetadataService.extract.mockRejectedValue(new Error('ffprobe failed'));
+    fileMetadataService.extract.mockImplementation(() => {
+      throw new Error('metadata payload inválido');
+    });
 
     await expect(service.generateProof(baseInput)).rejects.toThrow(UnprocessableEntityException);
 
@@ -81,7 +89,7 @@ describe('LegalProofService', () => {
     expect(openTimestampsService.stamp).not.toHaveBeenCalled();
     expect(eventBus.emit).toHaveBeenCalledWith(
       'legal-proof.failed',
-      expect.objectContaining({ entityType: 'track', entityId: 'entity-id-1', reason: 'ffprobe failed' }),
+      expect.objectContaining({ entityType: 'track', entityId: 'entity-id-1', reason: 'metadata payload inválido' }),
     );
   });
 

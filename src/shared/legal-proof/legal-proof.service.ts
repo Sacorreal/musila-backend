@@ -42,11 +42,11 @@ export class LegalProofService {
   }
 
   private async run(input: GenerateLegalProofInput): Promise<GenerateLegalProofResult> {
-    const { file, context } = input;
+    const { file, metadataPayload, context } = input;
     const processStartedAt = new Date();
     const errors: LegalProofPartialError[] = [];
 
-    const metadata = await this.extractMetadataOrAbort(file, context);
+    const metadata = this.extractMetadataOrAbort(file.fileName, metadataPayload, context);
     const sha256Hash = this.fileHashService.computeSha256(file.buffer);
     const { otsKey, status } = await this.tryGenerateTimestamp(sha256Hash, context, errors);
 
@@ -95,12 +95,13 @@ export class LegalProofService {
     };
   }
 
-  private async extractMetadataOrAbort(
-    file: GenerateLegalProofInput['file'],
+  private extractMetadataOrAbort(
+    fileName: string,
+    metadataPayload: GenerateLegalProofInput['metadataPayload'],
     context: GenerateLegalProofInput['context'],
-  ): Promise<ExtractedFileMetadata> {
+  ): ExtractedFileMetadata {
     try {
-      return await this.fileMetadataService.extract(file);
+      return this.fileMetadataService.extract(metadataPayload);
     } catch (error) {
       this.eventBus.emit('legal-proof.failed', {
         entityType: context.entityType,
@@ -109,7 +110,7 @@ export class LegalProofService {
         occurredAt: new Date(),
       });
       throw new UnprocessableEntityException(
-        `No fue posible procesar el archivo "${file.fileName}": ${(error as Error).message}`,
+        `No fue posible procesar el archivo "${fileName}": ${(error as Error).message}`,
       );
     }
   }
