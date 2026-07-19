@@ -16,6 +16,11 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuid } from 'uuid';
 import type { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
+import { createWriteStream } from 'fs';
+import { randomUUID } from 'crypto';
+import * as os from 'os';
+import * as path from 'path';
 
 import { STORAGE_OPTIONS } from './constants/storage-options.constants';
 import { ACL } from './constants/acl.constants';
@@ -142,6 +147,39 @@ export class StorageService {
     } catch (error) {
       this.logger.error('Error al descargar archivo del storage:', error);
       throw new InternalServerErrorException('Error downloading file from storage');
+    }
+  }
+
+  // =====================================================
+  // ✅ DOWNLOAD OBJECT TO TEMP FILE (lectura server-side a disco)
+  // =====================================================
+
+  async downloadObjectToTempFile(
+    key: string,
+  ): Promise<{ filePath: string; contentType: string; contentLength: number }> {
+    try {
+      const response = await this.s3.send(
+        new GetObjectCommand({
+          Bucket: this.options.bucket,
+          Key: key,
+        }),
+      );
+
+      const filePath = path.join(
+        os.tmpdir(),
+        `legal-proof-${randomUUID()}-${path.basename(key)}`,
+      );
+
+      await pipeline(response.Body as Readable, createWriteStream(filePath));
+
+      return {
+        filePath,
+        contentType: response.ContentType ?? 'application/octet-stream',
+        contentLength: response.ContentLength ?? 0,
+      };
+    } catch (error) {
+      this.logger.error('Error al descargar archivo a un archivo temporal:', error);
+      throw new InternalServerErrorException('Error downloading file to temp file');
     }
   }
 

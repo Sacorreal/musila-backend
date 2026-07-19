@@ -65,10 +65,11 @@ export class TracksController {
     status: 400,
     description: 'Datos inválidos',
   })
-  async createTrackController(   
-    @Body() createTrackInput: CreateTrackInput,    
+  async createTrackController(
+    @Body() createTrackInput: CreateTrackInput,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return await this.tracksService.createTrackService(createTrackInput);
+    return await this.tracksService.createTrackService(createTrackInput, user.id);
   }
 
   @Get()

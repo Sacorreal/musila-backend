@@ -16,6 +16,7 @@ import { Track } from './entities/track.entity';
 import { TrackResponseDto, PaginatedTracksResponseDto } from './dto/track-response.dto';
 import { FindAllTracksOptions } from './interface/tracks-options.interface';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
+import { EventBusService } from 'src/shared/events/event-bus.service';
 
 const tracksRelations: string[] = [
   'genre',
@@ -33,6 +34,7 @@ export class TracksService {
     @InjectRepository(MusicalGenre)
     private readonly genreRepository: Repository<MusicalGenre>,
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
+    private readonly eventBus: EventBusService,
 
   ) { }
 
@@ -54,6 +56,7 @@ export class TracksService {
 
   async createTrackService(
     createTrackInput: CreateTrackInput,
+    requestedByUserId?: string,
   ): Promise<TrackResponseDto> {
     const {
       genreId,
@@ -154,6 +157,13 @@ export class TracksService {
     } as any);
 
     const saved = await this.saveAndReturnWithRelations(newTrack as unknown as Track);
+
+    this.eventBus.emit('track.created', {
+      trackId: saved.id,
+      audioKey: saved.audioKey,
+      requestedByUserId,
+    });
+
     return TrackResponseDto.fromEntity(saved);
   }
 

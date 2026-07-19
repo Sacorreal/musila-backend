@@ -167,6 +167,51 @@ describe('StorageService', () => {
     });
   });
 
+  describe('downloadObjectToTempFile', () => {
+    let tempFilePathUsed: string | undefined;
+
+    afterEach(async () => {
+      if (!tempFilePathUsed) return;
+      const fs = await import('fs/promises');
+      await fs.rm(tempFilePathUsed, { force: true }).catch(() => undefined);
+      tempFilePathUsed = undefined;
+    });
+
+    it('debería escribir el archivo a disco y devolver contentType/contentLength', async () => {
+      function* fakeBody() {
+        yield Buffer.from('hola ');
+        yield Buffer.from('mundo');
+      }
+
+      jest.spyOn(S3Client.prototype, 'send').mockImplementation(() =>
+        Promise.resolve({
+          Body: fakeBody(),
+          ContentType: 'audio/mpeg',
+          ContentLength: 10,
+        } as any),
+      );
+
+      const result = await service.downloadObjectToTempFile('tracks/audio/file.mp3');
+      tempFilePathUsed = result.filePath;
+
+      const fs = await import('fs/promises');
+      const written = await fs.readFile(result.filePath, 'utf-8');
+
+      expect(written).toBe('hola mundo');
+      expect(result.contentType).toBe('audio/mpeg');
+      expect(result.contentLength).toBe(10);
+      expect(result.filePath).toContain('file.mp3');
+    });
+
+    it('debería lanzar InternalServerErrorException si S3 falla', async () => {
+      jest.spyOn(S3Client.prototype, 'send').mockImplementation(() => Promise.reject(new Error('S3 down')));
+
+      await expect(service.downloadObjectToTempFile('some-key')).rejects.toThrow(
+        'Error downloading file to temp file',
+      );
+    });
+  });
+
   describe('deleteObject', () => {
     it('debería intentar eliminar un objeto sin errores', async () => {
       const s3SendMock = jest.spyOn(S3Client.prototype, 'send').mockImplementation(() => Promise.resolve({})) as any;

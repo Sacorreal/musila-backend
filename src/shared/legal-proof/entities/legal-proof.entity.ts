@@ -7,6 +7,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { LegalProofStatus } from './legal-proof-status.enum';
+import { LegalEntityType } from './legal-entity-type.enum';
 
 /**
  * Tabla polimórfica de evidencia legal (hash + metadata + timestamp OTS).
@@ -16,13 +17,14 @@ import { LegalProofStatus } from './legal-proof-status.enum';
  */
 @Index('IDX_legal_proofs_entity', ['entityType', 'entityId'])
 @Index('IDX_legal_proofs_hash', ['sha256Hash'])
+@Index('IDX_legal_proofs_status', ['status'])
 @Entity({ name: 'legal_proofs' })
 export class LegalProof {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column('varchar', { name: 'entity_type', length: 50 })
-  entityType: string;
+  entityType: LegalEntityType;
 
   @Column('uuid', { name: 'entity_id' })
   entityId: string;

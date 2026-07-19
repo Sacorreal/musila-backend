@@ -6,6 +6,7 @@ import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { User } from 'src/users/entities/user.entity';
 import { UserRole } from 'src/users/entities/user-role.enum';
 import { TrackResponseDto } from './dto/track-response.dto';
+import { EventBusService } from 'src/shared/events/event-bus.service';
 
 describe('TracksService - findAllTracksService', () => {
   let service: TracksService;
@@ -26,6 +27,7 @@ describe('TracksService - findAllTracksService', () => {
         { provide: getRepositoryToken(Track), useValue: mockTrackRepository },
         { provide: getRepositoryToken(MusicalGenre), useValue: {} }, // Mocks vacíos si no se usan en este test
         { provide: getRepositoryToken(User), useValue: {} },
+        { provide: EventBusService, useValue: { emit: jest.fn() } },
       ],
     }).compile();
 
@@ -66,5 +68,84 @@ describe('TracksService - findAllTracksService', () => {
         where: expect.not.objectContaining({ authors: { id: 'admin-1' } }), // Admin no se auto-filtra
       })
     );
+  });
+});
+
+describe('TracksService - createTrackService', () => {
+  let service: TracksService;
+  let eventBus: { emit: jest.Mock };
+
+  const mockGenre = { id: 'genre-1', genre: 'Rock', subGenre: [] };
+  const mockAuthors = [{ id: 'author-1' }];
+  const savedTrack = {
+    id: 'track-1',
+    audioKey: 'develop/tracks/audio/file.mp3',
+    audioUrl: 'https://cdn/file.mp3',
+  };
+
+  const mockTrackRepository = {
+    create: jest.fn((input) => input),
+    save: jest.fn().mockResolvedValue(savedTrack),
+    findOne: jest.fn().mockResolvedValue(savedTrack),
+  };
+
+  const mockGenreRepository = {
+    findOne: jest.fn().mockResolvedValue(mockGenre),
+  };
+
+  const mockUsersRepository = {
+    find: jest.fn().mockResolvedValue(mockAuthors),
+  };
+
+  const createTrackInput = {
+    title: 'Nueva canción',
+    genreId: 'genre-1',
+    authorsIds: ['author-1'],
+    audioKey: 'develop/tracks/audio/file.mp3',
+    audioUrl: 'https://cdn/file.mp3',
+    language: 'Español',
+    lyric: 'letra',
+    isGospel: false,
+  };
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        TracksService,
+        { provide: getRepositoryToken(Track), useValue: mockTrackRepository },
+        { provide: getRepositoryToken(MusicalGenre), useValue: mockGenreRepository },
+        { provide: getRepositoryToken(User), useValue: mockUsersRepository },
+        { provide: EventBusService, useValue: { emit: jest.fn() } },
+      ],
+    }).compile();
+
+    service = module.get<TracksService>(TracksService);
+    eventBus = module.get(EventBusService);
+    jest.clearAllMocks();
+    mockTrackRepository.create.mockImplementation((input) => input);
+    mockTrackRepository.save.mockResolvedValue(savedTrack);
+    mockTrackRepository.findOne.mockResolvedValue(savedTrack);
+    mockGenreRepository.findOne.mockResolvedValue(mockGenre);
+    mockUsersRepository.find.mockResolvedValue(mockAuthors);
+  });
+
+  it('emite track.created con el trackId, audioKey y requestedByUserId tras guardar', async () => {
+    await service.createTrackService(createTrackInput as any, 'requester-1');
+
+    expect(eventBus.emit).toHaveBeenCalledWith('track.created', {
+      trackId: savedTrack.id,
+      audioKey: savedTrack.audioKey,
+      requestedByUserId: 'requester-1',
+    });
+  });
+
+  it('emite track.created sin requestedByUserId cuando no se provee', async () => {
+    await service.createTrackService(createTrackInput as any);
+
+    expect(eventBus.emit).toHaveBeenCalledWith('track.created', {
+      trackId: savedTrack.id,
+      audioKey: savedTrack.audioKey,
+      requestedByUserId: undefined,
+    });
   });
 });

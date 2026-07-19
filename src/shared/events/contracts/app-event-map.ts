@@ -137,6 +137,12 @@ export interface AppEventMap {
     ownerId: string;
   }
 
+  'track.created': {
+    trackId: string;
+    audioKey: string;
+    requestedByUserId?: string;
+  }
+
   // 💳 PAGOS / SUSCRIPCIONES
 
   'payment.subscription.approved': {

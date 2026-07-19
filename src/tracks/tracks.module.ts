@@ -6,6 +6,7 @@ import { Track } from './entities/track.entity';
 import { TracksController } from './tracks.controller';
 import { TracksService } from './tracks.service';
 import { UsersModule } from 'src/users/users.module';
+import { TrackLegalProofListener } from './listeners/track-legal-proof.listener';
 
 @Module({
   imports: [
@@ -13,6 +14,6 @@ import { UsersModule } from 'src/users/users.module';
     UsersModule
   ],
   controllers: [TracksController],
-  providers: [TracksService],
+  providers: [TracksService, TrackLegalProofListener],
 })
 export class TracksModule { }
