@@ -30,6 +30,7 @@ import { PlanLimitsGuard } from './shared/guards/plan-limits.guard';
 import { AffiliatesModule } from './affiliates/affiliates.module';
 import { LegalProofModule } from './shared/legal-proof/legal-proof.module';
 import { PdfModule } from './shared/pdf/pdf.module';
+import { OtpModule } from './shared/otp/otp.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { PdfModule } from './shared/pdf/pdf.module';
       { name: 'medium', ttl: 10000, limit: 50  },
       { name: 'long',   ttl: 60000, limit: 200 },
     ]),
+    OtpModule,
     EventBusModule,
     RealtimeModule,
     NotificationsModule,
