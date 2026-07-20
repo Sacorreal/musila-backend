@@ -9,6 +9,7 @@ describe('TrackLegalProofListener', () => {
   let listener: TrackLegalProofListener;
   let storageService: { downloadObjectToTempFile: jest.Mock };
   let legalProofService: { generateProof: jest.Mock };
+  let configService: { get: jest.Mock };
   let tempFilePath: string;
 
   beforeEach(async () => {
@@ -25,8 +26,15 @@ describe('TrackLegalProofListener', () => {
     legalProofService = {
       generateProof: jest.fn().mockResolvedValue({}),
     };
+    configService = {
+      get: jest.fn((_key: string, defaultValue: number) => defaultValue),
+    };
 
-    listener = new TrackLegalProofListener(storageService as any, legalProofService as any);
+    listener = new TrackLegalProofListener(
+      storageService as any,
+      legalProofService as any,
+      configService as any,
+    );
   });
 
   afterEach(async () => {
@@ -105,5 +113,59 @@ describe('TrackLegalProofListener', () => {
     const result = await (listener as any).extractAudioMetadata(tempFilePath);
 
     expect(result).toEqual({});
+  });
+
+  it('procesa como máximo LEGAL_PROOF_CONCURRENCY tracks en simultáneo', async () => {
+    const tempFileA = path.join(os.tmpdir(), `listener-test-${randomUUID()}.txt`);
+    const tempFileB = path.join(os.tmpdir(), `listener-test-${randomUUID()}.txt`);
+    await fs.writeFile(tempFileA, 'a');
+    await fs.writeFile(tempFileB, 'b');
+
+    const limitedStorageService = {
+      downloadObjectToTempFile: jest.fn((key: string) =>
+        Promise.resolve({
+          filePath: key === 'a.mp3' ? tempFileA : tempFileB,
+          contentType: 'audio/mpeg',
+          contentLength: 1,
+        }),
+      ),
+    };
+
+    let resolveFirst!: () => void;
+    const firstGate = new Promise<void>((resolve) => (resolveFirst = resolve));
+    const generateProof = jest
+      .fn()
+      .mockImplementationOnce(async () => {
+        await firstGate;
+        return {};
+      })
+      .mockImplementationOnce(async () => ({}));
+
+    const limitedConfigService = { get: jest.fn().mockReturnValue(1) };
+
+    const limitedListener = new TrackLegalProofListener(
+      limitedStorageService as any,
+      { generateProof } as any,
+      limitedConfigService as any,
+    );
+    jest.spyOn(limitedListener as any, 'extractAudioMetadata').mockResolvedValue({});
+
+    try {
+      const runA = limitedListener.handleTrackCreated({ trackId: 'a', audioKey: 'a.mp3' });
+      const runB = limitedListener.handleTrackCreated({ trackId: 'b', audioKey: 'b.mp3' });
+
+      // Deja avanzar el event loop: B no debería haber llegado a generateProof todavía,
+      // porque el límite es 1 y A sigue bloqueado en firstGate.
+      await new Promise((resolve) => setTimeout(resolve, 20));
+      expect(generateProof).toHaveBeenCalledTimes(1);
+
+      resolveFirst();
+      await Promise.all([runA, runB]);
+
+      expect(generateProof).toHaveBeenCalledTimes(2);
+    } finally {
+      await fs.rm(tempFileA, { force: true });
+      await fs.rm(tempFileB, { force: true });
+    }
   });
 });

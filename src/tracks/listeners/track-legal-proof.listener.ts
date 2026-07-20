@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import { EventListener } from 'src/shared/events/decorators/event-listener.decorator';
@@ -7,6 +8,9 @@ import { StorageService } from 'src/shared/storage/storage.service';
 import { LegalProofService } from 'src/shared/legal-proof/legal-proof.service';
 import { LegalEntityType } from 'src/shared/legal-proof/entities/legal-entity-type.enum';
 import { FileMetadataPayload } from 'src/shared/legal-proof/interfaces/file-metadata.interface';
+import { ConcurrencyLimiter } from 'src/shared/utils/concurrency-limiter.util';
+
+const DEFAULT_CONCURRENCY = 4;
 
 type AudioTechnicalMetadata = Partial<
   Pick<FileMetadataPayload, 'durationSeconds' | 'format' | 'bitRate' | 'sampleRate' | 'channels' | 'codec'>
@@ -26,14 +30,30 @@ const importEsm = new Function('specifier', 'return import(specifier)') as (
 @Injectable()
 export class TrackLegalProofListener {
   private readonly logger = new Logger(TrackLegalProofListener.name);
+  private readonly limiter: ConcurrencyLimiter;
 
   constructor(
     private readonly storageService: StorageService,
     private readonly legalProofService: LegalProofService,
-  ) {}
+    configService: ConfigService,
+  ) {
+    this.limiter = new ConcurrencyLimiter(
+      configService.get<number>('LEGAL_PROOF_CONCURRENCY', DEFAULT_CONCURRENCY),
+    );
+  }
 
+  /**
+   * `track.created` puede dispararse en ráfaga (varios tracks creados casi al mismo
+   * tiempo). Cada ejecución descarga el audio completo a memoria para hashearlo, así
+   * que sin este límite N ráfagas concurrentes multiplican N veces el uso de RAM del
+   * proceso. El límite acota ese pico; el resto de las tareas simplemente espera su turno.
+   */
   @EventListener({ event: 'track.created', channel: 'other' })
   async handleTrackCreated(payload: AppEventMap['track.created']): Promise<void> {
+    await this.limiter.run(() => this.processTrack(payload));
+  }
+
+  private async processTrack(payload: AppEventMap['track.created']): Promise<void> {
     let filePath: string | undefined;
 
     try {

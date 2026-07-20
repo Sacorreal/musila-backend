@@ -38,7 +38,7 @@ describe('LegalProofService', () => {
       save: jest.fn((data: LegalProof) => Promise.resolve({ ...data, id: 'legal-proof-id-1' })),
     };
     fileMetadataService = { extract: jest.fn().mockReturnValue({ size: 20, mimeType: 'audio/mpeg', fileName: 'track.mp3' }) };
-    fileHashService = { computeSha256: jest.fn().mockReturnValue('a'.repeat(64)) };
+    fileHashService = { computeSha256: jest.fn().mockResolvedValue('a'.repeat(64)) };
     openTimestampsService = { stamp: jest.fn().mockResolvedValue({ otsBytes: Buffer.from('ots') }) };
     storageService = {
       uploadBuffer: jest.fn().mockResolvedValue({ key: 'develop/legal-proofs/track/entity-id-1/hash.ots', publicUrl: 'https://x/y' }),

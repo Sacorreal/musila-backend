@@ -47,7 +47,7 @@ export class LegalProofService {
     const errors: LegalProofPartialError[] = [];
 
     const metadata = this.extractMetadataOrAbort(file.fileName, metadataPayload, context);
-    const sha256Hash = this.fileHashService.computeSha256(file.buffer);
+    const sha256Hash = await this.fileHashService.computeSha256(file.buffer);
     const { otsKey, status } = await this.tryGenerateTimestamp(sha256Hash, context, errors);
 
     const processCompletedAt = new Date();

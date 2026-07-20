@@ -17,6 +17,11 @@ import { GlobalExceptionFilter } from './shared/filters/global-exception.filter'
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Necesario para que los hooks OnModuleDestroy (p. ej. cerrar el pool de
+  // worker threads de FileHashService) corran ante SIGTERM/SIGINT — sin esto,
+  // Nest no escucha señales de apagado y el proceso se mata de golpe en cada deploy.
+  app.enableShutdownHooks();
+
   app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   }));
