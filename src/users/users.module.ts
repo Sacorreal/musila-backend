@@ -13,10 +13,12 @@ import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { Payment } from 'src/payments/entities/payment.entity';
+import { CreatorIdModule } from 'src/creator-id/creator-id.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, AuditLog, MusicalGenre, Track, RequestedTrack, Payment]),
+    CreatorIdModule,
   ],
   controllers: [UsersController, MeController],
   providers: [UsersService, AdminService, MeService, PlanService, AuditLogService],

@@ -13,6 +13,7 @@ import { UpdateUserInput } from './dto/update-user.input';
 import { UserRole } from './entities/user-role.enum';
 import { User } from './entities/user.entity';
 import { StorageService } from '../shared/storage/storage.service';
+import { CreatorIdService } from '../creator-id/creator-id.service';
 
 import { PaginationDto } from '../shared/dto/pagination.dto';
 import { FilterUserDto } from './dto/filter-user.dto';
@@ -32,6 +33,7 @@ export class UsersService {
     @InjectRepository(MusicalGenre)
     private readonly musicalGenreRepository: Repository<MusicalGenre>,
     private readonly storageService: StorageService,
+    private readonly creatorIdService: CreatorIdService,
   ) { }
 
   // =============================
@@ -88,9 +90,11 @@ export class UsersService {
 
   async createUserService({ preferredGenres, ...rest }: CreateUserInput) {
     const genres = await this.getValidatedGenres(preferredGenres);
+    const musilaCreatorId = await this.creatorIdService.generateUnique();
 
     const newUser = this.usersRepository.create({
       ...rest,
+      musilaCreatorId,
       ...(genres && { preferredGenres: genres }),
     });
 

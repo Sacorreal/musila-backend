@@ -39,6 +39,9 @@ export class User {
   @Column('varchar', { nullable: false, unique: true })
   email: string;
 
+  @Column('varchar', { name: 'musila_creator_id', unique: true })
+  musilaCreatorId: string;
+
   @Column('varchar', { nullable: false, select: false })
   password: string;
 
