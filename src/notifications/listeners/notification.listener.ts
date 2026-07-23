@@ -129,4 +129,24 @@ export class NotificationListener {
   async handlePlaylistUpdated(payload: AppEventMap['playlist.updated']) {
     this.logger.debug(`Playlist updated event received for ${payload.playlistTitle}.`);
   }
+
+  @EventListener({
+    event: 'otp.code.issued',
+    channel: 'in-app',
+  })
+  async handleOtpCodeIssued(payload: AppEventMap['otp.code.issued']) {
+    try {
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.userId } as any,
+        type: 'otp.code.issued',
+        title: 'Código de verificación',
+        message: `Tu código para ${payload.purposeLabel} es ${payload.code}. Vence a las ${payload.expiresAt.toLocaleTimeString('es-CO')}.`,
+        data: { purposeLabel: payload.purposeLabel, expiresAt: payload.expiresAt },
+      });
+
+      this.notificationsGateway.emitToUser(payload.userId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de otp.code.issued', error);
+    }
+  }
 }

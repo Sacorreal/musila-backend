@@ -79,4 +79,10 @@ export interface EmailTemplateMap {
     userName: string;
     billingUrl: string;
   };
+
+  'otp-code': {
+    code: string;
+    purposeLabel: string;
+    expiresInMinutes: number;
+  };
 }

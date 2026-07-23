@@ -42,6 +42,8 @@ import {
   PAYMENT_PROVIDER,
   PaymentProvider,
 } from './domain/payment-provider.interface';
+import { OtpVerificationService } from 'src/shared/otp-verification/otp-verification.service';
+import { OtpPurpose } from 'src/shared/otp-verification/otp-purpose.enum';
 import {
   ParsedTransactionEvent,
   ProviderEvent,
@@ -89,6 +91,7 @@ export class PaymentsService {
     @InjectRepository(RequestedTrack)
     private readonly requestedTrackRepo: Repository<RequestedTrack>,
     private readonly eventBus: EventBusService,
+    private readonly otpVerificationService: OtpVerificationService,
   ) {}
 
   private webAppUrl(): string {
@@ -192,6 +195,12 @@ export class PaymentsService {
     if (!track.licensePrice) throw new BadRequestException('El propietario aún no ha establecido un precio');
     if (track.status !== RequestsStatus.PENDIENTE) throw new BadRequestException('Esta solicitud no está en estado pendiente');
     if (track.licensePaymentStatus === LicensePaymentStatus.APPROVED) throw new BadRequestException('Esta licencia ya fue pagada');
+
+    await this.otpVerificationService.assertAndConsumeVerification(
+      userId,
+      OtpPurpose.LICENSE_SIGNING,
+      dto.requestedTrackId,
+    );
 
     const licensePriceInCents = Math.round(Number(track.licensePrice) * 100);
     const commissionInCents = Math.round(licensePriceInCents * LICENSE_COMMISSION_RATE);

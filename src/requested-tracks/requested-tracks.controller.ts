@@ -113,8 +113,12 @@ export class RequestedTracksController {
   })
   @ApiResponse({ status: 404, description: 'Solicitud no encontrada' })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  async updateRequestedTrackController(@Body() updateRequestedTrackInput: UpdateRequestedTrackInput, @Param('id') id: string) {
-    return await this.requestedTracksService.updateRequestedTracksService(id, updateRequestedTrackInput);
+  async updateRequestedTrackController(
+    @Body() updateRequestedTrackInput: UpdateRequestedTrackInput,
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return await this.requestedTracksService.updateRequestedTracksService(id, updateRequestedTrackInput, user.id);
   }
 
 

@@ -31,6 +31,8 @@ import { AffiliatesModule } from './affiliates/affiliates.module';
 import { LegalProofModule } from './shared/legal-proof/legal-proof.module';
 import { PdfModule } from './shared/pdf/pdf.module';
 import { OtpModule } from './shared/otp/otp.module';
+import { SmsModule } from './shared/sms/sms.module';
+import { OtpVerificationModule } from './shared/otp-verification/otp-verification.module';
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { OtpModule } from './shared/otp/otp.module';
       { name: 'long',   ttl: 60000, limit: 200 },
     ]),
     OtpModule,
+    SmsModule,
+    OtpVerificationModule,
     EventBusModule,
     RealtimeModule,
     NotificationsModule,

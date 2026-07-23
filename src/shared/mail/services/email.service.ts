@@ -114,4 +114,12 @@ export class EmailService {
       variables: data,
     });
   }
+
+  async sendOtpCodeEmail(to: string | string[], data: EmailTemplateMap['otp-code']) {
+    return this.sendEmail({
+      to,
+      templateId: 'otp-code',
+      variables: data,
+    });
+  }
 }

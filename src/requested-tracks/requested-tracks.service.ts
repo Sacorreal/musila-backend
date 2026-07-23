@@ -15,6 +15,8 @@ import { UserPlanType } from '../users/entities/user-plan-type.enum';
 import { PaginationDto } from '../shared/dto/pagination.dto'
 import { Chat } from 'src/chat/entities/chat.entity';
 import { EventBusService } from 'src/shared/events/event-bus.service';
+import { OtpVerificationService } from 'src/shared/otp-verification/otp-verification.service';
+import { OtpPurpose } from 'src/shared/otp-verification/otp-purpose.enum';
 
 const requestedTracksRelations: string[] = [
   'requester',
@@ -33,6 +35,7 @@ export class RequestedTracksService {
     @InjectRepository(Message) private readonly messageRepository: Repository<Message>,
     private readonly eventBus: EventBusService,
     private readonly dataSource: DataSource,
+    private readonly otpVerificationService: OtpVerificationService,
   ) { }
 
   private async findRequestedTrackWithRelations(id: string): Promise<RequestedTrack> {
@@ -172,8 +175,20 @@ export class RequestedTracksService {
     return await this.findRequestedTrackWithRelations(id)
   }
 
-  async updateRequestedTracksService(id: string, updateRequestedTrackInput: UpdateRequestedTrackInput) {
+  async updateRequestedTracksService(id: string, updateRequestedTrackInput: UpdateRequestedTrackInput, actingUserId: string) {
     const existingRequestedTrack = await this.findRequestedTrackWithRelations(id)
+
+    const isApprovingNow =
+      updateRequestedTrackInput.status === RequestsStatus.APROBADA &&
+      existingRequestedTrack.status !== RequestsStatus.APROBADA;
+
+    if (isApprovingNow) {
+      await this.otpVerificationService.assertAndConsumeVerification(
+        actingUserId,
+        OtpPurpose.REQUESTED_TRACK_APPROVAL,
+        id,
+      );
+    }
 
     Object.assign(existingRequestedTrack, updateRequestedTrackInput)
 

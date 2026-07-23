@@ -176,4 +176,13 @@ export interface AppEventMap {
     occurredAt: Date;
   }
 
+  // 🔐 OTP
+
+  'otp.code.issued': {
+    userId: string;
+    code: string;
+    purposeLabel: string;
+    expiresAt: Date;
+  }
+
 }
