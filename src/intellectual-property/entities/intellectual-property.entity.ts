@@ -34,8 +34,16 @@ export class IntellectualProperty {
   documentKey: string;
 
   @ApiProperty({ example: 'https://docs.google.com/...', description: 'URL del documento legal respaldatorio' })
-  @Column('varchar', { nullable: false, name: 'document_url' })
-  documentUrl: string;
+  @Column('varchar', { nullable: true, name: 'document_url' })
+  documentUrl?: string;
+
+  @ApiProperty({
+    example: { authors: [{ userId: '...', percentage: 50, role: 'compositor' }] },
+    description: 'Snapshot de datos estructurados (usado por el split de coautoría generado automáticamente).',
+    required: false,
+  })
+  @Column('jsonb', { nullable: true })
+  metadata?: Record<string, unknown>;
 
   @ApiProperty({ example: '2026-04-08T02:00:00Z', description: 'Fecha de creación' })
   @CreateDateColumn({

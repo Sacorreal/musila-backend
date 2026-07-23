@@ -70,6 +70,22 @@ export class UsersController {
     return this.usersService.findAllAuthorsService([UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360], paginationDto);
   }
 
+  @UseGuards(JWTAuthGuard)
+  @Get('search/by-creator-id/:musilaCreatorId')
+  @ApiBearerAuth('JWT-auth')
+  @ApiParam({ name: 'musilaCreatorId', description: 'Musila Creator ID del usuario a buscar' })
+  @ApiOperation({ summary: 'Buscar un usuario por su Musila Creator ID (para agregar coautores a un split)' })
+  @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
+  async findByMusilaCreatorIdController(@Param('musilaCreatorId') musilaCreatorId: string) {
+    const user = await this.usersService.findByMusilaCreatorIdService(musilaCreatorId);
+    return {
+      id: user.id,
+      name: user.name,
+      lastName: user.lastName,
+      musilaCreatorId: user.musilaCreatorId,
+    };
+  }
+
   // ── Admin routes (must be before /:id) ──────────────────────────────
 
   @Get('admin/stats')

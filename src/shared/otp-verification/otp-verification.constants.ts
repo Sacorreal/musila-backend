@@ -7,4 +7,5 @@ export const OTP_MAX_ATTEMPTS = 5;
 export const OTP_PURPOSE_LABELS: Record<OtpPurpose, string> = {
   [OtpPurpose.REQUESTED_TRACK_APPROVAL]: 'aprobar la solicitud de licencia',
   [OtpPurpose.LICENSE_SIGNING]: 'firmar y pagar la licencia',
+  [OtpPurpose.SPLIT_SIGNING]: 'firmar el split de coautoría',
 };

@@ -33,6 +33,7 @@ import { PdfModule } from './shared/pdf/pdf.module';
 import { OtpModule } from './shared/otp/otp.module';
 import { SmsModule } from './shared/sms/sms.module';
 import { OtpVerificationModule } from './shared/otp-verification/otp-verification.module';
+import { SplitModule } from './splits/split.module';
 
 @Module({
   imports: [
@@ -70,6 +71,7 @@ import { OtpVerificationModule } from './shared/otp-verification/otp-verificatio
     AffiliatesModule,
     LegalProofModule,
     PdfModule,
+    SplitModule,
   ],
   controllers: [AppController],
   providers: [

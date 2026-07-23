@@ -122,4 +122,37 @@ export class EmailService {
       variables: data,
     });
   }
+
+  async sendSplitCoauthorInvitationEmail(
+    to: string | string[],
+    data: EmailTemplateMap['split-coauthor-invitation'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'split-coauthor-invitation',
+      variables: data,
+    });
+  }
+
+  async sendSplitCompletedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['split-completed'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'split-completed',
+      variables: data,
+    });
+  }
+
+  async sendSplitRejectedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['split-rejected'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'split-rejected',
+      variables: data,
+    });
+  }
 }

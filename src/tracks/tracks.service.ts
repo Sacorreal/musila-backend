@@ -134,8 +134,10 @@ export class TracksService {
 
     if (rest.intellectualProperties) {
       const splitSheets = rest.intellectualProperties.filter(ip => ip.type === 'splitSheet');
-      if (splitSheets.length > 1) {
-        throw new BadRequestException('Solo se permite un documento Split Sheet por canción');
+      if (splitSheets.length > 0) {
+        throw new BadRequestException(
+          'El Split Sheet ya no se sube manualmente: se genera automáticamente desde el módulo de Split una vez que todos los coautores aprueban.',
+        );
       }
     }
 
@@ -255,8 +257,10 @@ export class TracksService {
 
     if (rest.intellectualProperties) {
       const splitSheets = rest.intellectualProperties.filter(ip => ip.type === 'splitSheet');
-      if (splitSheets.length > 1) {
-        throw new BadRequestException('Solo se permite un documento Split Sheet por canción');
+      if (splitSheets.length > 0) {
+        throw new BadRequestException(
+          'El Split Sheet ya no se sube manualmente: se genera automáticamente desde el módulo de Split una vez que todos los coautores aprueban.',
+        );
       }
     }
 

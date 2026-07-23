@@ -185,4 +185,42 @@ export interface AppEventMap {
     expiresAt: Date;
   }
 
+  // 🖋️ SPLIT
+
+  'split.created': {
+    splitId: string;
+    trackId: string;
+    trackTitle: string;
+    createdByUserId: string;
+    createdByName: string;
+    authors: {
+      userId: string;
+      name: string;
+      email: string;
+      percentage: number;
+      role: string;
+    }[];
+  }
+
+  'split.author.rejected': {
+    splitId: string;
+    trackId: string;
+    trackTitle: string;
+    authorUserId: string;
+    authorName: string;
+    reason: string;
+    createdByUserId: string;
+    createdByName: string;
+    createdByEmail: string;
+  }
+
+  'split.completed': {
+    splitId: string;
+    trackId: string;
+    trackTitle: string;
+    createdByUserId: string;
+    createdByName: string;
+    createdByEmail: string;
+  }
+
 }

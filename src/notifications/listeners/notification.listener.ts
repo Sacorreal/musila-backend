@@ -149,4 +149,71 @@ export class NotificationListener {
       this.logger.error('Error procesando notificacion de otp.code.issued', error);
     }
   }
+
+  @EventListener({
+    event: 'split.created',
+    channel: 'in-app',
+  })
+  async handleSplitCreated(payload: AppEventMap['split.created']) {
+    try {
+      for (const author of payload.authors) {
+        if (author.userId === payload.createdByUserId) continue;
+
+        const notification = await this.notificationsService.createNotification({
+          recipient: { id: author.userId } as any,
+          type: 'split.created',
+          title: 'Split de coautoría pendiente de tu aprobación',
+          message: `${payload.createdByName} te incluyó en el split de "${payload.trackTitle}" con un ${author.percentage}% como ${author.role}.`,
+          link: `/music/tracks/${payload.trackId}`,
+          data: payload,
+        });
+
+        this.notificationsGateway.emitToUser(author.userId, 'notification.received', notification);
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de split.created', error);
+    }
+  }
+
+  @EventListener({
+    event: 'split.author.rejected',
+    channel: 'in-app',
+  })
+  async handleSplitAuthorRejected(payload: AppEventMap['split.author.rejected']) {
+    try {
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.createdByUserId } as any,
+        type: 'split.author.rejected',
+        title: 'Un coautor rechazó el split',
+        message: `${payload.authorName} rechazó su participación en el split de "${payload.trackTitle}": ${payload.reason}`,
+        link: `/music/tracks/${payload.trackId}`,
+        data: payload,
+      });
+
+      this.notificationsGateway.emitToUser(payload.createdByUserId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de split.author.rejected', error);
+    }
+  }
+
+  @EventListener({
+    event: 'split.completed',
+    channel: 'in-app',
+  })
+  async handleSplitCompleted(payload: AppEventMap['split.completed']) {
+    try {
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.createdByUserId } as any,
+        type: 'split.completed',
+        title: 'Split de coautoría completado',
+        message: `Todos los coautores aprobaron el split de "${payload.trackTitle}".`,
+        link: `/music/tracks/${payload.trackId}`,
+        data: payload,
+      });
+
+      this.notificationsGateway.emitToUser(payload.createdByUserId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de split.completed', error);
+    }
+  }
 }

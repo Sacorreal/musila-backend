@@ -11,6 +11,8 @@ import { createHash } from 'crypto';
 
 import { User } from 'src/users/entities/user.entity';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
+import { SplitAuthor } from 'src/splits/entities/split-author.entity';
+import { SplitAuthorStatus } from 'src/splits/entities/split-author-status.enum';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { EmailService } from 'src/shared/mail/services/email.service';
 import { OtpService } from 'src/shared/otp/otp.service';
@@ -34,6 +36,8 @@ export class OtpVerificationService {
     private readonly otpVerificationRepo: Repository<OtpVerification>,
     @InjectRepository(RequestedTrack)
     private readonly requestedTrackRepo: Repository<RequestedTrack>,
+    @InjectRepository(SplitAuthor)
+    private readonly splitAuthorRepo: Repository<SplitAuthor>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     @Inject(SMS_PROVIDER)
@@ -164,6 +168,8 @@ export class OtpVerificationService {
       case OtpPurpose.REQUESTED_TRACK_APPROVAL:
       case OtpPurpose.LICENSE_SIGNING:
         return 'requested_track';
+      case OtpPurpose.SPLIT_SIGNING:
+        return 'split_author';
       default:
         throw new BadRequestException('Propósito OTP no soportado');
     }
@@ -193,6 +199,16 @@ export class OtpVerificationService {
           throw new ForbiddenException('No tienes permisos sobre esta solicitud');
         }
         return 'requested_track';
+      }
+      case OtpPurpose.SPLIT_SIGNING: {
+        const splitAuthor = await this.splitAuthorRepo.findOne({
+          where: { split: { id: entityId }, user: { id: userId } },
+        });
+        if (!splitAuthor) throw new NotFoundException('No formas parte de este split');
+        if (splitAuthor.status !== SplitAuthorStatus.PENDING) {
+          throw new ForbiddenException('Tu participación en este split ya fue procesada');
+        }
+        return 'split_author';
       }
       default:
         throw new BadRequestException('Propósito OTP no soportado');

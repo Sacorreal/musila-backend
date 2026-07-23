@@ -188,6 +188,13 @@ export class UsersService {
     return Object.values(MusicRole);
   }
 
+  /** Búsqueda exacta por Musila Creator ID, usada para agregar coautores a un split. */
+  async findByMusilaCreatorIdService(musilaCreatorId: string): Promise<User> {
+    const user = await this.usersRepository.findOne({ where: { musilaCreatorId } });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    return user;
+  }
+
   async findAllAuthorsService(planTypes: UserPlanType[], paginationDto: PaginationDto) {
     const { limit, offset } = paginationDto;
     const [data, total] = await this.usersRepository.findAndCount({

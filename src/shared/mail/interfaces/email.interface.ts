@@ -85,4 +85,27 @@ export interface EmailTemplateMap {
     purposeLabel: string;
     expiresInMinutes: number;
   };
+
+  'split-coauthor-invitation': {
+    coauthorName: string;
+    trackTitle: string;
+    adminName: string;
+    percentage: number;
+    role: string;
+    splitDetailUrl: string;
+  };
+
+  'split-completed': {
+    adminName: string;
+    trackTitle: string;
+    splitDetailUrl: string;
+  };
+
+  'split-rejected': {
+    adminName: string;
+    trackTitle: string;
+    coauthorName: string;
+    rejectionReason: string;
+    splitDetailUrl: string;
+  };
 }

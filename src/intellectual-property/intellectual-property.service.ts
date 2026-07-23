@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CreateIntellectualPropertyInput } from './dto/create-intellectual-property.input';
@@ -17,6 +17,12 @@ export class IntellectualPropertyService {
   ) {}
 
   async create(dto: CreateIntellectualPropertyInput): Promise<IntellectualProperty> {
+    if (dto.type === 'splitSheet') {
+      throw new BadRequestException(
+        'El Split Sheet ya no se crea manualmente: se genera automáticamente desde el módulo de Split.',
+      );
+    }
+
     const track = await this.trackRepository.findOne({ where: { id: dto.trackId } });
     if (!track) throw new NotFoundException('La pista musical no existe');
 

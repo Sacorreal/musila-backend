@@ -13,6 +13,7 @@ describe('OtpVerificationService', () => {
   let service: OtpVerificationService;
   let otpVerificationRepo: { save: jest.Mock; create: jest.Mock; findOne: jest.Mock; createQueryBuilder: jest.Mock };
   let requestedTrackRepo: { findOne: jest.Mock };
+  let splitAuthorRepo: { findOne: jest.Mock };
   let userRepo: { findOne: jest.Mock };
   let smsProvider: { sendSms: jest.Mock };
   let emailService: { sendOtpCodeEmail: jest.Mock };
@@ -36,6 +37,7 @@ describe('OtpVerificationService', () => {
       createQueryBuilder: jest.fn().mockReturnValue(qbMock),
     };
     requestedTrackRepo = { findOne: jest.fn() };
+    splitAuthorRepo = { findOne: jest.fn() };
     userRepo = { findOne: jest.fn().mockResolvedValue({ id: userId, email: 'owner@musila.com', phone: '3000000000' }) };
     smsProvider = { sendSms: jest.fn().mockResolvedValue(undefined) };
     emailService = { sendOtpCodeEmail: jest.fn().mockResolvedValue(undefined) };
@@ -44,6 +46,7 @@ describe('OtpVerificationService', () => {
     service = new OtpVerificationService(
       otpVerificationRepo as any,
       requestedTrackRepo as any,
+      splitAuthorRepo as any,
       userRepo as any,
       smsProvider as any,
       new OtpService(),
