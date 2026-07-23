@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { CollaboratorPermission } from '../entities/collaborator-permission.enum';
 import { PLAYLIST_PERMISSION_KEY } from '../decorators/require-permission.decorator';
 import { PlaylistCollaboratorsService } from '../playlist-collaborators.service';
@@ -52,7 +52,7 @@ export class PlaylistPermissionGuard implements CanActivate {
     }
 
     // 1. ADMIN de sistema tiene acceso total
-    if (user.role === UserRole.ADMIN) {
+    if (user.planType === UserPlanType.ADMIN) {
       return true;
     }
 

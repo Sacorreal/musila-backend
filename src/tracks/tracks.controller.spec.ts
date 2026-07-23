@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TracksController } from './tracks.controller';
 import { TracksService } from './tracks.service';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 
 describe('TracksController', () => {
   let controller: TracksController;
@@ -39,7 +39,7 @@ describe('TracksController', () => {
 
   describe('findAllTracksController', () => {
     it('debe llamar al servicio con los parámetros correctos y devolver el resultado paginado', async () => {
-      const mockUser = { id: 'user-uuid', role: UserRole.INTERPRETE };
+      const mockUser = { id: 'user-uuid', planType: UserPlanType.PLAN_DESCUBRIDOR };
       const mockFilterDto = { genreId: 'genre-uuid', limit: 10, offset: 0 };
 
       const result = await controller.findAllTracksController(

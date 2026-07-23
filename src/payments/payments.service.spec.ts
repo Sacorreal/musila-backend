@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UnauthorizedException } from '@nestjs/common';
 import { UserPlan } from 'src/users/entities/user-plan.enum';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { PaymentSource } from './entities/payment-source.entity';
@@ -85,7 +85,7 @@ describe('PaymentsService', () => {
 
   describe('createCheckout', () => {
     it('devuelve los parámetros del Widget con firma de integridad y crea el registro pendiente', async () => {
-      const result = await service.createCheckout({ role: UserRole.CANTAUTOR, plan: UserPlan.PRO });
+      const result = await service.createCheckout({ planType: UserPlanType.PLAN_360, plan: UserPlan.PRO });
 
       expect(provider.generateIntegritySignature).toHaveBeenCalledWith(
         expect.objectContaining({ amountInCents: 5990000, currency: 'COP' }),
@@ -100,7 +100,7 @@ describe('PaymentsService', () => {
       );
       expect(pendingRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
-          role: UserRole.CANTAUTOR,
+          planType: UserPlanType.PLAN_360,
           status: PendingRegistrationStatus.PENDING,
         }),
       );
@@ -108,7 +108,7 @@ describe('PaymentsService', () => {
 
     it('usa el precio anual cuando billingPeriod=annual', async () => {
       await service.createCheckout({
-        role: UserRole.AUTOR,
+        planType: UserPlanType.PLAN_AUTOR,
         plan: UserPlan.PRO,
         billingPeriod: 'annual',
       });
@@ -136,7 +136,7 @@ describe('PaymentsService', () => {
       pendingRepo.findOne.mockResolvedValue({
         id: 'pending-1',
         externalReference: 'ref-abc',
-        role: UserRole.CANTAUTOR,
+        planType: UserPlanType.PLAN_360,
       });
 
       await service.handleWebhook({ event: 'transaction.updated', data: {} } as any);
@@ -170,7 +170,7 @@ describe('PaymentsService', () => {
         reference: 'ref-xyz',
         status: ProviderTransactionStatus.DECLINED,
       });
-      pendingRepo.findOne.mockResolvedValue({ id: 'pending-2', role: UserRole.AUTOR });
+      pendingRepo.findOne.mockResolvedValue({ id: 'pending-2', planType: UserPlanType.PLAN_AUTOR });
 
       await service.handleWebhook({ event: 'transaction.updated', data: {} } as any);
 
@@ -190,7 +190,7 @@ describe('PaymentsService', () => {
     it('retorna approved cuando el pago fue confirmado', async () => {
       pendingRepo.findOne.mockResolvedValue({
         status: PendingRegistrationStatus.PAYMENT_CONFIRMED,
-        role: UserRole.INTERPRETE,
+        planType: UserPlanType.PLAN_DESCUBRIDOR,
         expiresAt: new Date(Date.now() + 60000),
       });
       const result = await service.getPaymentStatus('ref-ok');

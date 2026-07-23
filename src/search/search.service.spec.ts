@@ -3,7 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { User } from 'src/users/entities/user.entity';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { SearchService } from './search.service';
 
 describe('SearchService', () => {
@@ -58,7 +58,7 @@ describe('SearchService', () => {
       id: 't1',
       title: 'Rock anthem',
       genre: { id: 'g1', genre: 'Rock' },
-      authors: [{ id: 'u1', name: 'Ana', lastName: 'Pérez', role: UserRole.AUTOR }],
+      authors: [{ id: 'u1', name: 'Ana', lastName: 'Pérez', planType: UserPlanType.PLAN_AUTOR }],
       isAvailable: true,
       isGospel: false,
     } as unknown as Track;
@@ -69,7 +69,7 @@ describe('SearchService', () => {
       lastName: 'Gómez',
       avatarUrl: 'https://cdn/a.png',
       email: 'carlos@example.com',
-      role: UserRole.CANTAUTOR,
+      planType: UserPlanType.PLAN_360,
     } as unknown as User;
 
     const genre = { id: 'g1', genre: 'Rock' } as MusicalGenre;
@@ -87,7 +87,7 @@ describe('SearchService', () => {
     expect(result.tracks[0].id).toBe('t1');
 
     expect(result.authors).toEqual([
-      { id: 'u2', name: 'Carlos', lastName: 'Gómez', avatarUrl: 'https://cdn/a.png', role: UserRole.CANTAUTOR },
+      { id: 'u2', name: 'Carlos', lastName: 'Gómez', avatarUrl: 'https://cdn/a.png', planType: UserPlanType.PLAN_360 },
     ]);
     expect(result.authors[0]).not.toHaveProperty('email');
 

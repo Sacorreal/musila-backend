@@ -29,16 +29,16 @@ import { UsersService } from 'src/users/users.service';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { TracksService } from './tracks.service';
-import { UserRole } from '../users/entities/user-role.enum';
+import { UserPlanType } from '../users/entities/user-plan-type.enum';
 
 import { PaginatedTracksResponseDto, TrackResponseDto } from './dto/track-response.dto'
-import { RolesGuard } from 'src/users/guards/roles.guard';
-import { Roles } from 'src/users/decorators/roles.decorator';
+import { PlansGuard } from 'src/users/guards/plans.guard';
+import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
 import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
 import { EmailVerifiedGuard } from 'src/users/guards/email-verified.guard';
 
 @ApiTags('Tracks')
-@UseGuards(JWTAuthGuard, RolesGuard)
+@UseGuards(JWTAuthGuard, PlansGuard)
 @Controller('tracks')
 export class TracksController {
   constructor(
@@ -47,7 +47,7 @@ export class TracksController {
   ) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.AUTOR, UserRole.CANTAUTOR)
+  @AllowedPlans(UserPlanType.ADMIN, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
   @UseGuards(EmailVerifiedGuard)
   @PlanLimit('tracks')
   @ApiConsumes('multipart/form-data')
@@ -90,7 +90,7 @@ export class TracksController {
   } 
   
   @Get('my-tracks')
-  @Roles(UserRole.AUTOR, UserRole.CANTAUTOR)
+  @AllowedPlans(UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
   @ApiOperation({
     summary: 'Obtener todos los tracks autoría del usuario logeado'
   })
@@ -167,7 +167,7 @@ export class TracksController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const requesterId = user.role === UserRole.ADMIN ? undefined : user.id;
+    const requesterId = user.planType === UserPlanType.ADMIN ? undefined : user.id;
     return await this.tracksService.updateTrackService(id, updateTrackInput, requesterId);
   }
 
@@ -190,7 +190,7 @@ export class TracksController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const requesterId = user.role === UserRole.ADMIN ? undefined : user.id;
+    const requesterId = user.planType === UserPlanType.ADMIN ? undefined : user.id;
     return await this.tracksService.removeTrackService(id, requesterId);
   }
 }

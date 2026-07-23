@@ -16,10 +16,10 @@ import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { CreatePlaylistInput } from './dto/create-playlist.input';
 import { UpdatePlaylistInput } from './dto/update-playlist.input';
 import { PlaylistsService } from './playlists.service';
-import { Roles } from 'src/users/decorators/roles.decorator';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/users/guards/roles.guard';
+import { PlansGuard } from 'src/users/guards/plans.guard';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
 import { PaginatedPlaylistsResponseDto } from './dto/playlist-pagination.dto';
 import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
@@ -29,8 +29,8 @@ import { CollaboratorPermission } from 'src/playlist-collaborators/entities/coll
 import { EmailVerifiedGuard } from 'src/users/guards/email-verified.guard';
 
 @ApiTags('Listas de Reproducción')
-@UseGuards(JWTAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.INTERPRETE, UserRole.INVITADO)
+@UseGuards(JWTAuthGuard, PlansGuard)
+@AllowedPlans(UserPlanType.ADMIN, UserPlanType.PLAN_360, UserPlanType.PLAN_DESCUBRIDOR, UserPlanType.INVITADO)
 @Controller('playlists')
 export class PlaylistsController {
   constructor(private readonly playlistsService: PlaylistsService) {}

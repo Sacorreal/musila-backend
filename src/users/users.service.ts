@@ -10,7 +10,8 @@ import { In, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
-import { UserRole } from './entities/user-role.enum';
+import { UserPlanType } from './entities/user-plan-type.enum';
+import { MusicRole } from './entities/music-role.enum';
 import { User } from './entities/user.entity';
 import { StorageService } from '../shared/storage/storage.service';
 import { CreatorIdService } from '../creator-id/creator-id.service';
@@ -42,10 +43,10 @@ export class UsersService {
 
   private async findUserWithRelations(
     id: string,
-    role?: UserRole,
+    planType?: UserPlanType,
   ): Promise<User> {
     const user = await this.usersRepository.findOne({
-      where: { id, ...(role && { role }) },
+      where: { id, ...(planType && { planType }) },
       relations: userRelations,
     });
     if (!user) throw new NotFoundException('El usuario no existe');
@@ -140,7 +141,7 @@ export class UsersService {
   }
 
   async findAllUsersService(dto: FilterUserDto) {
-    const { limit, offset, search, role, isVerified } = dto;
+    const { limit, offset, search, planType, isVerified } = dto;
 
     const qb = this.usersRepository
       .createQueryBuilder('u')
@@ -154,7 +155,7 @@ export class UsersService {
         { s: `%${search}%` },
       );
     }
-    if (role) qb.andWhere('u.role = :role', { role });
+    if (planType) qb.andWhere('u.planType = :planType', { planType });
     if (isVerified !== undefined) qb.andWhere('u.is_verified = :isVerified', { isVerified });
 
     const [data, total] = await qb.getManyAndCount();
@@ -168,25 +169,29 @@ export class UsersService {
   async findUserBycitizenIDService(citizenID: string) {
     return await this.usersRepository.findOne({
       where: { citizenID },
-      select: ['id', 'email', 'password', 'role', 'name', 'citizenID'],
+      select: ['id', 'email', 'password', 'planType', 'name', 'citizenID'],
     });
   }
 
   async findUserByEmailService(email: string) {
     return await this.usersRepository.findOne({
       where: { email },
-      select: ['id', 'email', 'role', 'name', 'password', 'isVerified'],
+      select: ['id', 'email', 'planType', 'name', 'password', 'isVerified'],
     });
   }
 
-  getUserRolesService() {
-    return Object.values(UserRole);
+  getPlanTypesService() {
+    return Object.values(UserPlanType);
   }
 
-  async findAllAuthorsService(roles: UserRole[], paginationDto: PaginationDto) {
+  getMusicRolesService() {
+    return Object.values(MusicRole);
+  }
+
+  async findAllAuthorsService(planTypes: UserPlanType[], paginationDto: PaginationDto) {
     const { limit, offset } = paginationDto;
     const [data, total] = await this.usersRepository.findAndCount({
-      where: { role: In(roles) },
+      where: { planType: In(planTypes) },
       take: limit,
       skip: offset,
       order: { createdAt: 'DESC' },
@@ -199,7 +204,7 @@ export class UsersService {
     if (exists) throw new ConflictException('Ya existe un usuario con ese email');
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    return this.createUserService({ ...dto, password: hashedPassword, role: UserRole.ADMIN });
+    return this.createUserService({ ...dto, password: hashedPassword, planType: UserPlanType.ADMIN });
   }
 
   async deleteUserByIdService(id: string): Promise<{ id: string; message: string }> {

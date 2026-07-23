@@ -7,7 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import { CreateTrackInput } from './dto/create-track.input';
@@ -204,11 +204,11 @@ export class TracksService {
 
     // 1. Determinar si el usuario tiene acceso a todas las canciones (RBAC)
     const hasGlobalAccess = [
-      UserRole.ADMIN,
-      UserRole.INTERPRETE,
-      UserRole.CANTAUTOR,
-      UserRole.INVITADO
-    ].includes(user?.role);
+      UserPlanType.ADMIN,
+      UserPlanType.PLAN_DESCUBRIDOR,
+      UserPlanType.PLAN_360,
+      UserPlanType.INVITADO
+    ].includes(user?.planType);
 
     // Admins ven todos los tracks por defecto; el resto solo los disponibles
     const effectiveIsAvailable = isAvailable ?? (hasGlobalAccess ? undefined : true);

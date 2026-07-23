@@ -20,9 +20,9 @@ import {
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
-import { Roles } from 'src/users/decorators/roles.decorator';
-import { UserRole } from 'src/users/entities/user-role.enum';
-import { RolesGuard } from 'src/users/guards/roles.guard';
+import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { PlansGuard } from 'src/users/guards/plans.guard';
 import { CreateInviteDto } from './dto/create-invite.dto';
 import { InviteResponseDto } from './dto/invite-response.dto';
 import { InvitePaginationDto } from './dto/invite-pagination.dto';
@@ -35,11 +35,11 @@ export class InvitesController {
 
   // ─── POST /invites ────────────────────────────────────────────────────────────
   @Post()
-  @UseGuards(JWTAuthGuard, RolesGuard)
-  @Roles(
-    UserRole.ADMIN,    
-    UserRole.CANTAUTOR,
-    UserRole.INTERPRETE,   
+  @UseGuards(JWTAuthGuard, PlansGuard)
+  @AllowedPlans(
+    UserPlanType.ADMIN,    
+    UserPlanType.PLAN_360,
+    UserPlanType.PLAN_DESCUBRIDOR,   
   )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -60,8 +60,8 @@ export class InvitesController {
 
   // ─── Admin routes (deben ir antes de /:token) ────────────────────────────────
   @Get('admin')
-  @Roles(UserRole.ADMIN)
-  @UseGuards(JWTAuthGuard, RolesGuard)
+  @AllowedPlans(UserPlanType.ADMIN)
+  @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Listar todas las invitaciones (Admin)' })
   async findAllAdminController(@Query() pagination: InvitePaginationDto) {
@@ -69,8 +69,8 @@ export class InvitesController {
   }
 
   @Delete('admin/:id')
-  @Roles(UserRole.ADMIN)
-  @UseGuards(JWTAuthGuard, RolesGuard)
+  @AllowedPlans(UserPlanType.ADMIN)
+  @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Revocar (eliminar) una invitación (Admin)' })

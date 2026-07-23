@@ -15,7 +15,8 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { UserRole } from './user-role.enum';
+import { UserPlanType } from './user-plan-type.enum';
+import { MusicRole } from './music-role.enum';
 import { UserPlan } from './user-plan.enum';
 import { SocialNetworksData } from './social-networks.type';
 
@@ -59,10 +60,14 @@ export class User {
 
   @Column({
     type: 'enum',
-    enum: UserRole,
-    default: UserRole.INVITADO,
+    enum: UserPlanType,
+    default: UserPlanType.INVITADO,
+    name: 'plan_type',
   })
-  role: UserRole;
+  planType: UserPlanType;
+
+  @Column({ type: 'enum', enum: MusicRole, default: MusicRole.COMPOSITOR })
+  role: MusicRole;
 
   @Column('varchar', { name: 'avatar', nullable: true })
   avatarUrl?: string;

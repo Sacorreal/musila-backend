@@ -1,19 +1,20 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { ArrayMaxSize, IsArray, IsEmail, IsEmpty, IsIn, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength, ValidateNested } from "class-validator";
+import { ArrayMaxSize, IsArray, IsEmail, IsEmpty, IsEnum, IsIn, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
-import { UserRole } from "src/users/entities/user-role.enum";
+import { UserPlanType } from "src/users/entities/user-plan-type.enum";
+import { MusicRole } from "src/users/entities/music-role.enum";
 import { SocialNetworksInput } from "src/users/dto/social-networks.input";
 import { IsValidEmail } from "../decorators/is-valid-email.decorator";
 
 /**
- * Roles que un usuario puede autoasignarse en el registro público.
+ * Tipos de plan que un usuario puede autoasignarse en el registro público.
  * ADMIN, EDITOR e INVITADO quedan excluidos deliberadamente: solo se asignan
  * vía el panel de administración o flujos internos, nunca desde este endpoint.
  */
-export const PUBLIC_REGISTER_ROLES = [
-    UserRole.AUTOR,
-    UserRole.INTERPRETE,
-    UserRole.CANTAUTOR,
+export const PUBLIC_REGISTER_PLAN_TYPES = [
+    UserPlanType.PLAN_AUTOR,
+    UserPlanType.PLAN_DESCUBRIDOR,
+    UserPlanType.PLAN_360,
 ] as const;
 
 export class RegisterAuthDto {
@@ -113,13 +114,22 @@ export class RegisterAuthDto {
     citizenID: string;
 
     @ApiProperty({
-        example: UserRole.AUTOR,
-        enum: PUBLIC_REGISTER_ROLES,
-        description: 'Rol que el usuario elige al registrarse. Solo se permiten roles públicos (autor, intérprete, cantautor); admin/editor/invitado se asignan por otras vías.'
+        example: UserPlanType.PLAN_AUTOR,
+        enum: PUBLIC_REGISTER_PLAN_TYPES,
+        description: 'Plan que el usuario elige al registrarse. Solo se permiten planes públicos (Plan Autor, Plan Descubridor, Plan 360); admin/editor/invitado se asignan por otras vías.'
+    })
+    @IsNotEmpty({ message: 'El plan es obligatorio' })
+    @IsIn(PUBLIC_REGISTER_PLAN_TYPES, { message: 'El plan debe ser plan_autor, plan_descubridor o plan_360' })
+    planType: (typeof PUBLIC_REGISTER_PLAN_TYPES)[number];
+
+    @ApiProperty({
+        example: MusicRole.COMPOSITOR,
+        enum: MusicRole,
+        description: 'Rol musical descriptivo del usuario (disciplina, no determina permisos).'
     })
     @IsNotEmpty({ message: 'El rol es obligatorio' })
-    @IsIn(PUBLIC_REGISTER_ROLES, { message: 'El rol debe ser autor, interprete o cantautor' })
-    role: (typeof PUBLIC_REGISTER_ROLES)[number];
+    @IsEnum(MusicRole, { message: 'El rol debe ser un valor válido de MusicRole' })
+    role: MusicRole;
 
     @ApiPropertyOptional({
         example: 'https://ejemplo.com/imagenes/avatar.jpg',

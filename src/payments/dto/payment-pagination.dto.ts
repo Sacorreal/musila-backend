@@ -23,7 +23,7 @@ export class PaymentPaginationDto extends PaginationDto {
   @ApiPropertyOptional({ enum: UserPlan })
   @IsOptional()
   @IsEnum(UserPlan)
-  planType?: UserPlan;
+  billingTier?: UserPlan;
 
   @ApiPropertyOptional({ description: 'Filtrar por usuario' })
   @IsOptional()

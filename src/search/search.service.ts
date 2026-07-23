@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { TrackResponseDto } from 'src/tracks/dto/track-response.dto';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { ILike, In, Raw, Repository } from 'typeorm';
 import { SearchAuthorDto, SearchResponseDto } from './dto/search-response.dto';
@@ -67,13 +67,13 @@ export class SearchService {
 
                 this.usersRepository.findAndCount({
                     where: [
-                        { role: In([UserRole.AUTOR, UserRole.CANTAUTOR]), name: startsWith },
-                        { role: In([UserRole.AUTOR, UserRole.CANTAUTOR]), lastName: startsWith },
-                        { role: In([UserRole.AUTOR, UserRole.CANTAUTOR]), name: contains },
-                        { role: In([UserRole.AUTOR, UserRole.CANTAUTOR]), lastName: contains },
+                        { planType: In([UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360]), name: startsWith },
+                        { planType: In([UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360]), lastName: startsWith },
+                        { planType: In([UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360]), name: contains },
+                        { planType: In([UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360]), lastName: contains },
                         // Búsqueda por nombre completo (concatenando campos)
                         {
-                            role: In([UserRole.AUTOR, UserRole.CANTAUTOR]),
+                            planType: In([UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360]),
                             name: Raw(alias => `CONCAT_WS(' ', "${alias.split('.')[0]}"."name", "${alias.split('.')[0]}"."second_name", "${alias.split('.')[0]}"."last_name", "${alias.split('.')[0]}"."last_second_name") ILIKE :q`, { q: `%${query}%` })
                         }
                     ],

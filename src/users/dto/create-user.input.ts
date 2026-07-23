@@ -15,7 +15,8 @@ import {
   ValidateNested
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { UserRole } from '../entities/user-role.enum';
+import { UserPlanType } from '../entities/user-plan-type.enum';
+import { MusicRole } from '../entities/music-role.enum';
 import { SocialNetworksInput } from './social-networks.input';
 
 
@@ -105,13 +106,22 @@ export class CreateUserInput {
   citizenID?: string;
 
   @ApiPropertyOptional({
-    example: UserRole.ADMIN,
-    enum: UserRole,
-    description: 'Rol asignado al usuario dentro del sistema (opcional). Valores posibles definidos en el enum UserRole.'
+    example: UserPlanType.ADMIN,
+    enum: UserPlanType,
+    description: 'Tipo de plan asignado al usuario dentro del sistema (opcional). Valores posibles definidos en el enum UserPlanType.'
   })
-  @IsEnum(UserRole, { message: 'El rol debe ser un valor válido de UserRole' })
+  @IsEnum(UserPlanType, { message: 'El plan debe ser un valor válido de UserPlanType' })
   @IsOptional()
-  role?: UserRole;
+  planType?: UserPlanType;
+
+  @ApiPropertyOptional({
+    example: MusicRole.COMPOSITOR,
+    enum: MusicRole,
+    description: 'Rol musical descriptivo del usuario (opcional, editable por admin).'
+  })
+  @IsEnum(MusicRole, { message: 'El rol debe ser un valor válido de MusicRole' })
+  @IsOptional()
+  role?: MusicRole;
 
   @ApiPropertyOptional({
     example: 'https://ejemplo.com/imagenes/avatar.jpg',

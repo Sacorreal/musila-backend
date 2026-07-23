@@ -9,7 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { Guest } from 'src/guests/entities/guest.entity';
 import { Playlist } from 'src/playlists/entities/playlist.entity';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { Repository } from 'typeorm';
 import { AddCollaboratorDto } from './dto/add-collaborator.dto';
 import { CollaboratorPermission } from './entities/collaborator-permission.enum';
@@ -232,7 +232,7 @@ export class PlaylistCollaboratorsService {
    * Verifica que el usuario autenticado sea dueño de la playlist (o admin).
    */
   private assertOwnership(playlist: Playlist, user: JwtPayload): void {
-    if (playlist.owner.id !== user.id && user.role !== UserRole.ADMIN) {
+    if (playlist.owner.id !== user.id && user.planType !== UserPlanType.ADMIN) {
       throw new ForbiddenException('No tienes permisos para gestionar esta playlist');
     }
   }
@@ -241,7 +241,7 @@ export class PlaylistCollaboratorsService {
    * Verifica que el guest haya sido invitado por el usuario autenticado.
    */
   private assertGuestBelongsToUser(guest: Guest, user: JwtPayload): void {
-    if (guest.invited_by.id !== user.id && user.role !== UserRole.ADMIN) {
+    if (guest.invited_by.id !== user.id && user.planType !== UserPlanType.ADMIN) {
       throw new ForbiddenException('Este invitado no pertenece a tu red de colaboradores');
     }
   }

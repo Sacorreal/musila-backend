@@ -9,7 +9,7 @@ export class TrackAuthorDto {
   @ApiProperty() name: string;
   @ApiProperty({ nullable: true }) artistName?: string;
   @ApiProperty() email: string;
-  @ApiProperty() role: string;
+  @ApiProperty() planType: string;
 
   static fromUser(user: User): TrackAuthorDto {
     const dto = new TrackAuthorDto();
@@ -17,7 +17,7 @@ export class TrackAuthorDto {
     dto.name = user.name;
     dto.artistName = undefined;
     dto.email = user.email;
-    dto.role = user.role;
+    dto.planType = user.planType;
     return dto;
   }
 }

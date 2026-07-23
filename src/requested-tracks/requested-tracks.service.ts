@@ -11,7 +11,7 @@ import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
 import { RequestedTrack } from './entities/requested-track.entity';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
-import { UserRole } from '../users/entities/user-role.enum';
+import { UserPlanType } from '../users/entities/user-plan-type.enum';
 import { PaginationDto } from '../shared/dto/pagination.dto'
 import { Chat } from 'src/chat/entities/chat.entity';
 import { EventBusService } from 'src/shared/events/event-bus.service';
@@ -127,7 +127,7 @@ export class RequestedTracksService {
   ) {
     const { limit, offset } = paginationDto;
 
-    const isAdmin = user?.role === UserRole.ADMIN;
+    const isAdmin = user?.planType === UserPlanType.ADMIN;
 
     // Si no es Admin, filtramos para que vea:
     // 1. Solicitudes que él mismo hizo (requester)

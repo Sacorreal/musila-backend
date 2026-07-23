@@ -4,7 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { UserPlan } from 'src/users/entities/user-plan.enum';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { getLimit } from '../plan-limits/plan-limits.config';
 import { PlanLimitsService } from '../plan-limits/plan-limits.service';
 import { PlanLimitsGuard } from './plan-limits.guard';
@@ -16,7 +16,7 @@ const makeMockUserRepo = () => ({
 function buildContext(userId: string, resource: string | undefined): ExecutionContext {
   return {
     switchToHttp: () => ({
-      getRequest: () => ({ user: { id: userId, role: undefined } }),
+      getRequest: () => ({ user: { id: userId, planType: undefined } }),
     }),
     getHandler: () => ({}),
     getClass: () => ({}),
@@ -50,8 +50,8 @@ describe('PlanLimitsGuard', () => {
     jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(resource);
   }
 
-  function setupUser(role: UserRole, plan: UserPlan) {
-    userRepo.findOne.mockResolvedValue({ id: 'user-1', role, plan });
+  function setupUser(planType: UserPlanType, plan: UserPlan) {
+    userRepo.findOne.mockResolvedValue({ id: 'user-1', planType, plan });
   }
 
   // ─── Sin metadato de recurso ─────────────────────────────────────────────────
@@ -65,9 +65,9 @@ describe('PlanLimitsGuard', () => {
   // ─── Autor Free — tracks ─────────────────────────────────────────────────────
 
   it('debe bloquear al Autor Free que ya alcanzó el límite de tracks', async () => {
-    const limit = getLimit(UserRole.AUTOR, UserPlan.FREE, 'tracks') as number;
+    const limit = getLimit(UserPlanType.PLAN_AUTOR, UserPlan.FREE, 'tracks') as number;
     setupReflector('tracks');
-    setupUser(UserRole.AUTOR, UserPlan.FREE);
+    setupUser(UserPlanType.PLAN_AUTOR, UserPlan.FREE);
     planLimitsService.countResource.mockResolvedValue(limit);
 
     const ctx = buildContext('user-1', 'tracks');
@@ -75,9 +75,9 @@ describe('PlanLimitsGuard', () => {
   });
 
   it('debe permitir al Autor Free con menos tracks que el límite', async () => {
-    const limit = getLimit(UserRole.AUTOR, UserPlan.FREE, 'tracks') as number;
+    const limit = getLimit(UserPlanType.PLAN_AUTOR, UserPlan.FREE, 'tracks') as number;
     setupReflector('tracks');
-    setupUser(UserRole.AUTOR, UserPlan.FREE);
+    setupUser(UserPlanType.PLAN_AUTOR, UserPlan.FREE);
     planLimitsService.countResource.mockResolvedValue(limit - 1);
 
     const ctx = buildContext('user-1', 'tracks');
@@ -86,7 +86,7 @@ describe('PlanLimitsGuard', () => {
 
   it('debe permitir al Autor Pro publicar sin límite de tracks', async () => {
     setupReflector('tracks');
-    setupUser(UserRole.AUTOR, UserPlan.PRO);
+    setupUser(UserPlanType.PLAN_AUTOR, UserPlan.PRO);
     planLimitsService.countResource.mockResolvedValue(100);
 
     const ctx = buildContext('user-1', 'tracks');
@@ -96,9 +96,9 @@ describe('PlanLimitsGuard', () => {
   // ─── Cantautor Free — requests ───────────────────────────────────────────────
 
   it('debe bloquear al Cantautor Free que ya alcanzó el límite de solicitudes', async () => {
-    const limit = getLimit(UserRole.CANTAUTOR, UserPlan.FREE, 'requests') as number;
+    const limit = getLimit(UserPlanType.PLAN_360, UserPlan.FREE, 'requests') as number;
     setupReflector('requests');
-    setupUser(UserRole.CANTAUTOR, UserPlan.FREE);
+    setupUser(UserPlanType.PLAN_360, UserPlan.FREE);
     planLimitsService.countResource.mockResolvedValue(limit);
 
     const ctx = buildContext('user-1', 'requests');
@@ -107,7 +107,7 @@ describe('PlanLimitsGuard', () => {
 
   it('debe permitir al Cantautor Pro enviar solicitudes sin límite', async () => {
     setupReflector('requests');
-    setupUser(UserRole.CANTAUTOR, UserPlan.PRO);
+    setupUser(UserPlanType.PLAN_360, UserPlan.PRO);
     planLimitsService.countResource.mockResolvedValue(50);
 
     const ctx = buildContext('user-1', 'requests');
@@ -117,9 +117,9 @@ describe('PlanLimitsGuard', () => {
   // ─── Intérprete Free — playlists ────────────────────────────────────────────
 
   it('debe bloquear al Intérprete Free que ya alcanzó el límite de playlists', async () => {
-    const limit = getLimit(UserRole.INTERPRETE, UserPlan.FREE, 'playlists') as number;
+    const limit = getLimit(UserPlanType.PLAN_DESCUBRIDOR, UserPlan.FREE, 'playlists') as number;
     setupReflector('playlists');
-    setupUser(UserRole.INTERPRETE, UserPlan.FREE);
+    setupUser(UserPlanType.PLAN_DESCUBRIDOR, UserPlan.FREE);
     planLimitsService.countResource.mockResolvedValue(limit);
 
     const ctx = buildContext('user-1', 'playlists');
@@ -128,7 +128,7 @@ describe('PlanLimitsGuard', () => {
 
   it('debe permitir al Intérprete Pro playlists ilimitadas', async () => {
     setupReflector('playlists');
-    setupUser(UserRole.INTERPRETE, UserPlan.PRO);
+    setupUser(UserPlanType.PLAN_DESCUBRIDOR, UserPlan.PRO);
     planLimitsService.countResource.mockResolvedValue(99);
 
     const ctx = buildContext('user-1', 'playlists');
@@ -138,9 +138,9 @@ describe('PlanLimitsGuard', () => {
   // ─── Colaboradores ───────────────────────────────────────────────────────────
 
   it('debe bloquear al Cantautor Free que ya alcanzó el límite de colaboradores', async () => {
-    const limit = getLimit(UserRole.CANTAUTOR, UserPlan.FREE, 'collaborators') as number;
+    const limit = getLimit(UserPlanType.PLAN_360, UserPlan.FREE, 'collaborators') as number;
     setupReflector('collaborators');
-    setupUser(UserRole.CANTAUTOR, UserPlan.FREE);
+    setupUser(UserPlanType.PLAN_360, UserPlan.FREE);
     planLimitsService.countResource.mockResolvedValue(limit);
 
     const ctx = buildContext('user-1', 'collaborators');
@@ -148,9 +148,9 @@ describe('PlanLimitsGuard', () => {
   });
 
   it('debe bloquear al Cantautor Pro que ya alcanzó el límite de colaboradores', async () => {
-    const limit = getLimit(UserRole.CANTAUTOR, UserPlan.PRO, 'collaborators') as number;
+    const limit = getLimit(UserPlanType.PLAN_360, UserPlan.PRO, 'collaborators') as number;
     setupReflector('collaborators');
-    setupUser(UserRole.CANTAUTOR, UserPlan.PRO);
+    setupUser(UserPlanType.PLAN_360, UserPlan.PRO);
     planLimitsService.countResource.mockResolvedValue(limit);
 
     const ctx = buildContext('user-1', 'collaborators');
@@ -160,9 +160,9 @@ describe('PlanLimitsGuard', () => {
   // ─── Respuesta 402 con payload correcto ─────────────────────────────────────
 
   it('debe retornar HTTP 402 con PLAN_LIMIT_REACHED en el body', async () => {
-    const limit = getLimit(UserRole.AUTOR, UserPlan.FREE, 'tracks') as number;
+    const limit = getLimit(UserPlanType.PLAN_AUTOR, UserPlan.FREE, 'tracks') as number;
     setupReflector('tracks');
-    setupUser(UserRole.AUTOR, UserPlan.FREE);
+    setupUser(UserPlanType.PLAN_AUTOR, UserPlan.FREE);
     planLimitsService.countResource.mockResolvedValue(limit);
 
     const ctx = buildContext('user-1', 'tracks');

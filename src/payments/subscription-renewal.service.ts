@@ -4,7 +4,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Between, In, Repository } from 'typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { UserPlan } from 'src/users/entities/user-plan.enum';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { BillingPeriod, Payment, PaymentStatus } from './entities/payment.entity';
 import { PaymentSource, PaymentSourceStatus } from './entities/payment-source.entity';
 import { Notification } from 'src/notifications/entities/notification.entity';
@@ -44,7 +44,7 @@ export class SubscriptionRenewalService {
     const expiringUsers = await this.userRepo.find({
       where: {
         plan: UserPlan.PRO,
-        role: In([UserRole.AUTOR, UserRole.CANTAUTOR]),
+        planType: In([UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360]),
         planExpiresAt: Between(todayStart, todayEnd),
       },
     });
@@ -81,7 +81,7 @@ export class SubscriptionRenewalService {
       const result = await this.paymentsService.chargeRecurring(
         user.id,
         source.id,
-        user.role,
+        user.planType,
         billingPeriod,
       );
 

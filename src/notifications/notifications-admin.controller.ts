@@ -1,17 +1,17 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/users/guards/roles.guard';
-import { Roles } from 'src/users/decorators/roles.decorator';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { PlansGuard } from 'src/users/guards/plans.guard';
+import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationAdminDto } from './dto/create-notification-admin.dto';
 import { NotificationPaginationDto } from './dto/notification-pagination.dto';
 import { NotificationsGateway } from './notifications.gateway';
 
 @ApiTags('Notificaciones (Admin)')
-@UseGuards(JWTAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@UseGuards(JWTAuthGuard, PlansGuard)
+@AllowedPlans(UserPlanType.ADMIN)
 @Controller('notifications/admin')
 export class NotificationsAdminController {
   constructor(

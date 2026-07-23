@@ -1,5 +1,5 @@
 import { LicenseType } from "src/requested-tracks/entities/license-type.enum";
-import { UserRole } from "src/users/entities/user-role.enum";
+import { UserPlanType } from "src/users/entities/user-plan-type.enum";
 import { UserPlan } from "src/users/entities/user-plan.enum";
 import { BillingPeriod, PaymentType } from "src/payments/entities/payment.entity";
 
@@ -147,7 +147,7 @@ export interface AppEventMap {
 
   'payment.subscription.approved': {
     userId: string;
-    role: UserRole;
+    planType: UserPlanType;
     plan: UserPlan;
     paymentId: string;
     paymentType: PaymentType;

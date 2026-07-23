@@ -9,7 +9,7 @@ export class SearchAuthorDto {
   @ApiProperty() name: string;
   @ApiProperty({ nullable: true }) lastName?: string;
   @ApiProperty({ nullable: true }) avatarUrl?: string;
-  @ApiProperty() role: string;
+  @ApiProperty() planType: string;
 
   static fromUser(user: User): SearchAuthorDto {
     const dto = new SearchAuthorDto();
@@ -17,7 +17,7 @@ export class SearchAuthorDto {
     dto.name = user.name;
     dto.lastName = user.lastName;
     dto.avatarUrl = user.avatarUrl;
-    dto.role = user.role;
+    dto.planType = user.planType;
     return dto;
   }
 }

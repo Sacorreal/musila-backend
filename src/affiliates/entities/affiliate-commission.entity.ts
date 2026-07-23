@@ -8,7 +8,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { BillingPeriod } from 'src/payments/entities/payment.entity';
 import { Affiliate } from './affiliate.entity';
 import { AffiliateTier } from './affiliate-tier.enum';
@@ -64,8 +64,8 @@ export class AffiliateCommission {
   })
   status: AffiliateCommissionStatus;
 
-  @Column({ type: 'enum', enum: UserRole, name: 'plan_role' })
-  planRole: UserRole;
+  @Column({ type: 'enum', enum: UserPlanType, name: 'plan_type' })
+  planType: UserPlanType;
 
   @Column({ type: 'enum', enum: BillingPeriod, name: 'billing_period', nullable: true })
   billingPeriod?: BillingPeriod;

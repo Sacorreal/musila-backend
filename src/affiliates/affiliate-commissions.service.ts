@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { LessThanOrEqual, Repository } from 'typeorm';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { AppEventMap } from 'src/shared/events/contracts/app-event-map';
 import { Affiliate } from './entities/affiliate.entity';
@@ -25,7 +25,7 @@ export const COMMISSION_RATES: Record<
   [AffiliateTier.PARTNER]: { firstPurchase: 0.3, recurring: 0.3 },
 };
 
-const ELIGIBLE_ROLES = [UserRole.AUTOR, UserRole.CANTAUTOR, UserRole.INTERPRETE];
+const ELIGIBLE_PLAN_TYPES = [UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360, UserPlanType.PLAN_DESCUBRIDOR];
 
 function addDays(date: Date, days: number): Date {
   const result = new Date(date);
@@ -52,7 +52,7 @@ export class AffiliateCommissionsService {
    * está activo, y la compra cae dentro de las ventanas de atribución/recurrencia.
    */
   async createCommissionForPurchase(payload: AppEventMap['payment.subscription.approved']) {
-    if (!ELIGIBLE_ROLES.includes(payload.role)) return;
+    if (!ELIGIBLE_PLAN_TYPES.includes(payload.planType)) return;
 
     const user = await this.userRepo.findOne({ where: { id: payload.userId } });
     if (!user?.referredByAffiliateId || !user.referredAt) return;
@@ -131,7 +131,7 @@ export class AffiliateCommissionsService {
         saleAmount: payload.amount,
         commissionAmount,
         status: AffiliateCommissionStatus.PENDING,
-        planRole: payload.role,
+        planType: payload.planType,
         billingPeriod: payload.billingPeriod,
         isFirstPurchase: payload.isFirstPurchase,
         approvalDueAt: addDays(now, APPROVAL_DAYS),

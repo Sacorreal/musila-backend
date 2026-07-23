@@ -42,7 +42,7 @@ export class PlanLimitsGuard implements CanActivate {
     if (!user) return true;
 
     const plan = user.plan ?? UserPlan.FREE;
-    const limit = getLimit(user.role, plan, resource);
+    const limit = getLimit(user.planType, plan, resource);
 
     if (limit === undefined || limit === null) return true;
 

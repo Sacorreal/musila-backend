@@ -216,7 +216,7 @@ export class AuthService {
     const payload: JwtPayload = {
       id: account.id,
       email: account.email,
-      role: account.role,
+      planType: account.planType,
       name: account.name,
       plan: 'plan' in account ? (account).plan : undefined,
       isVerified: account.isVerified,

@@ -7,7 +7,7 @@ import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.en
 import { RequestsStatus } from 'src/requested-tracks/entities/requests-status.enum';
 import { Track } from 'src/tracks/entities/track.entity';
 import { UserPlan } from 'src/users/entities/user-plan.enum';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { getLimit, PLAN_LIMITS } from './plan-limits.config';
 import { PlanResource } from './plan-limit.decorator';
 
@@ -63,24 +63,24 @@ export class PlanLimitsService {
     }
   }
 
-  /** Recursos aplicables a un rol (unión de las claves definidas en ambos planes para ese rol). */
-  resourcesForRole(role: UserRole): PlanResource[] {
-    const free = PLAN_LIMITS[role]?.[UserPlan.FREE] ?? {};
-    const pro = PLAN_LIMITS[role]?.[UserPlan.PRO] ?? {};
+  /** Recursos aplicables a un tipo de plan (unión de las claves definidas en ambos billing tiers). */
+  resourcesForPlanType(planType: UserPlanType): PlanResource[] {
+    const free = PLAN_LIMITS[planType]?.[UserPlan.FREE] ?? {};
+    const pro = PLAN_LIMITS[planType]?.[UserPlan.PRO] ?? {};
     return Array.from(new Set([...Object.keys(free), ...Object.keys(pro)])) as PlanResource[];
   }
 
-  /** Uso de todos los recursos aplicables al rol/plan de un usuario. */
-  async getUsageForRole(
-    role: UserRole,
+  /** Uso de todos los recursos aplicables al plan/billing tier de un usuario. */
+  async getUsageForPlanType(
+    planType: UserPlanType,
     plan: UserPlan,
     userId: string,
   ): Promise<Partial<Record<PlanResource, ResourceUsage>>> {
-    const resources = this.resourcesForRole(role);
+    const resources = this.resourcesForPlanType(planType);
 
     const entries = await Promise.all(
       resources.map(async (resource) => {
-        const limit = getLimit(role, plan, resource) ?? null;
+        const limit = getLimit(planType, plan, resource) ?? null;
         const current = await this.countResource(resource, userId);
         return [resource, { current, limit }] as const;
       }),

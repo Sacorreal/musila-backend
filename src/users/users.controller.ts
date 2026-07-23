@@ -16,18 +16,18 @@ import { PaginationDto } from '../shared/dto/pagination.dto';
 import { FilterUserDto } from './dto/filter-user.dto';
 import { PaginatedUsersResponseDto } from './dto/user-pagination.dto';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { Roles } from 'src/users/decorators/roles.decorator';
+import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
 import { UpdateUserInput } from './dto/update-user.input';
 import { CreateUserInput } from './dto/create-user.input';
 import { AdminStatsDto } from './dto/admin-stats.dto';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { UserRole } from './entities/user-role.enum';
+import { UserPlanType } from './entities/user-plan-type.enum';
 import { UsersService } from './users.service';
 import { AdminService } from './admin.service';
 import { AuditLogService } from './audit-log.service';
 import { AuditLogPaginationDto } from './dto/audit-log-pagination.dto';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from './guards/roles.guard';
+import { PlansGuard } from './guards/plans.guard';
 
 @ApiTags('Usuarios')
 @Controller('users')
@@ -39,8 +39,8 @@ export class UsersController {
   ) {}
 
   @Get()
-  @Roles(UserRole.ADMIN)
-  @UseGuards(JWTAuthGuard, RolesGuard)
+  @AllowedPlans(UserPlanType.ADMIN)
+  @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Obtener todos los usuarios (Admin)' })
   @ApiResponse({ status: 200, type: PaginatedUsersResponseDto })
@@ -50,10 +50,16 @@ export class UsersController {
     return await this.usersService.findAllUsersService(filterDto);
   }
 
-  @Get('roles')
-  @ApiOperation({ summary: 'Obtener roles disponibles' })
-  getUserRolesController() {
-    return this.usersService.getUserRolesService();
+  @Get('plan-types')
+  @ApiOperation({ summary: 'Obtener tipos de plan disponibles' })
+  getPlanTypesController() {
+    return this.usersService.getPlanTypesService();
+  }
+
+  @Get('music-roles')
+  @ApiOperation({ summary: 'Obtener roles musicales disponibles (atributo descriptivo)' })
+  getMusicRolesController() {
+    return this.usersService.getMusicRolesService();
   }
 
   @UseGuards(JWTAuthGuard)
@@ -61,14 +67,14 @@ export class UsersController {
   @ApiOperation({ summary: 'Obtener todos los autores y cantautores' })
   @ApiResponse({ status: 200, type: PaginatedUsersResponseDto })
   getAuthorsController(@Query() paginationDto: PaginationDto) {
-    return this.usersService.findAllAuthorsService([UserRole.AUTOR, UserRole.CANTAUTOR], paginationDto);
+    return this.usersService.findAllAuthorsService([UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360], paginationDto);
   }
 
   // ── Admin routes (must be before /:id) ──────────────────────────────
 
   @Get('admin/stats')
-  @Roles(UserRole.ADMIN)
-  @UseGuards(JWTAuthGuard, RolesGuard)
+  @AllowedPlans(UserPlanType.ADMIN)
+  @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Estadísticas generales del sistema (Admin)' })
   @ApiResponse({ status: 200, type: AdminStatsDto })
@@ -77,8 +83,8 @@ export class UsersController {
   }
 
   @Post('admin/create')
-  @Roles(UserRole.ADMIN)
-  @UseGuards(JWTAuthGuard, RolesGuard)
+  @AllowedPlans(UserPlanType.ADMIN)
+  @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Crear usuario administrador (Admin)' })
   @ApiResponse({ status: 201, description: 'Administrador creado exitosamente' })
@@ -88,8 +94,8 @@ export class UsersController {
   }
 
   @Get('admin/audit-log')
-  @Roles(UserRole.ADMIN)
-  @UseGuards(JWTAuthGuard, RolesGuard)
+  @AllowedPlans(UserPlanType.ADMIN)
+  @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Listar registro de auditoría (Admin, solo lectura)' })
   async findAllAuditLogController(@Query() pagination: AuditLogPaginationDto) {
@@ -97,8 +103,8 @@ export class UsersController {
   }
 
   @Delete(':id/hard')
-  @Roles(UserRole.ADMIN)
-  @UseGuards(JWTAuthGuard, RolesGuard)
+  @AllowedPlans(UserPlanType.ADMIN)
+  @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiParam({ name: 'id', description: 'UUID del usuario' })
   @ApiOperation({
@@ -148,8 +154,8 @@ export class UsersController {
     return await this.usersService.findOneUserByIdService(id);
   }
 
-  @Roles(UserRole.ADMIN)
-  @UseGuards(JWTAuthGuard, RolesGuard)
+  @AllowedPlans(UserPlanType.ADMIN)
+  @UseGuards(JWTAuthGuard, PlansGuard)
   @Put(':id')
   @ApiBearerAuth('JWT-auth')
   @ApiParam({ name: 'id', description: 'UUID del usuario' })
@@ -161,8 +167,8 @@ export class UsersController {
     return await this.usersService.updateUserService(id, updateUserInput);
   }
 
-  @Roles(UserRole.ADMIN)
-  @UseGuards(JWTAuthGuard, RolesGuard)
+  @AllowedPlans(UserPlanType.ADMIN)
+  @UseGuards(JWTAuthGuard, PlansGuard)
   @Delete(':id')
   @ApiBearerAuth('JWT-auth')
   @ApiParam({ name: 'id', description: 'UUID del usuario' })

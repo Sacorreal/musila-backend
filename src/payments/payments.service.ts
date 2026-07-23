@@ -11,7 +11,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserPlan } from 'src/users/entities/user-plan.enum';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { LessThan, Repository } from 'typeorm';
 import { v4 as uuid } from 'uuid';
@@ -52,22 +52,22 @@ import {
 const CURRENCY = 'COP';
 const LICENSE_COMMISSION_RATE = 0.10;
 
-const PLAN_PRICES: Record<UserRole, number> = {
-  [UserRole.AUTOR]: 39900,
-  [UserRole.CANTAUTOR]: 59900,
-  [UserRole.INTERPRETE]: 39900,
-  [UserRole.ADMIN]: 0,
-  [UserRole.INVITADO]: 0,
-  [UserRole.EDITOR]: 0,
+const PLAN_PRICES: Record<UserPlanType, number> = {
+  [UserPlanType.PLAN_AUTOR]: 39900,
+  [UserPlanType.PLAN_360]: 59900,
+  [UserPlanType.PLAN_DESCUBRIDOR]: 39900,
+  [UserPlanType.ADMIN]: 0,
+  [UserPlanType.INVITADO]: 0,
+  [UserPlanType.EDITOR]: 0,
 };
 
-const ANNUAL_PLAN_PRICES: Record<UserRole, number> = {
-  [UserRole.AUTOR]: 359100,
-  [UserRole.CANTAUTOR]: 539100,
-  [UserRole.INTERPRETE]: 39900, // pago único, sin variación
-  [UserRole.ADMIN]: 0,
-  [UserRole.INVITADO]: 0,
-  [UserRole.EDITOR]: 0,
+const ANNUAL_PLAN_PRICES: Record<UserPlanType, number> = {
+  [UserPlanType.PLAN_AUTOR]: 359100,
+  [UserPlanType.PLAN_360]: 539100,
+  [UserPlanType.PLAN_DESCUBRIDOR]: 39900, // pago único, sin variación
+  [UserPlanType.ADMIN]: 0,
+  [UserPlanType.INVITADO]: 0,
+  [UserPlanType.EDITOR]: 0,
 };
 
 @Injectable()
@@ -102,10 +102,10 @@ export class PaymentsService {
     return this.configService.get<string>(key, 'http://localhost:3000');
   }
 
-  private resolveAmount(role: UserRole, billingPeriod?: string) {
-    const isLifetime = role === UserRole.INTERPRETE;
+  private resolveAmount(planType: UserPlanType, billingPeriod?: string) {
+    const isLifetime = planType === UserPlanType.PLAN_DESCUBRIDOR;
     const isAnnual = billingPeriod === 'annual' && !isLifetime;
-    const amountCop = isAnnual ? ANNUAL_PLAN_PRICES[role] : PLAN_PRICES[role];
+    const amountCop = isAnnual ? ANNUAL_PLAN_PRICES[planType] : PLAN_PRICES[planType];
     return {
       isLifetime,
       isAnnual,
@@ -122,7 +122,7 @@ export class PaymentsService {
    */
   async createCheckout(dto: CreateCheckoutDto) {
     const reference = uuid();
-    const { amountInCents } = this.resolveAmount(dto.role, dto.billingPeriod);
+    const { amountInCents } = this.resolveAmount(dto.planType, dto.billingPeriod);
 
     if (amountInCents <= 0) {
       throw new ServiceUnavailableException('El plan seleccionado no está disponible.');
@@ -153,7 +153,7 @@ export class PaymentsService {
     try {
       await this.pendingRepo.save({
         externalReference: reference,
-        role: dto.role,
+        planType: dto.planType,
         plan: UserPlan.PRO,
         status: PendingRegistrationStatus.PENDING,
         expiresAt,
@@ -221,8 +221,8 @@ export class PaymentsService {
       status: PaymentStatus.PENDING,
       amount: amountInCents / 100,
       currency: CURRENCY,
-      planType: UserPlan.FREE,
-      roleType: UserRole.INVITADO,
+      billingTier: UserPlan.FREE,
+      planType: UserPlanType.INVITADO,
       paymentType: PaymentType.LICENSE,
       externalReference: reference,
       requestedTrackId: track.id,
@@ -301,15 +301,15 @@ export class PaymentsService {
     }
 
     const paymentStatus = this.mapStatus(parsed.status);
-    const isLifetime = pending?.role === UserRole.INTERPRETE;
+    const isLifetime = pending?.planType === UserPlanType.PLAN_DESCUBRIDOR;
 
     let expiresAt: Date | undefined;
     let billingPeriod: BillingPeriod | undefined;
     if (paymentStatus === PaymentStatus.APPROVED && !isLifetime) {
       const isAnnual =
         parsed.amountInCents != null &&
-        pending?.role != null &&
-        parsed.amountInCents >= ANNUAL_PLAN_PRICES[pending.role] * 100;
+        pending?.planType != null &&
+        parsed.amountInCents >= ANNUAL_PLAN_PRICES[pending.planType] * 100;
       billingPeriod = isAnnual ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
       expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + (isAnnual ? 365 : 30));
@@ -322,8 +322,8 @@ export class PaymentsService {
       status: paymentStatus,
       amount: parsed.amountInCents != null ? parsed.amountInCents / 100 : undefined,
       currency: CURRENCY,
-      planType: UserPlan.PRO,
-      roleType: pending?.role ?? UserRole.INVITADO,
+      billingTier: UserPlan.PRO,
+      planType: pending?.planType ?? UserPlanType.INVITADO,
       paymentType: isLifetime ? PaymentType.ONE_TIME : PaymentType.SUBSCRIPTION,
       billingPeriod,
       externalReference: parsed.reference,
@@ -354,7 +354,7 @@ export class PaymentsService {
         });
         this.eventBus.emit('payment.subscription.approved', {
           userId: pending.userId,
-          role: pending.role ?? UserRole.INVITADO,
+          planType: pending.planType ?? UserPlanType.INVITADO,
           plan: UserPlan.PRO,
           paymentId,
           paymentType: isLifetime ? PaymentType.ONE_TIME : PaymentType.SUBSCRIPTION,
@@ -389,8 +389,8 @@ export class PaymentsService {
       status: paymentStatus,
       amount: parsed.amountInCents != null ? parsed.amountInCents / 100 : undefined,
       currency: CURRENCY,
-      planType: UserPlan.FREE,
-      roleType: UserRole.INVITADO,
+      billingTier: UserPlan.FREE,
+      planType: UserPlanType.INVITADO,
       paymentType: PaymentType.LICENSE,
       externalReference: parsed.reference,
       requestedTrackId: track.id,
@@ -445,7 +445,7 @@ export class PaymentsService {
     if (!pending) return { status: 'not_found' };
 
     if (pending.status === PendingRegistrationStatus.PAYMENT_CONFIRMED) {
-      return { status: 'approved', userId: pending.userId, plan: 'pro', role: pending.role };
+      return { status: 'approved', userId: pending.userId, plan: 'pro', planType: pending.planType };
     }
 
     if (pending.status === PendingRegistrationStatus.EXPIRED || new Date() > pending.expiresAt) {
@@ -528,7 +528,7 @@ export class PaymentsService {
   async chargeRecurring(
     userId: string,
     paymentSourceId: string,
-    role: UserRole,
+    planType: UserPlanType,
     billingPeriod: BillingPeriod = BillingPeriod.MONTHLY,
   ) {
     const source = await this.paymentSourceRepo.findOne({
@@ -539,7 +539,7 @@ export class PaymentsService {
     }
 
     const reference = uuid();
-    const { amountInCents } = this.resolveAmount(role, billingPeriod);
+    const { amountInCents } = this.resolveAmount(planType, billingPeriod);
     const user = await this.userRepo.findOne({ where: { id: userId } });
 
     const result = await this.provider.chargeRecurring({
@@ -567,8 +567,8 @@ export class PaymentsService {
       status: paymentStatus,
       amount: amountInCents / 100,
       currency: CURRENCY,
-      planType: UserPlan.PRO,
-      roleType: role,
+      billingTier: UserPlan.PRO,
+      planType,
       paymentType: PaymentType.SUBSCRIPTION,
       billingPeriod,
       externalReference: reference,
@@ -579,7 +579,7 @@ export class PaymentsService {
       await this.userRepo.update(userId, { plan: UserPlan.PRO, planExpiresAt: newExpiry });
       this.eventBus.emit('payment.subscription.approved', {
         userId,
-        role,
+        planType,
         plan: UserPlan.PRO,
         paymentId: savedPayment.id,
         paymentType: PaymentType.SUBSCRIPTION,
@@ -618,7 +618,7 @@ export class PaymentsService {
     if (payment && payment.status === PaymentStatus.APPROVED) {
       this.eventBus.emit('payment.subscription.approved', {
         userId,
-        role: payment.roleType,
+        planType: payment.planType,
         plan: UserPlan.PRO,
         paymentId: payment.id,
         paymentType: payment.paymentType,
@@ -668,7 +668,7 @@ export class PaymentsService {
   // ─────────────────────────────────────────────────────────────────────────────
 
   async findAllPaymentsAdmin(pagination: PaymentPaginationDto) {
-    const { limit = 10, offset = 0, status, provider, paymentType, planType, userId } = pagination;
+    const { limit = 10, offset = 0, status, provider, paymentType, billingTier, userId } = pagination;
     const qb = this.paymentRepo
       .createQueryBuilder('payment')
       .leftJoinAndSelect('payment.user', 'user')
@@ -679,7 +679,7 @@ export class PaymentsService {
     if (status) qb.andWhere('payment.status = :status', { status });
     if (provider) qb.andWhere('payment.provider = :provider', { provider });
     if (paymentType) qb.andWhere('payment.paymentType = :paymentType', { paymentType });
-    if (planType) qb.andWhere('payment.planType = :planType', { planType });
+    if (billingTier) qb.andWhere('payment.billingTier = :billingTier', { billingTier });
     if (userId) qb.andWhere('payment.userId = :userId', { userId });
 
     const [data, total] = await qb.getManyAndCount();

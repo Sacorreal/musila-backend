@@ -3,17 +3,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PlanLimitsService } from 'src/shared/plan-limits/plan-limits.service';
 import { UserPlan } from './entities/user-plan.enum';
-import { UserRole } from './entities/user-role.enum';
+import { UserPlanType } from './entities/user-plan-type.enum';
 import { User } from './entities/user.entity';
 import { Payment, PaymentStatus } from 'src/payments/entities/payment.entity';
 
 const PLAN_FEATURES: Record<string, string[]> = {
-  [`${UserRole.AUTOR}_${UserPlan.FREE}`]: ['Hasta 5 canciones'],
-  [`${UserRole.AUTOR}_${UserPlan.PRO}`]: ['Canciones ilimitadas', 'Solicitudes ilimitadas recibidas'],
-  [`${UserRole.CANTAUTOR}_${UserPlan.FREE}`]: ['Hasta 5 canciones', 'Hasta 3 solicitudes', 'Hasta 2 colaboradores', 'Hasta 1 playlist', 'Búsqueda ilimitada'],
-  [`${UserRole.CANTAUTOR}_${UserPlan.PRO}`]: ['Canciones ilimitadas', 'Solicitudes ilimitadas', 'Hasta 5 colaboradores', 'Playlists ilimitadas', 'Búsqueda ilimitada'],
-  [`${UserRole.INTERPRETE}_${UserPlan.FREE}`]: ['Hasta 5 solicitudes', 'Hasta 2 colaboradores', 'Hasta 1 playlist', 'Búsqueda ilimitada'],
-  [`${UserRole.INTERPRETE}_${UserPlan.PRO}`]: ['Solicitudes ilimitadas', 'Hasta 5 colaboradores', 'Playlists ilimitadas', 'Búsqueda ilimitada', 'Acceso de por vida'],
+  [`${UserPlanType.PLAN_AUTOR}_${UserPlan.FREE}`]: ['Hasta 5 canciones'],
+  [`${UserPlanType.PLAN_AUTOR}_${UserPlan.PRO}`]: ['Canciones ilimitadas', 'Solicitudes ilimitadas recibidas'],
+  [`${UserPlanType.PLAN_360}_${UserPlan.FREE}`]: ['Hasta 5 canciones', 'Hasta 3 solicitudes', 'Hasta 2 colaboradores', 'Hasta 1 playlist', 'Búsqueda ilimitada'],
+  [`${UserPlanType.PLAN_360}_${UserPlan.PRO}`]: ['Canciones ilimitadas', 'Solicitudes ilimitadas', 'Hasta 5 colaboradores', 'Playlists ilimitadas', 'Búsqueda ilimitada'],
+  [`${UserPlanType.PLAN_DESCUBRIDOR}_${UserPlan.FREE}`]: ['Hasta 5 solicitudes', 'Hasta 2 colaboradores', 'Hasta 1 playlist', 'Búsqueda ilimitada'],
+  [`${UserPlanType.PLAN_DESCUBRIDOR}_${UserPlan.PRO}`]: ['Solicitudes ilimitadas', 'Hasta 5 colaboradores', 'Playlists ilimitadas', 'Búsqueda ilimitada', 'Acceso de por vida'],
 };
 
 @Injectable()
@@ -49,7 +49,7 @@ export class PlanService {
     const now = new Date();
     // Preferir expiresAt del pago si el usuario no tiene planExpiresAt actualizado
     const expiresAt = user.planExpiresAt ?? latestPayment?.expiresAt ?? null;
-    const isLifetime = user.plan === UserPlan.PRO && user.role === UserRole.INTERPRETE;
+    const isLifetime = user.plan === UserPlan.PRO && user.planType === UserPlanType.PLAN_DESCUBRIDOR;
     const isExpired = expiresAt ? now > expiresAt : false;
 
     // Auto-degrade if expired
@@ -64,12 +64,12 @@ export class PlanService {
       daysRemaining = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
     }
 
-    const features = PLAN_FEATURES[`${user.role}_${user.plan}`] ?? [];
-    const usage = await this.planLimitsService.getUsageForRole(user.role, user.plan, userId);
+    const features = PLAN_FEATURES[`${user.planType}_${user.plan}`] ?? [];
+    const usage = await this.planLimitsService.getUsageForPlanType(user.planType, user.plan, userId);
 
     return {
       plan: user.plan,
-      role: user.role,
+      planType: user.planType,
       startDate: latestPayment?.createdAt ?? null,
       expiresAt,
       billingPeriod: latestPayment?.billingPeriod ?? null,

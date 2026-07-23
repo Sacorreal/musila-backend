@@ -4,7 +4,7 @@ import { TracksService } from './tracks.service';
 import { Track } from './entities/track.entity';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { User } from 'src/users/entities/user.entity';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { TrackResponseDto } from './dto/track-response.dto';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 
@@ -36,7 +36,7 @@ describe('TracksService - findAllTracksService', () => {
   });
 
   it('debe filtrar por genreId y devolver estructura paginada', async () => {
-    const mockUser = { id: 'user-123', role: UserRole.INTERPRETE };
+    const mockUser = { id: 'user-123', planType: UserPlanType.PLAN_AUTOR };
     const options = { params: { genreId: 'genre-99', limit: 10, offset: 0 } };
 
     const result = await service.findAllTracksService(options as any, mockUser as any);
@@ -58,7 +58,7 @@ describe('TracksService - findAllTracksService', () => {
   });
 
   it('debe permitir al ADMIN ver tracks de otros autores', async () => {
-    const adminUser = { id: 'admin-1', role: UserRole.ADMIN };
+    const adminUser = { id: 'admin-1', planType: UserPlanType.ADMIN };
     const options = { params: { isAvailable: false } };
 
     await service.findAllTracksService(options as any, adminUser as any);

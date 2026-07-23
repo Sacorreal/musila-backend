@@ -1,9 +1,9 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/users/guards/roles.guard';
-import { Roles } from 'src/users/decorators/roles.decorator';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { PlansGuard } from 'src/users/guards/plans.guard';
+import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { AffiliatesAdminService } from './affiliates-admin.service';
 import { AffiliatePaginationDto } from './dto/affiliate-pagination.dto';
 import { CommissionPaginationDto } from './dto/commission-pagination.dto';
@@ -13,8 +13,8 @@ import { RejectCommissionDto } from './dto/reject-commission.dto';
 import { CreateAffiliateAdminDto } from './dto/create-affiliate-admin.dto';
 
 @ApiTags('Afiliados (Admin)')
-@UseGuards(JWTAuthGuard, RolesGuard)
-@Roles(UserRole.ADMIN)
+@UseGuards(JWTAuthGuard, PlansGuard)
+@AllowedPlans(UserPlanType.ADMIN)
 @Controller('affiliates/admin')
 export class AffiliatesAdminController {
   constructor(private readonly adminService: AffiliatesAdminService) {}
