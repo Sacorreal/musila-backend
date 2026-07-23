@@ -18,6 +18,7 @@ import {
 import { UserPlanType } from './user-plan-type.enum';
 import { MusicRole } from './music-role.enum';
 import { UserPlan } from './user-plan.enum';
+import { ProSociety } from './pro-society.enum';
 import { SocialNetworksData } from './social-networks.type';
 
 @Entity({ name: 'users' })
@@ -136,6 +137,15 @@ export class User {
 
   @Column('varchar', { nullable: true, name: 'fiscal_address' })
   fiscalAddress?: string;
+
+  @Column('varchar', { nullable: true, name: 'pro_society' })
+  proSociety?: ProSociety;
+
+  @Column('varchar', { nullable: true, name: 'ipi_number' })
+  ipiNumber?: string;
+
+  @Column('varchar', { nullable: true, name: 'publisher' })
+  publisher?: string;
 
   @Column('varchar', { nullable: true, name: 'reset_token', select: false })
   resetToken?: string;

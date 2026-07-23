@@ -4,6 +4,7 @@ import { CreateUserInput } from './create-user.input';
 import { ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { IsDateString, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
 import { UserPlan } from '../entities/user-plan.enum';
+import { ProSociety } from '../entities/pro-society.enum';
 
 export class UpdateUserInput extends PartialType(CreateUserInput) {
   @ApiPropertyOptional({ enum: UserPlan, description: 'Plan del usuario (Admin)' })
@@ -33,4 +34,24 @@ export class UpdateUserInput extends PartialType(CreateUserInput) {
   @IsString()
   @MaxLength(300)
   fiscalAddress?: string;
+
+  @ApiPropertyOptional({
+    enum: ProSociety,
+    description: 'Sociedad autoral o PRO a la que pertenece el usuario',
+  })
+  @IsOptional()
+  @IsEnum(ProSociety, { message: 'La sociedad autoral debe ser un valor válido de ProSociety' })
+  proSociety?: ProSociety;
+
+  @ApiPropertyOptional({ description: 'Número IPI del usuario' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  ipiNumber?: string;
+
+  @ApiPropertyOptional({ description: 'Editora musical del usuario' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  publisher?: string;
 }
