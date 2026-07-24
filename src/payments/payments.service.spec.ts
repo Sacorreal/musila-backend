@@ -14,11 +14,15 @@ import {
 import { PaymentsService } from './payments.service';
 import { PAYMENT_PROVIDER } from './domain/payment-provider.interface';
 import { ProviderTransactionStatus } from './domain/payment-provider.types';
+import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
+import { EventBusService } from 'src/shared/events/event-bus.service';
+import { OtpVerificationService } from 'src/shared/otp-verification/otp-verification.service';
 
 const makeMockRepo = (overrides: Record<string, jest.Mock> = {}) => ({
   save: jest.fn().mockResolvedValue({}),
   findOne: jest.fn().mockResolvedValue(null),
   update: jest.fn().mockResolvedValue({}),
+  delete: jest.fn().mockResolvedValue({}),
   createQueryBuilder: jest.fn(),
   ...overrides,
 });
@@ -29,6 +33,7 @@ describe('PaymentsService', () => {
   let pendingRepo: ReturnType<typeof makeMockRepo>;
   let paymentSourceRepo: ReturnType<typeof makeMockRepo>;
   let userRepo: ReturnType<typeof makeMockRepo>;
+  let requestedTrackRepo: ReturnType<typeof makeMockRepo>;
   let provider: {
     name: string;
     generateIntegritySignature: jest.Mock;
@@ -45,6 +50,7 @@ describe('PaymentsService', () => {
     pendingRepo = makeMockRepo();
     paymentSourceRepo = makeMockRepo();
     userRepo = makeMockRepo();
+    requestedTrackRepo = makeMockRepo();
     provider = {
       name: 'wompi',
       generateIntegritySignature: jest.fn().mockReturnValue('sig-abc'),
@@ -77,6 +83,15 @@ describe('PaymentsService', () => {
         { provide: getRepositoryToken(PendingRegistration), useValue: pendingRepo },
         { provide: getRepositoryToken(PaymentSource), useValue: paymentSourceRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
+        { provide: getRepositoryToken(RequestedTrack), useValue: requestedTrackRepo },
+        {
+          provide: EventBusService,
+          useValue: { emit: jest.fn(), on: jest.fn() },
+        },
+        {
+          provide: OtpVerificationService,
+          useValue: { assertAndConsumeVerification: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 

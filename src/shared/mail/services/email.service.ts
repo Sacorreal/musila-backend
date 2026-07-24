@@ -155,4 +155,15 @@ export class EmailService {
       variables: data,
     });
   }
+
+  async sendLicenseCollectionPaymentLinkEmail(
+    to: string | string[],
+    data: EmailTemplateMap['license-collection-payment-link'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'license-collection-payment-link',
+      variables: data,
+    });
+  }
 }

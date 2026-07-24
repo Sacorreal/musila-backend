@@ -7,7 +7,8 @@
     "assets": [
       {"include": "**/*.hbs", "outDir": "dist"},
       {"include": "payments/assets/**", "outDir": "dist"},
-      {"include": "shared/legal-proof/services/workers/*.js", "outDir": "dist"}
+      {"include": "shared/legal-proof/services/workers/*.js", "outDir": "dist"},
+      {"include": "license-collections/workers/*.js", "outDir": "dist"}
     ]
   }
 }

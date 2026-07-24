@@ -108,4 +108,12 @@ export interface EmailTemplateMap {
     rejectionReason: string;
     splitDetailUrl: string;
   };
+
+  'license-collection-payment-link': {
+    userName: string;
+    trackTitle: string;
+    amount: string;
+    dueDate: string;
+    paymentUrl: string;
+  };
 }

@@ -14,7 +14,7 @@ import { UserPlan } from 'src/users/entities/user-plan.enum';
 import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { LessThan, Repository } from 'typeorm';
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'crypto';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { CreateLicenseCheckoutDto } from './dto/create-license-checkout.dto';
 import { CreatePaymentSourceDto } from './dto/create-payment-source.dto';
@@ -124,7 +124,7 @@ export class PaymentsService {
    * inicializar el Widget de Wompi (incluida la firma de integridad).
    */
   async createCheckout(dto: CreateCheckoutDto) {
-    const reference = uuid();
+    const reference = randomUUID();
     const { amountInCents } = this.resolveAmount(dto.planType, dto.billingPeriod);
 
     if (amountInCents <= 0) {
@@ -205,7 +205,7 @@ export class PaymentsService {
     const licensePriceInCents = Math.round(Number(track.licensePrice) * 100);
     const commissionInCents = Math.round(licensePriceInCents * LICENSE_COMMISSION_RATE);
     const amountInCents = licensePriceInCents + commissionInCents;
-    const reference = uuid();
+    const reference = randomUUID();
 
     let signature: string;
     try {
@@ -324,7 +324,7 @@ export class PaymentsService {
       expiresAt.setDate(expiresAt.getDate() + (isAnnual ? 365 : 30));
     }
 
-    const paymentData: Partial<Payment> = {
+    const paymentData: Omit<Partial<Payment>, 'user'> = {
       provider: PaymentProviderName.WOMPI,
       wompiTransactionId: parsed.transactionId,
       userId: pending?.userId,
@@ -391,7 +391,7 @@ export class PaymentsService {
       return;
     }
 
-    const paymentData: Partial<Payment> = {
+    const paymentData: Omit<Partial<Payment>, 'user'> = {
       provider: PaymentProviderName.WOMPI,
       wompiTransactionId: parsed.transactionId,
       userId: track.requester?.id,
@@ -547,7 +547,7 @@ export class PaymentsService {
       throw new ServiceUnavailableException('Fuente de pago no encontrada');
     }
 
-    const reference = uuid();
+    const reference = randomUUID();
     const { amountInCents } = this.resolveAmount(planType, billingPeriod);
     const user = await this.userRepo.findOne({ where: { id: userId } });
 

@@ -13,6 +13,6 @@ import { RealtimeModule } from 'src/shared/realtime/realtime.module';
   imports: [TypeOrmModule.forFeature([Notification, User]), RealtimeModule],
   controllers: [NotificationsController, NotificationsAdminController],
   providers: [NotificationsService, NotificationsGateway, NotificationListener],
-  exports: [NotificationsService],
+  exports: [NotificationsService, NotificationsGateway],
 })
 export class AppNotificationsModule {}

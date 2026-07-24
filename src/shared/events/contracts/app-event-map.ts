@@ -223,4 +223,28 @@ export interface AppEventMap {
     createdByEmail: string;
   }
 
+  // 💰 GESTIÓN DE COBROS (anticipos de licencia de primer uso)
+
+  'license.collection.link.sent': {
+    collectionId: string;
+    requestedTrackId: string;
+    channel: string;
+    sentAt: Date;
+  }
+
+  'license.collection.send.exhausted': {
+    collectionId: string;
+    requestedTrackId: string;
+    trackTitle: string;
+    attempts: number;
+    lastError: string;
+  }
+
+  'license.collection.overdue': {
+    collectionId: string;
+    requestedTrackId: string;
+    trackTitle: string;
+    dueDate: Date;
+  }
+
 }
