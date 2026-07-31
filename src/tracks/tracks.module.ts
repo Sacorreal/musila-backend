@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
+import { Mood } from 'src/moods/entities/mood.entity';
+import { Theme } from 'src/themes/entities/theme.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Track } from './entities/track.entity';
 import { TracksController } from './tracks.controller';
@@ -12,7 +14,7 @@ import { TrackLegalProofListener } from './listeners/track-legal-proof.listener'
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Track, User, MusicalGenre]),
+    TypeOrmModule.forFeature([Track, User, MusicalGenre, Mood, Theme]),
     UsersModule,
     ConfigModule,
     CertificatesModule,

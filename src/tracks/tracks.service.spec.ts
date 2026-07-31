@@ -3,6 +3,8 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { TracksService } from './tracks.service';
 import { Track } from './entities/track.entity';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
+import { Mood } from 'src/moods/entities/mood.entity';
+import { Theme } from 'src/themes/entities/theme.entity';
 import { User } from 'src/users/entities/user.entity';
 import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { TrackResponseDto } from './dto/track-response.dto';
@@ -27,6 +29,8 @@ describe('TracksService - findAllTracksService', () => {
         TracksService,
         { provide: getRepositoryToken(Track), useValue: mockTrackRepository },
         { provide: getRepositoryToken(MusicalGenre), useValue: {} }, // Mocks vacíos si no se usan en este test
+        { provide: getRepositoryToken(Mood), useValue: {} },
+        { provide: getRepositoryToken(Theme), useValue: {} },
         { provide: getRepositoryToken(User), useValue: {} },
         { provide: EventBusService, useValue: { emit: jest.fn() } },
         { provide: CertificatesService, useValue: { getStatusesForTracks: jest.fn().mockResolvedValue(new Map()) } },
@@ -79,6 +83,7 @@ describe('TracksService - createTrackService', () => {
 
   const mockGenre = { id: 'genre-1', genre: 'Rock', subGenre: [] };
   const mockAuthors = [{ id: 'author-1' }];
+  const mockMoods = [{ id: 'mood-1' }];
   const savedTrack = {
     id: 'track-1',
     audioKey: 'develop/tracks/audio/file.mp3',
@@ -99,10 +104,19 @@ describe('TracksService - createTrackService', () => {
     find: jest.fn().mockResolvedValue(mockAuthors),
   };
 
+  const mockMoodsRepository = {
+    find: jest.fn().mockResolvedValue(mockMoods),
+  };
+
+  const mockThemesRepository = {
+    findOne: jest.fn().mockResolvedValue(null),
+  };
+
   const createTrackInput = {
     title: 'Nueva canción',
     genreId: 'genre-1',
     authorsIds: ['author-1'],
+    moodsIds: ['mood-1'],
     audioKey: 'develop/tracks/audio/file.mp3',
     audioUrl: 'https://cdn/file.mp3',
     language: 'Español',
@@ -116,6 +130,8 @@ describe('TracksService - createTrackService', () => {
         TracksService,
         { provide: getRepositoryToken(Track), useValue: mockTrackRepository },
         { provide: getRepositoryToken(MusicalGenre), useValue: mockGenreRepository },
+        { provide: getRepositoryToken(Mood), useValue: mockMoodsRepository },
+        { provide: getRepositoryToken(Theme), useValue: mockThemesRepository },
         { provide: getRepositoryToken(User), useValue: mockUsersRepository },
         { provide: EventBusService, useValue: { emit: jest.fn() } },
         { provide: CertificatesService, useValue: { getStatusesForTracks: jest.fn().mockResolvedValue(new Map()) } },
@@ -130,6 +146,8 @@ describe('TracksService - createTrackService', () => {
     mockTrackRepository.findOne.mockResolvedValue(savedTrack);
     mockGenreRepository.findOne.mockResolvedValue(mockGenre);
     mockUsersRepository.find.mockResolvedValue(mockAuthors);
+    mockMoodsRepository.find.mockResolvedValue(mockMoods);
+    mockThemesRepository.findOne.mockResolvedValue(null);
   });
 
   it('emite track.created con el trackId, audioKey y requestedByUserId tras guardar', async () => {

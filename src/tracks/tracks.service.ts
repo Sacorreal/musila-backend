@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
+import { Mood } from 'src/moods/entities/mood.entity';
+import { Theme } from 'src/themes/entities/theme.entity';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
@@ -21,6 +23,8 @@ import { CertificatesService } from 'src/certificates/certificates.service';
 
 const tracksRelations: string[] = [
   'genre',
+  'moods',
+  'theme',
   'intellectualProperties',
   'authors',
   'playlists',
@@ -34,6 +38,10 @@ export class TracksService {
     private readonly tracksRepository: Repository<Track>,
     @InjectRepository(MusicalGenre)
     private readonly genreRepository: Repository<MusicalGenre>,
+    @InjectRepository(Mood)
+    private readonly moodsRepository: Repository<Mood>,
+    @InjectRepository(Theme)
+    private readonly themesRepository: Repository<Theme>,
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
     private readonly eventBus: EventBusService,
     private readonly certificatesService: CertificatesService,
@@ -64,6 +72,8 @@ export class TracksService {
       genreId,
       subGenre,
       authorsIds,
+      moodsIds,
+      themeId,
       audioKey,
       audioUrl,
       coverKey,
@@ -121,6 +131,26 @@ export class TracksService {
     }
 
     // =============================
+    // 2.5️⃣ Validar moods y tema
+    // =============================
+
+    const moods = await this.moodsRepository.find({
+      where: { id: In(moodsIds) },
+    });
+
+    if (moods.length !== moodsIds.length) {
+      throw new NotFoundException('Uno o más moods no existen');
+    }
+
+    let theme: Theme | null = null;
+    if (themeId) {
+      theme = await this.themesRepository.findOne({
+        where: { id: themeId },
+      });
+      if (!theme) throw new NotFoundException('El tema no existe');
+    }
+
+    // =============================
     // 3️⃣ Validar que venga audio
     // =============================
 
@@ -152,6 +182,8 @@ export class TracksService {
       genre,
       subGenre,
       authors,
+      moods,
+      theme: theme ?? null,
       audioKey,
       audioUrl,
       externalsIds,
@@ -258,7 +290,7 @@ export class TracksService {
       if (!isAuthor) throw new ForbiddenException('No tienes permiso para editar este track');
     }
 
-    const { genreId, authorsIds, ...rest } = updateTrackInput;
+    const { genreId, authorsIds, moodsIds, themeId, ...rest } = updateTrackInput;
 
     if (rest.intellectualProperties) {
       const splitSheets = rest.intellectualProperties.filter(ip => ip.type === 'splitSheet');
@@ -287,6 +319,28 @@ export class TracksService {
       if (authors.length !== authorsIds.length)
         throw new NotFoundException('Uno o más autores no existen');
       existingTrack.authors = authors;
+    }
+
+    if (moodsIds) {
+      const moods = await this.moodsRepository.find({
+        where: { id: In(moodsIds) },
+      });
+
+      if (moods.length !== moodsIds.length)
+        throw new NotFoundException('Uno o más moods no existen');
+      existingTrack.moods = moods;
+    }
+
+    if (themeId !== undefined) {
+      if (themeId === null) {
+        existingTrack.theme = undefined;
+      } else {
+        const theme = await this.themesRepository.findOne({
+          where: { id: themeId },
+        });
+        if (!theme) throw new NotFoundException('El tema no existe');
+        existingTrack.theme = theme;
+      }
     }
 
     const updated = await this.saveAndReturnWithRelations(existingTrack);

@@ -11,6 +11,8 @@ import { LanguagesModule } from './shared/language/languages.module';
 
 import { InvitesModule } from './invites/invites.module';
 import { MusicalGenreModule } from './musical-genre/musical-genre.module';
+import { MoodsModule } from './moods/moods.module';
+import { ThemesModule } from './themes/themes.module';
 import { NotificationsModule } from './shared/notifications/notifications.module';
 import { PlaylistCollaboratorsModule } from './playlist-collaborators/playlist-collaborators.module';
 import { PlaylistsModule } from './playlists/playlists.module';
@@ -62,6 +64,8 @@ import { WalletModule } from './wallet/wallet.module';
     GuestsModule,
     RequestedTracksModule,
     MusicalGenreModule,
+    MoodsModule,
+    ThemesModule,
     IntellectualPropertyModule,
     InvitesModule,
     PlaylistCollaboratorsModule,

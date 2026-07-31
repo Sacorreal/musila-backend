@@ -1,5 +1,7 @@
 import { IntellectualProperty } from 'src/intellectual-property/entities/intellectual-property.entity';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
+import { Mood } from 'src/moods/entities/mood.entity';
+import { Theme } from 'src/themes/entities/theme.entity';
 import { Playlist } from 'src/playlists/entities/playlist.entity';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { User } from 'src/users/entities/user.entity';
@@ -77,6 +79,19 @@ export class Track {
 
   @Column('boolean', { default: false, name: 'is_gospel' })
   isGospel: boolean;
+
+  @ManyToMany(() => Mood, (mood) => mood.tracks, { nullable: false })
+  @JoinTable({ name: 'track_moods' })
+  moods: Mood[];
+
+  @ManyToOne(() => Theme, (theme) => theme.tracks, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  theme?: Theme;
+
+  @Column('boolean', { default: false, name: 'is_feat' })
+  isFeat: boolean;
 
   @OneToMany(() => RequestedTrack, (requestedTrack) => requestedTrack.track, {
     nullable: true,

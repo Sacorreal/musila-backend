@@ -2,7 +2,35 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Track } from '../entities/track.entity';
 import { ExternalId } from '../entities/external-id.entity';
 import { User } from '../../users/entities/user.entity';
+import { Mood } from '../../moods/entities/mood.entity';
+import { Theme } from '../../themes/entities/theme.entity';
 import { CertificateStatus } from '../../certificates/entities/certificate-status.enum';
+
+/** DTO ligero para serializar moods sin exponer metadata interna del catálogo */
+export class MoodTrackDto {
+  @ApiProperty() id: string;
+  @ApiProperty() name: string;
+
+  static fromEntity(mood: Mood): MoodTrackDto {
+    const dto = new MoodTrackDto();
+    dto.id = mood.id;
+    dto.name = mood.name;
+    return dto;
+  }
+}
+
+/** DTO ligero para serializar el tema sin exponer metadata interna del catálogo */
+export class ThemeTrackDto {
+  @ApiProperty() id: string;
+  @ApiProperty() name: string;
+
+  static fromEntity(theme: Theme): ThemeTrackDto {
+    const dto = new ThemeTrackDto();
+    dto.id = theme.id;
+    dto.name = theme.name;
+    return dto;
+  }
+}
 
 /** DTO ligero para serializar autores sin exponer datos sensibles */
 export class TrackAuthorDto {
@@ -69,6 +97,15 @@ export class TrackResponseDto {
   @ApiProperty()
   isGospel: boolean;
 
+  @ApiProperty({ type: [MoodTrackDto], description: 'Moods asociados al track' })
+  moods: MoodTrackDto[];
+
+  @ApiProperty({ type: ThemeTrackDto, nullable: true, description: 'Tema/uso asociado al track' })
+  theme: ThemeTrackDto | null;
+
+  @ApiProperty({ description: 'Indica si la canción está grabada a dúo/varias voces (Feat)' })
+  isFeat: boolean;
+
   @ApiProperty({ nullable: true })
   coverKey?: string;
 
@@ -113,6 +150,9 @@ export class TrackResponseDto {
     dto.iswc = track.iswc;
     dto.isAvailable = track.isAvailable;
     dto.isGospel = track.isGospel;
+    dto.moods = track.moods?.map((m) => MoodTrackDto.fromEntity(m)) ?? [];
+    dto.theme = track.theme ? ThemeTrackDto.fromEntity(track.theme) : null;
+    dto.isFeat = track.isFeat;
     dto.coverKey = track.coverKey;
     dto.authors = track.authors?.map((u) => TrackAuthorDto.fromUser(u)) ?? [];
     dto.intellectualProperties = track.intellectualProperties ?? [];

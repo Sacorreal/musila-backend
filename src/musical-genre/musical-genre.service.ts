@@ -7,7 +7,7 @@ import { UpdateMusicalGenreInput } from './dto/update-musical-genre.input';
 import { MusicalGenre } from './entities/musical-genre.entity';
 import { PaginationDto } from '../shared/dto/pagination.dto'
 
-const musicalGenreRelations: string[] = ['tracks', 'tracks.authors'];
+const musicalGenreRelations: string[] = ['tracks', 'tracks.authors', 'tracks.moods', 'tracks.theme'];
 
 @Injectable()
 export class MusicalGenreService {
