@@ -5,7 +5,7 @@ import {
   EmailTemplateMap,
   SendEmailOptions,
 } from '../interfaces/email.interface';
-import type { EmailConfig } from '../interfaces/email.interface';
+import type { EmailAttachment, EmailConfig } from '../interfaces/email.interface';
 
 @Injectable()
 export class EmailService {
@@ -20,7 +20,7 @@ export class EmailService {
     options: SendEmailOptions<T>,
   ): Promise<void> {
     try {
-      const { to, templateId, variables } = options;
+      const { to, templateId, variables, attachments } = options;
 
       await this.resend.emails.send({
         to,
@@ -28,6 +28,7 @@ export class EmailService {
           id: templateId,
           variables,
         },
+        ...(attachments?.length ? { attachments } : {}),
       } as any);
 
       this.logger.log('Email enviado 📨');
@@ -163,6 +164,85 @@ export class EmailService {
     return this.sendEmail({
       to,
       templateId: 'license-collection-payment-link',
+      variables: data,
+    });
+  }
+
+  async sendLicenseContractSignatureRequestEmail(
+    to: string | string[],
+    data: EmailTemplateMap['license-contract-signature-request'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'license-contract-signature-request',
+      variables: data,
+    });
+  }
+
+  async sendLicenseContractSignedCopyEmail(
+    to: string | string[],
+    data: EmailTemplateMap['license-contract-signed-copy'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'license-contract-signed-copy',
+      variables: data,
+    });
+  }
+
+  async sendLicenseContractRejectedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['license-contract-rejected'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'license-contract-rejected',
+      variables: data,
+    });
+  }
+
+  async sendCertificateIssuedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['track-certificate-issued'],
+    attachments: EmailAttachment[],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'track-certificate-issued',
+      variables: data,
+      attachments,
+    });
+  }
+
+  async sendCertificatePendingEmail(
+    to: string | string[],
+    data: EmailTemplateMap['track-certificate-pending'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'track-certificate-pending',
+      variables: data,
+    });
+  }
+
+  async sendCertificateCoauthorIncompleteEmail(
+    to: string | string[],
+    data: EmailTemplateMap['track-certificate-coauthor-incomplete'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'track-certificate-coauthor-incomplete',
+      variables: data,
+    });
+  }
+
+  async sendCertificateTechAlertEmail(
+    to: string | string[],
+    data: EmailTemplateMap['track-certificate-tech-alert'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'track-certificate-tech-alert',
       variables: data,
     });
   }

@@ -7,6 +7,7 @@ import { Track } from './entities/track.entity';
 import { TracksController } from './tracks.controller';
 import { TracksService } from './tracks.service';
 import { UsersModule } from 'src/users/users.module';
+import { CertificatesModule } from 'src/certificates/certificates.module';
 import { TrackLegalProofListener } from './listeners/track-legal-proof.listener';
 
 @Module({
@@ -14,6 +15,7 @@ import { TrackLegalProofListener } from './listeners/track-legal-proof.listener'
     TypeOrmModule.forFeature([Track, User, MusicalGenre]),
     UsersModule,
     ConfigModule,
+    CertificatesModule,
   ],
   controllers: [TracksController],
   providers: [TracksService, TrackLegalProofListener],

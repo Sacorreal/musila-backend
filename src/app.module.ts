@@ -35,6 +35,8 @@ import { SmsModule } from './shared/sms/sms.module';
 import { OtpVerificationModule } from './shared/otp-verification/otp-verification.module';
 import { SplitModule } from './splits/split.module';
 import { LicenseCollectionsModule } from './license-collections/license-collections.module';
+import { LicenseContractsModule } from './license-contracts/license-contracts.module';
+import { CertificatesModule } from './certificates/certificates.module';
 
 @Module({
   imports: [
@@ -74,6 +76,8 @@ import { LicenseCollectionsModule } from './license-collections/license-collecti
     PdfModule,
     SplitModule,
     LicenseCollectionsModule,
+    LicenseContractsModule,
+    CertificatesModule,
   ],
   controllers: [AppController],
   providers: [

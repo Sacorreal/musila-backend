@@ -216,4 +216,180 @@ export class NotificationListener {
       this.logger.error('Error procesando notificacion de split.completed', error);
     }
   }
+
+  @EventListener({
+    event: 'license.contract.preview.generated',
+    channel: 'in-app',
+  })
+  async handleLicenseContractPreviewGenerated(payload: AppEventMap['license.contract.preview.generated']) {
+    try {
+      for (const signatory of payload.signatories) {
+        const notification = await this.notificationsService.createNotification({
+          recipient: { id: signatory.userId } as any,
+          type: 'license.contract.preview.generated',
+          title: 'Contrato de licencia pendiente de tu firma',
+          message: `El contrato de licencia de primer uso de "${payload.trackTitle}" está listo para tu firma como ${signatory.roleLabel}.`,
+          link: `/music/solicitudes/${payload.requestedTrackId}`,
+          data: payload,
+        });
+        this.notificationsGateway.emitToUser(signatory.userId, 'notification.received', notification);
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de license.contract.preview.generated', error);
+    }
+  }
+
+  @EventListener({
+    event: 'license.contract.signatory.signed',
+    channel: 'in-app',
+  })
+  async handleLicenseContractSignatorySigned(payload: AppEventMap['license.contract.signatory.signed']) {
+    this.logger.debug(`${payload.userName} firmó el contrato de "${payload.trackTitle}" (allSigned=${payload.allSigned}).`);
+  }
+
+  @EventListener({
+    event: 'license.contract.signatory.rejected',
+    channel: 'in-app',
+  })
+  async handleLicenseContractSignatoryRejected(payload: AppEventMap['license.contract.signatory.rejected']) {
+    try {
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.ownerId } as any,
+        type: 'license.contract.signatory.rejected',
+        title: 'Rechazaron el contrato de licencia',
+        message: `${payload.userName} rechazó el contrato de "${payload.trackTitle}": ${payload.reason}`,
+        link: `/music/solicitudes`,
+        data: payload,
+      });
+      this.notificationsGateway.emitToUser(payload.ownerId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de license.contract.signatory.rejected', error);
+    }
+  }
+
+  @EventListener({
+    event: 'license.contract.signed',
+    channel: 'in-app',
+  })
+  async handleLicenseContractSigned(payload: AppEventMap['license.contract.signed']) {
+    try {
+      for (const party of payload.parties) {
+        const notification = await this.notificationsService.createNotification({
+          recipient: { id: party.userId } as any,
+          type: 'license.contract.signed',
+          title: 'Contrato de licencia firmado',
+          message: `Todas las partes firmaron el contrato de licencia de primer uso de "${payload.trackTitle}".`,
+          link: `/music/solicitudes/${payload.requestedTrackId}`,
+          data: payload,
+        });
+        this.notificationsGateway.emitToUser(party.userId, 'notification.received', notification);
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de license.contract.signed', error);
+    }
+  }
+
+  @EventListener({
+    event: 'license.contract.expiration.pending_confirmation',
+    channel: 'in-app',
+  })
+  async handleLicenseContractExpirationPending(
+    payload: AppEventMap['license.contract.expiration.pending_confirmation'],
+  ) {
+    try {
+      for (const recipient of [
+        { id: payload.ownerId },
+        { id: payload.requesterId },
+      ]) {
+        const notification = await this.notificationsService.createNotification({
+          recipient: recipient as any,
+          type: 'license.contract.expiration.pending_confirmation',
+          title: 'Venció la vigencia de una licencia',
+          message: `La vigencia de la licencia de "${payload.trackTitle}" venció sin ISRC registrado. Si ya la grabaste, confirma el ISRC; si no, el propietario puede ofrecerla a otro intérprete.`,
+          link: `/music/solicitudes/${payload.requestedTrackId}`,
+          data: payload,
+        });
+        this.notificationsGateway.emitToUser(recipient.id, 'notification.received', notification);
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de license.contract.expiration.pending_confirmation', error);
+    }
+  }
+
+  @EventListener({
+    event: 'license.contract.fulfilled',
+    channel: 'in-app',
+  })
+  async handleLicenseContractFulfilled(payload: AppEventMap['license.contract.fulfilled']) {
+    try {
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.otherPartyId } as any,
+        type: 'license.contract.fulfilled',
+        title: 'ISRC confirmado',
+        message: `Se confirmó el ISRC (${payload.isrc}) de la grabación de "${payload.trackTitle}". La licencia quedó cumplida.`,
+        link: `/music/solicitudes/${payload.requestedTrackId}`,
+        data: payload,
+      });
+      this.notificationsGateway.emitToUser(payload.otherPartyId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de license.contract.fulfilled', error);
+    }
+  }
+
+  @EventListener({
+    event: 'certificate.issued',
+    channel: 'in-app',
+  })
+  async handleCertificateIssued(payload: AppEventMap['certificate.issued']) {
+    try {
+      for (const recipient of payload.recipients) {
+        const notification = await this.notificationsService.createNotification({
+          recipient: { id: recipient.userId } as any,
+          type: 'certificate.issued',
+          title: 'Tu certificado de autoría está listo',
+          message: `El Certificado de Autoría de "${payload.trackTitle}" ya está disponible para descarga.`,
+          link: `/music`,
+          data: payload,
+        });
+        this.notificationsGateway.emitToUser(recipient.userId, 'notification.received', notification);
+      }
+
+      if (payload.incompleteRecipients.length > 0 && payload.requestedByUserId) {
+        const names = payload.incompleteRecipients.map((r) => r.name).join(', ');
+        const notification = await this.notificationsService.createNotification({
+          recipient: { id: payload.requestedByUserId } as any,
+          type: 'certificate.issued',
+          title: 'Completa los datos de tus coautores',
+          message: `No enviamos el certificado de "${payload.trackTitle}" a: ${names}. Completa sus datos de identificación para que lo reciban.`,
+          link: `/music`,
+          data: payload,
+        });
+        this.notificationsGateway.emitToUser(payload.requestedByUserId, 'notification.received', notification);
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de certificate.issued', error);
+    }
+  }
+
+  @EventListener({
+    event: 'certificate.generation.failed',
+    channel: 'in-app',
+  })
+  async handleCertificateGenerationFailed(payload: AppEventMap['certificate.generation.failed']) {
+    if (!payload.requestedByUserId) return;
+
+    try {
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.requestedByUserId } as any,
+        type: 'certificate.generation.failed',
+        title: 'Tu certificado de autoría tomará un poco más',
+        message: `Estamos reintentando generar el Certificado de Autoría de "${payload.trackTitle}". Te avisaremos cuando esté listo.`,
+        link: `/music`,
+        data: payload,
+      });
+      this.notificationsGateway.emitToUser(payload.requestedByUserId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de certificate.generation.failed', error);
+    }
+  }
 }

@@ -18,7 +18,12 @@ import { EmailService } from 'src/shared/mail/services/email.service';
 
 const DEFAULT_MAX_SEND_ATTEMPTS = 3;
 const ACTIVE_STATUSES = [CollectionStatus.PENDIENTE, CollectionStatus.ENLACE_ENVIADO];
-const collectionRelations = ['requestedTrack', 'requestedTrack.requester', 'requestedTrack.track'];
+const collectionRelations = [
+  'requestedTrack',
+  'requestedTrack.requester',
+  'requestedTrack.track',
+  'licenseContract',
+];
 
 @Injectable()
 export class LicenseCollectionsService {
@@ -268,6 +273,7 @@ export class LicenseCollectionsService {
       requestedTrackId: collection.requestedTrack.id,
       trackTitle: collection.requestedTrack.track?.title ?? 'la pista solicitada',
       dueDate: collection.dueDate,
+      licenseContractId: collection.licenseContract?.id,
     });
   }
 
@@ -283,5 +289,77 @@ export class LicenseCollectionsService {
     await this.collectionRepo.save(collection);
 
     this.logger.log(`[LicenseCollections] cobro ${collection.id} marcado como pagado`);
+  }
+
+  /**
+   * Crea las N cuotas del anticipo de un `LicenseContract` (flujo "generar en
+   * línea"), cada una como su propia fila de `license_collections` numerada
+   * secuencialmente. Se ejecuta una sola vez, cuando el contrato queda
+   * completamente firmado.
+   */
+  async createInstallments(
+    requestedTrackId: string,
+    licenseContractId: string,
+    installments: { amount: number; dueDate: Date }[],
+  ): Promise<LicenseCollection[]> {
+    return this.collectionRepo.manager.transaction(async (manager) => {
+      const rows = installments.map((installment, index) =>
+        manager.create(LicenseCollection, {
+          requestedTrack: { id: requestedTrackId } as RequestedTrack,
+          licenseContract: { id: licenseContractId } as any,
+          installmentNumber: index + 1,
+          amount: installment.amount,
+          dueDate: installment.dueDate,
+        }),
+      );
+      return manager.save(LicenseCollection, rows);
+    });
+  }
+
+  async findByPaymentReference(reference: string): Promise<LicenseCollection | null> {
+    return this.collectionRepo.findOne({
+      where: { paymentReference: reference },
+      relations: collectionRelations,
+    });
+  }
+
+  async setPaymentReference(collectionId: string, reference: string): Promise<void> {
+    await this.collectionRepo.update(collectionId, { paymentReference: reference });
+  }
+
+  /** Cuotas asociadas a un contrato, más recientes primero por número de cuota. */
+  async findByLicenseContract(licenseContractId: string): Promise<LicenseCollection[]> {
+    return this.collectionRepo.find({
+      where: { licenseContract: { id: licenseContractId } },
+      order: { installmentNumber: 'ASC' },
+      relations: collectionRelations,
+    });
+  }
+
+  /**
+   * Marca una cuota puntual como pagada. Si todas las cuotas del contrato
+   * asociado quedan pagadas, emite `license.contract.fully_paid` para que el
+   * módulo de contratos actualice el estado de pago general.
+   */
+  async markCollectionPaid(collectionId: string): Promise<void> {
+    const collection = await this.findWithRelations(collectionId);
+    collection.status = CollectionStatus.PAGADO;
+    collection.paidAt = new Date();
+    await this.collectionRepo.save(collection);
+
+    this.logger.log(`[LicenseCollections] cuota ${collection.id} marcada como pagada`);
+
+    if (!collection.licenseContract) return;
+
+    const siblings = await this.collectionRepo.find({
+      where: { licenseContract: { id: collection.licenseContract.id } },
+    });
+    const allPaid = siblings.every((row) => row.status === CollectionStatus.PAGADO);
+    if (!allPaid) return;
+
+    this.eventBus.emit('license.contract.fully_paid', {
+      licenseContractId: collection.licenseContract.id,
+      requestedTrackId: collection.requestedTrack.id,
+    });
   }
 }

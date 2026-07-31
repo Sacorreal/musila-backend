@@ -9,6 +9,12 @@ export interface EmailConfig {
 
 
 
+export interface EmailAttachment {
+  filename: string;
+  /** Contenido en base64. */
+  content: string;
+}
+
 export interface SendEmailOptions<
   T extends keyof EmailTemplateMap = keyof EmailTemplateMap,
 > {
@@ -16,6 +22,7 @@ export interface SendEmailOptions<
   subject?: string;
   templateId: T;
   variables: EmailTemplateMap[T];
+  attachments?: EmailAttachment[];
 }
 
 
@@ -115,5 +122,51 @@ export interface EmailTemplateMap {
     amount: string;
     dueDate: string;
     paymentUrl: string;
+  };
+
+  'license-contract-signature-request': {
+    signerName: string;
+    trackTitle: string;
+    roleLabel: string;
+    signUrl: string;
+  };
+
+  'license-contract-signed-copy': {
+    recipientName: string;
+    trackTitle: string;
+    documentUrl: string;
+  };
+
+  'license-contract-rejected': {
+    ownerName: string;
+    trackTitle: string;
+    rejectedByName: string;
+    reason: string;
+    contractUrl: string;
+  };
+
+  'track-certificate-issued': {
+    recipientName: string;
+    trackTitle: string;
+    registryNumber: string;
+    certificateUrl: string;
+  };
+
+  'track-certificate-pending': {
+    userName: string;
+    trackTitle: string;
+  };
+
+  'track-certificate-coauthor-incomplete': {
+    userName: string;
+    trackTitle: string;
+    incompleteCoauthorNames: string;
+  };
+
+  'track-certificate-tech-alert': {
+    trackId: string;
+    trackTitle: string;
+    attempts: number;
+    lastError: string;
   };
 }

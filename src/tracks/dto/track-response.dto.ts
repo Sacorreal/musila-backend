@@ -2,6 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Track } from '../entities/track.entity';
 import { ExternalId } from '../entities/external-id.entity';
 import { User } from '../../users/entities/user.entity';
+import { CertificateStatus } from '../../certificates/entities/certificate-status.enum';
 
 /** DTO ligero para serializar autores sin exponer datos sensibles */
 export class TrackAuthorDto {
@@ -89,11 +90,14 @@ export class TrackResponseDto {
   @ApiProperty()
   updatedAt: Date;
 
+  @ApiProperty({ enum: CertificateStatus, nullable: true, description: 'Estado del Certificado de Autoría, si ya existe' })
+  certificateStatus?: CertificateStatus | null;
+
   /**
    * Transforma una entidad Track en TrackResponseDto,
    * incluyendo todas las relaciones cargadas.
    */
-  static fromEntity(track: Track): TrackResponseDto {
+  static fromEntity(track: Track, certificateStatus?: CertificateStatus | null): TrackResponseDto {
     const dto = new TrackResponseDto();
     dto.id = track.id;
     dto.title = track.title;
@@ -116,6 +120,7 @@ export class TrackResponseDto {
     dto.requestedTrack = (track.requestedTrack ?? []) as unknown[];
     dto.createdAt = track.createdAt;
     dto.updatedAt = track.updatedAt;
+    dto.certificateStatus = certificateStatus ?? null;
     return dto;
   }
 }

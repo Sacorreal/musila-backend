@@ -26,17 +26,34 @@ export class PdfInputValidatorService {
       errors.push({ field: 'documentTitle', reason: 'documentTitle es obligatorio' });
     }
 
-    if (!input.body) {
-      errors.push({ field: 'body', reason: 'body es obligatorio' });
+    const isMultiBlock = Array.isArray(input.body);
+    const blocks: PdfBodyContent[] = Array.isArray(input.body) ? input.body : input.body ? [input.body] : [];
+    if (!blocks.length) {
+      errors.push({ field: 'body', reason: 'body es obligatorio y no puede ser un array vacío' });
     } else {
-      errors.push(...this.validateBody(input.body));
+      blocks.forEach((block, index) => {
+        const blockErrors = this.validateBody(block);
+        errors.push(...(isMultiBlock ? blockErrors.map((e) => ({ ...e, field: `body[${index}].${e.field}` })) : blockErrors));
+      });
+    }
+
+    if (input.footer) {
+      if (!input.footer.legalText?.trim()) {
+        errors.push({ field: 'footer.legalText', reason: 'legalText es obligatorio cuando se define footer' });
+      }
+      if (!input.footer.registryLabel?.trim()) {
+        errors.push({ field: 'footer.registryLabel', reason: 'registryLabel es obligatorio cuando se define footer' });
+      }
+      if (!input.footer.registryCode?.trim()) {
+        errors.push({ field: 'footer.registryCode', reason: 'registryCode es obligatorio cuando se define footer' });
+      }
     }
 
     if (errors.length > 0) {
       throw new PdfValidationException(errors);
     }
 
-    this.logger.log(`Input de PDF validado: tipo=${input.body.type}, timestamp=${new Date().toISOString()}`);
+    this.logger.log(`Input de PDF validado: bloques=${blocks.length}, timestamp=${new Date().toISOString()}`);
   }
 
   private validateBody(body: PdfBodyContent): PdfInvalidField[] {

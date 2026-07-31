@@ -8,4 +8,5 @@ export const OTP_PURPOSE_LABELS: Record<OtpPurpose, string> = {
   [OtpPurpose.REQUESTED_TRACK_APPROVAL]: 'aprobar la solicitud de licencia',
   [OtpPurpose.LICENSE_SIGNING]: 'firmar y pagar la licencia',
   [OtpPurpose.SPLIT_SIGNING]: 'firmar el split de coautoría',
+  [OtpPurpose.LICENSE_CONTRACT_SIGNING]: 'firmar el contrato de licencia de primer uso',
 };

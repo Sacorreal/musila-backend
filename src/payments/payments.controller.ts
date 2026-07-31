@@ -19,6 +19,7 @@ import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { CreateLicenseCheckoutDto } from './dto/create-license-checkout.dto';
+import { CreateLicenseInstallmentCheckoutDto } from './dto/create-license-installment-checkout.dto';
 import { CreatePaymentSourceDto } from './dto/create-payment-source.dto';
 import { PaymentsService } from './payments.service';
 import { ReceiptService } from './receipt.service';
@@ -52,6 +53,20 @@ export class PaymentsController {
   async createLicenseCheckout(@Body() dto: CreateLicenseCheckoutDto, @Req() req: Request) {
     const user = req['user'] as JwtPayload;
     return this.paymentsService.createLicenseCheckout(dto, user.id);
+  }
+
+  @Post('license-installment-checkout')
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Iniciar pago de una cuota de anticipo de un contrato de licencia de primer uso' })
+  @ApiResponse({ status: 201, description: 'Parámetros del Widget de Wompi para el pago de la cuota' })
+  @ApiResponse({ status: 400, description: 'Cuota inválida, ya pagada o no pertenece al usuario' })
+  async createLicenseInstallmentCheckout(
+    @Body() dto: CreateLicenseInstallmentCheckoutDto,
+    @Req() req: Request,
+  ) {
+    const user = req['user'] as JwtPayload;
+    return this.paymentsService.createLicenseInstallmentCheckout(dto, user.id);
   }
 
   @Get('license-status/:reference')

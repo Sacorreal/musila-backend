@@ -13,6 +13,8 @@ import { User } from 'src/users/entities/user.entity';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { SplitAuthor } from 'src/splits/entities/split-author.entity';
 import { SplitAuthorStatus } from 'src/splits/entities/split-author-status.enum';
+import { LicenseContractSignatory } from 'src/license-contracts/entities/license-contract-signatory.entity';
+import { LicenseSignatoryStatus } from 'src/license-contracts/entities/license-signatory-status.enum';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { EmailService } from 'src/shared/mail/services/email.service';
 import { OtpService } from 'src/shared/otp/otp.service';
@@ -38,6 +40,8 @@ export class OtpVerificationService {
     private readonly requestedTrackRepo: Repository<RequestedTrack>,
     @InjectRepository(SplitAuthor)
     private readonly splitAuthorRepo: Repository<SplitAuthor>,
+    @InjectRepository(LicenseContractSignatory)
+    private readonly licenseContractSignatoryRepo: Repository<LicenseContractSignatory>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     @Inject(SMS_PROVIDER)
@@ -170,6 +174,8 @@ export class OtpVerificationService {
         return 'requested_track';
       case OtpPurpose.SPLIT_SIGNING:
         return 'split_author';
+      case OtpPurpose.LICENSE_CONTRACT_SIGNING:
+        return 'license_contract_signatory';
       default:
         throw new BadRequestException('Propósito OTP no soportado');
     }
@@ -209,6 +215,20 @@ export class OtpVerificationService {
           throw new ForbiddenException('Tu participación en este split ya fue procesada');
         }
         return 'split_author';
+      }
+      case OtpPurpose.LICENSE_CONTRACT_SIGNING: {
+        const signatory = await this.licenseContractSignatoryRepo.findOne({
+          where: { id: entityId },
+          relations: ['user'],
+        });
+        if (!signatory) throw new NotFoundException('El firmante no existe');
+        if (signatory.user.id !== userId) {
+          throw new ForbiddenException('No tienes permisos sobre esta firma');
+        }
+        if (signatory.status !== LicenseSignatoryStatus.PENDING) {
+          throw new ForbiddenException('Tu firma en este contrato ya fue procesada');
+        }
+        return 'license_contract_signatory';
       }
       default:
         throw new BadRequestException('Propósito OTP no soportado');

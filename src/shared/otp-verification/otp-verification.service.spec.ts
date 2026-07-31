@@ -14,6 +14,7 @@ describe('OtpVerificationService', () => {
   let otpVerificationRepo: { save: jest.Mock; create: jest.Mock; findOne: jest.Mock; createQueryBuilder: jest.Mock };
   let requestedTrackRepo: { findOne: jest.Mock };
   let splitAuthorRepo: { findOne: jest.Mock };
+  let licenseContractSignatoryRepo: { findOne: jest.Mock };
   let userRepo: { findOne: jest.Mock };
   let smsProvider: { sendSms: jest.Mock };
   let emailService: { sendOtpCodeEmail: jest.Mock };
@@ -38,6 +39,7 @@ describe('OtpVerificationService', () => {
     };
     requestedTrackRepo = { findOne: jest.fn() };
     splitAuthorRepo = { findOne: jest.fn() };
+    licenseContractSignatoryRepo = { findOne: jest.fn() };
     userRepo = { findOne: jest.fn().mockResolvedValue({ id: userId, email: 'owner@musila.com', phone: '3000000000' }) };
     smsProvider = { sendSms: jest.fn().mockResolvedValue(undefined) };
     emailService = { sendOtpCodeEmail: jest.fn().mockResolvedValue(undefined) };
@@ -47,6 +49,7 @@ describe('OtpVerificationService', () => {
       otpVerificationRepo as any,
       requestedTrackRepo as any,
       splitAuthorRepo as any,
+      licenseContractSignatoryRepo as any,
       userRepo as any,
       smsProvider as any,
       new OtpService(),
@@ -95,6 +98,50 @@ describe('OtpVerificationService', () => {
       expect(result.channel).toBe(OtpChannel.PUSH);
       expect(eventBus.emit).toHaveBeenCalledWith('otp.code.issued', expect.objectContaining({ userId }));
       expect(emailService.sendOtpCodeEmail).not.toHaveBeenCalled();
+    });
+
+    it('LICENSE_CONTRACT_SIGNING: rechaza si el firmante no existe', async () => {
+      licenseContractSignatoryRepo.findOne.mockResolvedValue(null);
+
+      await expect(
+        service.requestOtp(userId, OtpPurpose.LICENSE_CONTRACT_SIGNING, 'signatory-1', 'web'),
+      ).rejects.toThrow(NotFoundException);
+    });
+
+    it('LICENSE_CONTRACT_SIGNING: rechaza si el usuario no es el firmante', async () => {
+      licenseContractSignatoryRepo.findOne.mockResolvedValue({
+        user: { id: 'otro-usuario' },
+        status: 'pending',
+      });
+
+      await expect(
+        service.requestOtp(userId, OtpPurpose.LICENSE_CONTRACT_SIGNING, 'signatory-1', 'web'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('LICENSE_CONTRACT_SIGNING: rechaza si la firma ya fue procesada', async () => {
+      licenseContractSignatoryRepo.findOne.mockResolvedValue({
+        user: { id: userId },
+        status: 'signed',
+      });
+
+      await expect(
+        service.requestOtp(userId, OtpPurpose.LICENSE_CONTRACT_SIGNING, 'signatory-1', 'web'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('LICENSE_CONTRACT_SIGNING: envía el código cuando el firmante es válido y está pendiente', async () => {
+      licenseContractSignatoryRepo.findOne.mockResolvedValue({
+        user: { id: userId },
+        status: 'pending',
+      });
+
+      const result = await service.requestOtp(userId, OtpPurpose.LICENSE_CONTRACT_SIGNING, 'signatory-1', 'web');
+
+      expect(result.channel).toBe(OtpChannel.EMAIL);
+      expect(otpVerificationRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ entityType: 'license_contract_signatory' }),
+      );
     });
   });
 

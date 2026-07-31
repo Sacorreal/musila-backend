@@ -17,6 +17,7 @@ import { TrackResponseDto, PaginatedTracksResponseDto } from './dto/track-respon
 import { FindAllTracksOptions } from './interface/tracks-options.interface';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
 import { EventBusService } from 'src/shared/events/event-bus.service';
+import { CertificatesService } from 'src/certificates/certificates.service';
 
 const tracksRelations: string[] = [
   'genre',
@@ -35,6 +36,7 @@ export class TracksService {
     private readonly genreRepository: Repository<MusicalGenre>,
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
     private readonly eventBus: EventBusService,
+    private readonly certificatesService: CertificatesService,
 
   ) { }
 
@@ -179,8 +181,11 @@ export class TracksService {
       skip: offset,
       order: { createdAt: 'DESC' },
     });
+
+    const certificateStatuses = await this.certificatesService.getStatusesForTracks(tracks.map((t) => t.id));
+
     return {
-      data: tracks.map((t) => TrackResponseDto.fromEntity(t)),
+      data: tracks.map((t) => TrackResponseDto.fromEntity(t, certificateStatuses.get(t.id))),
       total,
     };
   }

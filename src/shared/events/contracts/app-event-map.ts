@@ -245,6 +245,103 @@ export interface AppEventMap {
     requestedTrackId: string;
     trackTitle: string;
     dueDate: Date;
+    licenseContractId?: string;
+  }
+
+  // 📜 CONTRATO DE LICENCIA DE PRIMER USO (generado en línea)
+
+  'license.contract.terms.saved': {
+    contractId: string;
+    requestedTrackId: string;
+    ownerId: string;
+    trackTitle: string;
+  }
+
+  'license.contract.preview.generated': {
+    contractId: string;
+    requestedTrackId: string;
+    trackTitle: string;
+    signatories: { userId: string; name: string; email: string; roleLabel: string }[];
+  }
+
+  'license.contract.signatory.signed': {
+    contractId: string;
+    signatoryId: string;
+    userId: string;
+    userName: string;
+    roleLabel: string;
+    trackTitle: string;
+    allSigned: boolean;
+  }
+
+  'license.contract.signatory.rejected': {
+    contractId: string;
+    signatoryId: string;
+    userId: string;
+    userName: string;
+    reason: string;
+    trackTitle: string;
+    ownerId: string;
+    ownerEmail: string;
+    ownerName: string;
+  }
+
+  'license.contract.signed': {
+    contractId: string;
+    requestedTrackId: string;
+    trackTitle: string;
+    documentUrl: string;
+    parties: { userId: string; name: string; email: string }[];
+  }
+
+  'license.contract.fully_paid': {
+    licenseContractId: string;
+    requestedTrackId: string;
+  }
+
+  'license.contract.expiration.pending_confirmation': {
+    contractId: string;
+    requestedTrackId: string;
+    trackTitle: string;
+    ownerId: string;
+    ownerEmail: string;
+    ownerName: string;
+    requesterId: string;
+    requesterEmail: string;
+    requesterName: string;
+  }
+
+  'license.contract.fulfilled': {
+    contractId: string;
+    requestedTrackId: string;
+    trackTitle: string;
+    confirmedByUserId: string;
+    otherPartyId: string;
+    otherPartyEmail: string;
+    otherPartyName: string;
+    isrc: string;
+  }
+
+  // 📄 CERTIFICADO DE AUTORÍA
+
+  'certificate.issued': {
+    certificateId: string;
+    trackId: string;
+    trackTitle: string;
+    registryNumber: string;
+    recipients: { userId: string; name: string; email: string }[];
+    incompleteRecipients: { userId: string; name: string }[];
+    requestedByUserId?: string;
+    requestedByUserEmail?: string;
+  }
+
+  'certificate.generation.failed': {
+    trackId: string;
+    trackTitle: string;
+    requestedByUserId?: string;
+    primaryUserEmail?: string;
+    attempts: number;
+    lastError: string;
   }
 
 }

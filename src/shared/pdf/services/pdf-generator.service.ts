@@ -30,12 +30,14 @@ export class PdfGeneratorService {
     this.validator.validate(input);
     const headerConfig = this.configService.getHeaderConfig();
 
-    this.logger.log(`Generando PDF "${input.documentTitle}" (tipo=${input.body.type})`);
+    const bodyTypes = Array.isArray(input.body) ? input.body.map((b) => b.type).join(',') : input.body.type;
+    this.logger.log(`Generando PDF "${input.documentTitle}" (tipo=${bodyTypes})`);
 
     const element = React.createElement(PdfDocumentTemplate, {
       headerConfig,
       documentTitle: input.documentTitle,
       body: input.body,
+      footer: input.footer,
       metadata: input.metadata,
     });
 

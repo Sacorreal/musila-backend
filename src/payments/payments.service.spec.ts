@@ -17,6 +17,7 @@ import { ProviderTransactionStatus } from './domain/payment-provider.types';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { OtpVerificationService } from 'src/shared/otp-verification/otp-verification.service';
+import { LicenseCollectionsService } from 'src/license-collections/license-collections.service';
 
 const makeMockRepo = (overrides: Record<string, jest.Mock> = {}) => ({
   save: jest.fn().mockResolvedValue({}),
@@ -91,6 +92,15 @@ describe('PaymentsService', () => {
         {
           provide: OtpVerificationService,
           useValue: { assertAndConsumeVerification: jest.fn().mockResolvedValue(undefined) },
+        },
+        {
+          provide: LicenseCollectionsService,
+          useValue: {
+            findOne: jest.fn(),
+            findByPaymentReference: jest.fn().mockResolvedValue(null),
+            setPaymentReference: jest.fn().mockResolvedValue(undefined),
+            markCollectionPaid: jest.fn().mockResolvedValue(undefined),
+          },
         },
       ],
     }).compile();

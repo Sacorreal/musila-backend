@@ -9,6 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
+import { LicenseContract } from 'src/license-contracts/entities/license-contract.entity';
 import { CollectionStatus } from './collection-status.enum';
 import { CollectionChannel } from './collection-channel.enum';
 
@@ -20,6 +21,17 @@ export class LicenseCollection {
   @ManyToOne(() => RequestedTrack, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'requested_track_id' })
   requestedTrack: RequestedTrack;
+
+  /** Solo presente para cuotas generadas desde un LicenseContract (flujo "generar en línea"). */
+  @ManyToOne(() => LicenseContract, { onDelete: 'CASCADE', nullable: true })
+  @JoinColumn({ name: 'license_contract_id' })
+  licenseContract: LicenseContract | null;
+
+  @Column({ type: 'int', name: 'installment_number', default: 1 })
+  installmentNumber: number;
+
+  @Column({ type: 'varchar', name: 'payment_reference', nullable: true })
+  paymentReference: string | null;
 
   @Column({ type: 'numeric', precision: 12, scale: 2 })
   amount: number;
