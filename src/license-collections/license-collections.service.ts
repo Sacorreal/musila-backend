@@ -349,6 +349,15 @@ export class LicenseCollectionsService {
 
     this.logger.log(`[LicenseCollections] cuota ${collection.id} marcada como pagada`);
 
+    this.eventBus.emit('license.collection.installment.paid', {
+      collectionId: collection.id,
+      requestedTrackId: collection.requestedTrack.id,
+      licenseContractId: collection.licenseContract?.id ?? null,
+      installmentNumber: collection.installmentNumber,
+      amount: Number(collection.amount),
+      paidAt: collection.paidAt,
+    });
+
     if (!collection.licenseContract) return;
 
     const siblings = await this.collectionRepo.find({

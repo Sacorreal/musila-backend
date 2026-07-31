@@ -14,6 +14,7 @@ import { UpdateMeDto } from './dto/update-me.dto';
 import { ChangeEmailDto } from './dto/change-email.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateBillingDto } from './dto/update-billing.dto';
+import { BankAccountInput } from './dto/bank-account.input';
 
 @Injectable()
 export class MeService {
@@ -76,6 +77,20 @@ export class MeService {
   async updateBilling(userId: string, dto: UpdateBillingDto) {
     await this.userRepo.update(userId, dto);
     return this.getBilling(userId);
+  }
+
+  async getBankAccount(userId: string) {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      select: ['id', 'bankAccount'],
+    });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    return user.bankAccount ?? null;
+  }
+
+  async updateBankAccount(userId: string, dto: BankAccountInput) {
+    await this.userRepo.update(userId, { bankAccount: dto });
+    return this.getBankAccount(userId);
   }
 
   private sanitize(user: User) {

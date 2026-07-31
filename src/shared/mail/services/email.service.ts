@@ -246,4 +246,37 @@ export class EmailService {
       variables: data,
     });
   }
+
+  async sendWalletWithdrawalRequestedAdminEmail(
+    to: string | string[],
+    data: EmailTemplateMap['wallet-withdrawal-requested-admin'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'wallet-withdrawal-requested-admin',
+      variables: data,
+    });
+  }
+
+  async sendWalletWithdrawalPaidEmail(
+    to: string | string[],
+    data: EmailTemplateMap['wallet-withdrawal-paid'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'wallet-withdrawal-paid',
+      variables: data,
+    });
+  }
+
+  async sendWalletWithdrawalRejectedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['wallet-withdrawal-rejected'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'wallet-withdrawal-rejected',
+      variables: data,
+    });
+  }
 }

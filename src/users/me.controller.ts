@@ -17,6 +17,7 @@ import { ChangeEmailDto } from './dto/change-email.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateBillingDto } from './dto/update-billing.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
+import { BankAccountInput } from './dto/bank-account.input';
 import { MeService } from './me.service';
 import { PlanService } from './plan.service';
 
@@ -95,6 +96,20 @@ export class MeController {
   @ApiOperation({ summary: 'Actualizar datos de facturación' })
   updateBilling(@Req() req: Request, @Body() dto: UpdateBillingDto) {
     return this.meService.updateBilling(this.uid(req), dto);
+  }
+
+  // ── Datos bancarios (placeholder para retiros de Wallet) ─
+
+  @Get('bank-account')
+  @ApiOperation({ summary: 'Obtener datos bancarios guardados' })
+  getBankAccount(@Req() req: Request) {
+    return this.meService.getBankAccount(this.uid(req));
+  }
+
+  @Patch('bank-account')
+  @ApiOperation({ summary: 'Guardar/actualizar datos bancarios' })
+  updateBankAccount(@Req() req: Request, @Body() dto: BankAccountInput) {
+    return this.meService.updateBankAccount(this.uid(req), dto);
   }
 
   // ── Historial de pagos ──────────────────────────────────

@@ -344,4 +344,44 @@ export interface AppEventMap {
     lastError: string;
   }
 
+  // 💰 WALLET
+
+  'license.collection.installment.paid': {
+    collectionId: string;
+    requestedTrackId: string;
+    licenseContractId: string | null;
+    installmentNumber: number;
+    amount: number;
+    paidAt: Date;
+  }
+
+  'wallet.withdrawal.requested': {
+    withdrawalId: string;
+    userId: string;
+    userName: string;
+    userEmail: string;
+    amount: number;
+    currency: string;
+    requestedAt: Date;
+  }
+
+  'wallet.withdrawal.paid': {
+    withdrawalId: string;
+    userId: string;
+    userEmail: string;
+    userName: string;
+    amount: number;
+    paidAt: Date;
+  }
+
+  'wallet.withdrawal.rejected': {
+    withdrawalId: string;
+    userId: string;
+    userEmail: string;
+    userName: string;
+    amount: number;
+    reason: string;
+    rejectedAt: Date;
+  }
+
 }

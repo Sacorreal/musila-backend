@@ -37,6 +37,7 @@ import { SplitModule } from './splits/split.module';
 import { LicenseCollectionsModule } from './license-collections/license-collections.module';
 import { LicenseContractsModule } from './license-contracts/license-contracts.module';
 import { CertificatesModule } from './certificates/certificates.module';
+import { WalletModule } from './wallet/wallet.module';
 
 @Module({
   imports: [
@@ -78,6 +79,7 @@ import { CertificatesModule } from './certificates/certificates.module';
     LicenseCollectionsModule,
     LicenseContractsModule,
     CertificatesModule,
+    WalletModule,
   ],
   controllers: [AppController],
   providers: [

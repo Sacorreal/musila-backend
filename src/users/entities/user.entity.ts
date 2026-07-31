@@ -21,6 +21,15 @@ import { UserPlan } from './user-plan.enum';
 import { ProSociety } from './pro-society.enum';
 import { SocialNetworksData } from './social-networks.type';
 
+export interface UserBankAccount {
+  bankName: string;
+  accountType: string;
+  accountNumber: string;
+  accountHolderName: string;
+  accountHolderIdType: string;
+  accountHolderIdNumber: string;
+}
+
 @Entity({ name: 'users' })
 export class User {
   @PrimaryGeneratedColumn('uuid')
@@ -84,6 +93,9 @@ export class User {
 
   @Column('jsonb', { name: 'social_networks', nullable: true })
   socialNetworks?: SocialNetworksData;
+
+  @Column('jsonb', { name: 'bank_account', nullable: true })
+  bankAccount?: UserBankAccount;
 
   @ManyToMany(() => Track, (track) => track.authors, { nullable: true })
   tracks?: Track[];

@@ -169,4 +169,26 @@ export interface EmailTemplateMap {
     attempts: number;
     lastError: string;
   };
+
+  'wallet-withdrawal-requested-admin': {
+    adminName: string;
+    userName: string;
+    userEmail: string;
+    amount: string;
+    withdrawalUrl: string;
+  };
+
+  'wallet-withdrawal-paid': {
+    userName: string;
+    amount: string;
+    paidAt: string;
+    accountUrl: string;
+  };
+
+  'wallet-withdrawal-rejected': {
+    userName: string;
+    amount: string;
+    reason: string;
+    accountUrl: string;
+  };
 }
