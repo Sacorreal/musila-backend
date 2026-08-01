@@ -141,6 +141,8 @@ export interface AppEventMap {
     trackId: string;
     audioKey: string;
     requestedByUserId?: string;
+    trackTitle: string;
+    authorIds: string[];
   }
 
   // 💳 PAGOS / SUSCRIPCIONES

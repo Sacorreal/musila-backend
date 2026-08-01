@@ -86,8 +86,10 @@ describe('TracksService - createTrackService', () => {
   const mockMoods = [{ id: 'mood-1' }];
   const savedTrack = {
     id: 'track-1',
+    title: 'Track Title',
     audioKey: 'develop/tracks/audio/file.mp3',
     audioUrl: 'https://cdn/file.mp3',
+    authors: mockAuthors,
   };
 
   const mockTrackRepository = {
@@ -157,6 +159,8 @@ describe('TracksService - createTrackService', () => {
       trackId: savedTrack.id,
       audioKey: savedTrack.audioKey,
       requestedByUserId: 'requester-1',
+      trackTitle: savedTrack.title,
+      authorIds: mockAuthors.map((author) => author.id),
     });
   });
 
@@ -167,6 +171,8 @@ describe('TracksService - createTrackService', () => {
       trackId: savedTrack.id,
       audioKey: savedTrack.audioKey,
       requestedByUserId: undefined,
+      trackTitle: savedTrack.title,
+      authorIds: mockAuthors.map((author) => author.id),
     });
   });
 });

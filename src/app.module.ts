@@ -40,6 +40,7 @@ import { LicenseCollectionsModule } from './license-collections/license-collecti
 import { LicenseContractsModule } from './license-contracts/license-contracts.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { WalletModule } from './wallet/wallet.module';
+import { FollowsModule } from './follows/follows.module';
 
 @Module({
   imports: [
@@ -84,6 +85,7 @@ import { WalletModule } from './wallet/wallet.module';
     LicenseContractsModule,
     CertificatesModule,
     WalletModule,
+    FollowsModule,
   ],
   controllers: [AppController],
   providers: [

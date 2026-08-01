@@ -198,6 +198,8 @@ export class TracksService {
       trackId: saved.id,
       audioKey: saved.audioKey,
       requestedByUserId,
+      trackTitle: saved.title,
+      authorIds: saved.authors.map((author) => author.id),
     });
 
     return TrackResponseDto.fromEntity(saved);

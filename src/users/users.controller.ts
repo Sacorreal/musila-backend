@@ -166,8 +166,11 @@ export class UsersController {
   @ApiBearerAuth('JWT-auth')
   @ApiParam({ name: 'id', description: 'UUID del usuario' })
   @ApiOperation({ summary: 'Obtener un usuario por ID' })
-  async findUserByIdController(@Param('id', ParseUUIDPipe) id: string) {
-    return await this.usersService.findOneUserByIdService(id);
+  async findUserByIdController(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return await this.usersService.findOneUserByIdService(id, user.id);
   }
 
   @AllowedPlans(UserPlanType.ADMIN)

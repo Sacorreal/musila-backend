@@ -160,7 +160,7 @@ export class LicenseContractsService {
         if (this.roundCurrency(distributionSum) !== 100) {
           throw new BadRequestException('La distribución del anticipo debe sumar exactamente 100%');
         }
-        const splitUserIds = new Set(split!.authors.map((author) => author.user.id));
+        const splitUserIds = new Set(split.authors.map((author) => author.user.id));
         const distributionUserIds = new Set(dto.advanceDistribution.map((entry) => entry.userId));
         const allAreAuthors = dto.advanceDistribution.every((entry) => splitUserIds.has(entry.userId));
         if (!allAreAuthors || distributionUserIds.size !== dto.advanceDistribution.length) {
@@ -743,7 +743,7 @@ export class LicenseContractsService {
       contractId: contract.id,
       requestedTrackId: contract.requestedTrack.id,
       trackTitle: track.title,
-      documentUrl: contract.documentUrl as string,
+      documentUrl: contract.documentUrl,
       parties: Array.from(uniqueParties.values()).map((user) => ({
         userId: user.id,
         name: `${user.name} ${user.lastName}`.trim(),

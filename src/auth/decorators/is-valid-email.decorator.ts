@@ -34,7 +34,7 @@ export class IsValidEmailConstraint implements ValidatorConstraintInterface {
 }
 
 export function IsValidEmail(validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       target: object.constructor,
       propertyName: propertyName,

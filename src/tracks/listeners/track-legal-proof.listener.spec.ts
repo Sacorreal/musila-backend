@@ -55,6 +55,8 @@ describe('TrackLegalProofListener', () => {
       trackId: 'track-1',
       audioKey: 'develop/tracks/audio/cancion.mp3',
       requestedByUserId: 'user-1',
+      trackTitle: 'Canción',
+      authorIds: ['user-1'],
     });
 
     expect(storageService.downloadObjectToTempFile).toHaveBeenCalledWith(
@@ -93,7 +95,7 @@ describe('TrackLegalProofListener', () => {
     legalProofService.generateProof.mockRejectedValue(new Error('boom'));
 
     await expect(
-      listener.handleTrackCreated({ trackId: 'track-2', audioKey: 'k.mp3' }),
+      listener.handleTrackCreated({ trackId: 'track-2', audioKey: 'k.mp3', trackTitle: 'Track', authorIds: [] }),
     ).resolves.toBeUndefined();
 
     await expect(fs.access(tempFilePath)).rejects.toThrow();
@@ -103,7 +105,7 @@ describe('TrackLegalProofListener', () => {
     storageService.downloadObjectToTempFile.mockRejectedValue(new Error('S3 down'));
 
     await expect(
-      listener.handleTrackCreated({ trackId: 'track-3', audioKey: 'k.mp3' }),
+      listener.handleTrackCreated({ trackId: 'track-3', audioKey: 'k.mp3', trackTitle: 'Track', authorIds: [] }),
     ).resolves.toBeUndefined();
 
     expect(legalProofService.generateProof).not.toHaveBeenCalled();
@@ -151,8 +153,8 @@ describe('TrackLegalProofListener', () => {
     jest.spyOn(limitedListener as any, 'extractAudioMetadata').mockResolvedValue({});
 
     try {
-      const runA = limitedListener.handleTrackCreated({ trackId: 'a', audioKey: 'a.mp3' });
-      const runB = limitedListener.handleTrackCreated({ trackId: 'b', audioKey: 'b.mp3' });
+      const runA = limitedListener.handleTrackCreated({ trackId: 'a', audioKey: 'a.mp3', trackTitle: 'Track A', authorIds: [] });
+      const runB = limitedListener.handleTrackCreated({ trackId: 'b', audioKey: 'b.mp3', trackTitle: 'Track B', authorIds: [] });
 
       // Deja avanzar el event loop: B no debería haber llegado a generateProof todavía,
       // porque el límite es 1 y A sigue bloqueado en firstGate.

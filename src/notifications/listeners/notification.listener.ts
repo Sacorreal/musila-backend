@@ -3,6 +3,7 @@ import { AppEventMap } from 'src/shared/events/contracts/app-event-map';
 import { NotificationsService } from '../notifications.service';
 import { NotificationsGateway } from '../notifications.gateway';
 import { EventListener } from 'src/shared/events/decorators/event-listener.decorator';
+import { FollowsService } from 'src/follows/follows.service';
 
 @Injectable()
 export class NotificationListener {
@@ -11,6 +12,7 @@ export class NotificationListener {
   constructor(
     private readonly notificationsService: NotificationsService,
     private readonly notificationsGateway: NotificationsGateway,
+    private readonly followsService: FollowsService,
   ) {}
 
   @EventListener({
@@ -98,6 +100,33 @@ export class NotificationListener {
       this.notificationsGateway.emitToUser(payload.requesterId, 'notification.received', notification);
     } catch (error) {
       this.logger.error('Error procesando notificacion de track.request.license.approved', error);
+    }
+  }
+
+  @EventListener({
+    event: 'track.created',
+    channel: 'in-app',
+  })
+  async handleTrackCreatedNotifyFollowers(payload: AppEventMap['track.created']) {
+    try {
+      for (const authorId of payload.authorIds) {
+        const followerIds = await this.followsService.getFollowerIds(authorId);
+
+        for (const followerId of followerIds) {
+          const notification = await this.notificationsService.createNotification({
+            recipient: { id: followerId } as any,
+            type: 'track.published',
+            title: 'Nueva canción publicada',
+            message: `Un artista que sigues publicó "${payload.trackTitle}".`,
+            link: `/music/tracks/${payload.trackId}`,
+            data: payload,
+          });
+
+          this.notificationsGateway.emitToUser(followerId, 'notification.received', notification);
+        }
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de followers para track.created', error);
     }
   }
 

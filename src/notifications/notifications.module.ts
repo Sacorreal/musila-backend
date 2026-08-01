@@ -8,9 +8,10 @@ import { NotificationsAdminController } from './notifications-admin.controller';
 import { NotificationsGateway } from './notifications.gateway';
 import { NotificationListener } from './listeners/notification.listener';
 import { RealtimeModule } from 'src/shared/realtime/realtime.module';
+import { FollowsModule } from 'src/follows/follows.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Notification, User]), RealtimeModule],
+  imports: [TypeOrmModule.forFeature([Notification, User]), RealtimeModule, FollowsModule],
   controllers: [NotificationsController, NotificationsAdminController],
   providers: [NotificationsService, NotificationsGateway, NotificationListener],
   exports: [NotificationsService, NotificationsGateway],

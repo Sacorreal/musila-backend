@@ -14,10 +14,11 @@ import { Track } from 'src/tracks/entities/track.entity';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { Payment } from 'src/payments/entities/payment.entity';
 import { CreatorIdModule } from 'src/creator-id/creator-id.module';
+import { Follow } from 'src/follows/entities/follow.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, AuditLog, MusicalGenre, Track, RequestedTrack, Payment]),
+    TypeOrmModule.forFeature([User, AuditLog, MusicalGenre, Track, RequestedTrack, Payment, Follow]),
     CreatorIdModule,
   ],
   controllers: [UsersController, MeController],

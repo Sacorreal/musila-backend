@@ -15,6 +15,7 @@ import { MusicRole } from './entities/music-role.enum';
 import { User } from './entities/user.entity';
 import { StorageService } from '../shared/storage/storage.service';
 import { CreatorIdService } from '../creator-id/creator-id.service';
+import { Follow } from 'src/follows/entities/follow.entity';
 
 import { PaginationDto } from '../shared/dto/pagination.dto';
 import { FilterUserDto } from './dto/filter-user.dto';
@@ -33,6 +34,8 @@ export class UsersService {
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
     @InjectRepository(MusicalGenre)
     private readonly musicalGenreRepository: Repository<MusicalGenre>,
+    @InjectRepository(Follow)
+    private readonly followsRepository: Repository<Follow>,
     private readonly storageService: StorageService,
     private readonly creatorIdService: CreatorIdService,
   ) { }
@@ -136,8 +139,22 @@ export class UsersService {
     return { id, message: 'Usuario eliminado' };
   }
 
-  async findOneUserByIdService(id: string): Promise<User> {
-    return this.findUserWithRelations(id);
+  async findOneUserByIdService(
+    id: string,
+    viewerId?: string,
+  ): Promise<User & { followersCount: number; isFollowingByViewer: boolean }> {
+    const user = await this.findUserWithRelations(id);
+
+    const [followersCount, isFollowingByViewer] = await Promise.all([
+      this.followsRepository.count({ where: { following: { id } } }),
+      viewerId
+        ? this.followsRepository.exists({
+            where: { follower: { id: viewerId }, following: { id } },
+          })
+        : Promise.resolve(false),
+    ]);
+
+    return { ...user, followersCount, isFollowingByViewer };
   }
 
   async findAllUsersService(dto: FilterUserDto) {
