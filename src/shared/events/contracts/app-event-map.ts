@@ -2,6 +2,8 @@ import { LicenseType } from "src/requested-tracks/entities/license-type.enum";
 import { UserPlanType } from "src/users/entities/user-plan-type.enum";
 import { UserPlan } from "src/users/entities/user-plan.enum";
 import { BillingPeriod, PaymentType } from "src/payments/entities/payment.entity";
+import { ShareResourceType } from "src/sharing/entities/share-resource-type.enum";
+import { ShareAccessReason } from "src/sharing/entities/share-access-reason.enum";
 
 export interface AppEventMap {
   // 👥 INVITES
@@ -384,6 +386,46 @@ export interface AppEventMap {
     amount: number;
     reason: string;
     rejectedAt: Date;
+  }
+
+  // 🔗 COMPARTIR
+
+  'share.created': {
+    shareLinkId: string;
+    resourceType: ShareResourceType;
+    resourceId: string;
+    ownerName: string;
+    shareUrl: string;
+  }
+
+  'share.recipient.authorized': {
+    shareLinkId: string;
+    resourceType: ShareResourceType;
+    resourceId: string;
+    resourceTitle: string;
+    recipientEmail: string;
+    recipientName: string;
+    authorizedByName: string;
+    shareUrl: string;
+  }
+
+  'share.recipient.revoked': {
+    shareLinkId: string;
+    recipientUserId: string;
+    revokedByName: string;
+  }
+
+  'share.access.attempted': {
+    token: string;
+    shareLinkId?: string;
+    resourceType?: ShareResourceType;
+    resourceId?: string;
+    accessorUserId?: string;
+    accessorMusilaCreatorId?: string;
+    granted: boolean;
+    reason: ShareAccessReason;
+    ipAddress?: string;
+    userAgent?: string;
   }
 
 }

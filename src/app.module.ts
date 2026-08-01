@@ -41,6 +41,7 @@ import { LicenseContractsModule } from './license-contracts/license-contracts.mo
 import { CertificatesModule } from './certificates/certificates.module';
 import { WalletModule } from './wallet/wallet.module';
 import { FollowsModule } from './follows/follows.module';
+import { SharingModule } from './sharing/sharing.module';
 
 @Module({
   imports: [
@@ -86,6 +87,7 @@ import { FollowsModule } from './follows/follows.module';
     CertificatesModule,
     WalletModule,
     FollowsModule,
+    SharingModule,
   ],
   controllers: [AppController],
   providers: [

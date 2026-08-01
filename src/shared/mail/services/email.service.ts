@@ -279,4 +279,15 @@ export class EmailService {
       variables: data,
     });
   }
+
+  async sendShareContentEmail(
+    to: string | string[],
+    data: EmailTemplateMap['share-content-notification'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'share-content-notification',
+      variables: data,
+    });
+  }
 }

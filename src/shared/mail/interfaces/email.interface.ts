@@ -191,4 +191,13 @@ export interface EmailTemplateMap {
     reason: string;
     accountUrl: string;
   };
+
+  'share-content-notification': {
+    recipientName: string;
+    ownerName: string;
+    resourceTypeLabel: string;
+    resourceTitle: string;
+    shareUrl: string;
+    instructionsText: string;
+  };
 }
