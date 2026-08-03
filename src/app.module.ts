@@ -12,6 +12,7 @@ import { LanguagesModule } from './shared/language/languages.module';
 import { InvitesModule } from './invites/invites.module';
 import { MusicalGenreModule } from './musical-genre/musical-genre.module';
 import { MoodsModule } from './moods/moods.module';
+import { BlogModule } from './blog/blog.module';
 import { ThemesModule } from './themes/themes.module';
 import { NotificationsModule } from './shared/notifications/notifications.module';
 import { PlaylistCollaboratorsModule } from './playlist-collaborators/playlist-collaborators.module';
@@ -67,6 +68,7 @@ import { SharingModule } from './sharing/sharing.module';
     RequestedTracksModule,
     MusicalGenreModule,
     MoodsModule,
+    BlogModule,
     ThemesModule,
     IntellectualPropertyModule,
     InvitesModule,
