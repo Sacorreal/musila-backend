@@ -17,7 +17,7 @@ import { CreatePlaylistInput } from './dto/create-playlist.input';
 import { UpdatePlaylistInput } from './dto/update-playlist.input';
 import { PlaylistsService } from './playlists.service';
 import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES, UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { PlansGuard } from 'src/users/guards/plans.guard';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
@@ -30,7 +30,7 @@ import { EmailVerifiedGuard } from 'src/users/guards/email-verified.guard';
 
 @ApiTags('Listas de Reproducción')
 @UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(UserPlanType.ADMIN, UserPlanType.PLAN_360, UserPlanType.PLAN_DESCUBRIDOR, UserPlanType.INVITADO)
+@AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_360, UserPlanType.PLAN_DESCUBRIDOR, UserPlanType.INVITADO)
 @Controller('playlists')
 export class PlaylistsController {
   constructor(private readonly playlistsService: PlaylistsService) {}

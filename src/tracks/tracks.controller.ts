@@ -29,7 +29,7 @@ import { UsersService } from 'src/users/users.service';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { TracksService } from './tracks.service';
-import { UserPlanType } from '../users/entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES, UserPlanType, isAdminPlanType } from '../users/entities/user-plan-type.enum';
 
 import { PaginatedTracksResponseDto, TrackResponseDto } from './dto/track-response.dto'
 import { PlansGuard } from 'src/users/guards/plans.guard';
@@ -47,7 +47,7 @@ export class TracksController {
   ) {}
 
   @Post()
-  @AllowedPlans(UserPlanType.ADMIN, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
+  @AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
   @UseGuards(EmailVerifiedGuard)
   @PlanLimit('tracks')
   @ApiConsumes('multipart/form-data')
@@ -167,7 +167,7 @@ export class TracksController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const requesterId = user.planType === UserPlanType.ADMIN ? undefined : user.id;
+    const requesterId = isAdminPlanType(user.planType) ? undefined : user.id;
     return await this.tracksService.updateTrackService(id, updateTrackInput, requesterId);
   }
 
@@ -190,7 +190,7 @@ export class TracksController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const requesterId = user.planType === UserPlanType.ADMIN ? undefined : user.id;
+    const requesterId = isAdminPlanType(user.planType) ? undefined : user.id;
     return await this.tracksService.removeTrackService(id, requesterId);
   }
 }

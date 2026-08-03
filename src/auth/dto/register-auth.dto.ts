@@ -8,8 +8,8 @@ import { IsValidEmail } from "../decorators/is-valid-email.decorator";
 
 /**
  * Tipos de plan que un usuario puede autoasignarse en el registro público.
- * ADMIN, EDITOR e INVITADO quedan excluidos deliberadamente: solo se asignan
- * vía el panel de administración o flujos internos, nunca desde este endpoint.
+ * SUPERADMIN, ADMIN, EDITOR e INVITADO quedan excluidos deliberadamente: solo se
+ * asignan vía el panel de administración o flujos internos, nunca desde este endpoint.
  */
 export const PUBLIC_REGISTER_PLAN_TYPES = [
     UserPlanType.PLAN_AUTOR,
@@ -116,7 +116,7 @@ export class RegisterAuthDto {
     @ApiProperty({
         example: UserPlanType.PLAN_AUTOR,
         enum: PUBLIC_REGISTER_PLAN_TYPES,
-        description: 'Plan que el usuario elige al registrarse. Solo se permiten planes públicos (Plan Autor, Plan Descubridor, Plan 360); admin/editor/invitado se asignan por otras vías.'
+        description: 'Plan que el usuario elige al registrarse. Solo se permiten planes públicos (Plan Autor, Plan Descubridor, Plan 360); superadmin/admin/editor/invitado se asignan por otras vías.'
     })
     @IsNotEmpty({ message: 'El plan es obligatorio' })
     @IsIn(PUBLIC_REGISTER_PLAN_TYPES, { message: 'El plan debe ser plan_autor, plan_descubridor o plan_360' })

@@ -21,7 +21,7 @@ import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES, UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { PlansGuard } from 'src/users/guards/plans.guard';
 import { CreateInviteDto } from './dto/create-invite.dto';
 import { InviteResponseDto } from './dto/invite-response.dto';
@@ -37,9 +37,9 @@ export class InvitesController {
   @Post()
   @UseGuards(JWTAuthGuard, PlansGuard)
   @AllowedPlans(
-    UserPlanType.ADMIN,    
+    ...ADMIN_PLAN_TYPES,
     UserPlanType.PLAN_360,
-    UserPlanType.PLAN_DESCUBRIDOR,   
+    UserPlanType.PLAN_DESCUBRIDOR,
   )
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -60,7 +60,7 @@ export class InvitesController {
 
   // ─── Admin routes (deben ir antes de /:token) ────────────────────────────────
   @Get('admin')
-  @AllowedPlans(UserPlanType.ADMIN)
+  @AllowedPlans(...ADMIN_PLAN_TYPES)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Listar todas las invitaciones (Admin)' })
@@ -69,7 +69,7 @@ export class InvitesController {
   }
 
   @Delete('admin/:id')
-  @AllowedPlans(UserPlanType.ADMIN)
+  @AllowedPlans(...ADMIN_PLAN_TYPES)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.NO_CONTENT)

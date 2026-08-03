@@ -62,6 +62,7 @@ const PLAN_PRICES: Record<UserPlanType, number> = {
   [UserPlanType.PLAN_AUTOR]: 39900,
   [UserPlanType.PLAN_360]: 59900,
   [UserPlanType.PLAN_DESCUBRIDOR]: 39900,
+  [UserPlanType.SUPERADMIN]: 0,
   [UserPlanType.ADMIN]: 0,
   [UserPlanType.INVITADO]: 0,
   [UserPlanType.EDITOR]: 0,
@@ -71,6 +72,7 @@ const ANNUAL_PLAN_PRICES: Record<UserPlanType, number> = {
   [UserPlanType.PLAN_AUTOR]: 359100,
   [UserPlanType.PLAN_360]: 539100,
   [UserPlanType.PLAN_DESCUBRIDOR]: 39900, // pago único, sin variación
+  [UserPlanType.SUPERADMIN]: 0,
   [UserPlanType.ADMIN]: 0,
   [UserPlanType.INVITADO]: 0,
   [UserPlanType.EDITOR]: 0,

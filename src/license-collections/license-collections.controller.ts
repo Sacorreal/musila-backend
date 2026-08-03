@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { PlansGuard } from 'src/users/guards/plans.guard';
 import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
 import { LicenseCollectionsService } from './license-collections.service';
 import { CreateLicenseCollectionDto } from './dto/create-license-collection.dto';
 import { LicenseCollectionPaginationDto } from './dto/license-collection-pagination.dto';
@@ -15,7 +15,7 @@ import { LicenseCollectionPaginationDto } from './dto/license-collection-paginat
  */
 @ApiTags('Gestión de Cobros (Admin)')
 @UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(UserPlanType.ADMIN)
+@AllowedPlans(...ADMIN_PLAN_TYPES)
 @Controller('license-collections')
 export class LicenseCollectionsController {
   constructor(private readonly collectionsService: LicenseCollectionsService) {}

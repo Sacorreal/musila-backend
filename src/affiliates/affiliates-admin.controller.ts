@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { PlansGuard } from 'src/users/guards/plans.guard';
 import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
 import { AffiliatesAdminService } from './affiliates-admin.service';
 import { AffiliatePaginationDto } from './dto/affiliate-pagination.dto';
 import { CommissionPaginationDto } from './dto/commission-pagination.dto';
@@ -14,7 +14,7 @@ import { CreateAffiliateAdminDto } from './dto/create-affiliate-admin.dto';
 
 @ApiTags('Afiliados (Admin)')
 @UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(UserPlanType.ADMIN)
+@AllowedPlans(...ADMIN_PLAN_TYPES)
 @Controller('affiliates/admin')
 export class AffiliatesAdminController {
   constructor(private readonly adminService: AffiliatesAdminService) {}

@@ -9,7 +9,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { isAdminPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { EventBusService } from 'src/shared/events/event-bus.service';
@@ -282,7 +282,7 @@ export class CertificatesService {
     if (!track) throw new NotFoundException('El track no existe');
 
     const isAuthor = track.authors?.some((a) => a.id === user.id);
-    if (user.planType !== UserPlanType.ADMIN && !isAuthor) {
+    if (!isAdminPlanType(user.planType) && !isAuthor) {
       throw new ForbiddenException('No tienes permiso para acceder al certificado de este track');
     }
 

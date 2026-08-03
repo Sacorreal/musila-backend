@@ -3,7 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { Guest } from 'src/guests/entities/guest.entity';
 import { Track } from 'src/tracks/entities/track.entity';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { UserPlanType, isAdminPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { In, Repository } from 'typeorm';
 import { CreatePlaylistInput } from './dto/create-playlist.input';
@@ -48,7 +48,7 @@ export class PlaylistsService {
 
   async createPlaylistsService(createPlaylistInput: CreatePlaylistInput, user: JwtPayload): Promise<Playlist> {
     const ownerId =
-      user.planType === UserPlanType.ADMIN && createPlaylistInput.ownerId
+      isAdminPlanType(user.planType) && createPlaylistInput.ownerId
         ? createPlaylistInput.ownerId
         : user.id;
 
@@ -71,7 +71,7 @@ export class PlaylistsService {
 
     // 1. Construimos la condición de búsqueda dinámicamente según el rol
     const whereCondition =
-      user.planType === UserPlanType.ADMIN
+      isAdminPlanType(user.planType)
         ? {} // Un admin ve todas las playlists del sistema
         : user.planType === UserPlanType.INVITADO
           ? { collaborators: { guest: { id: user.id } } } // Si es invitado, busca en la tabla intermedia
@@ -112,7 +112,7 @@ export class PlaylistsService {
     const existingPlaylist = await this.findPlaylistWithRelations(id);
 
     // 1. Autorización: Evitar que un usuario modifique playlists de otros
-    if (existingPlaylist.owner.id !== owner.id && owner.planType !== UserPlanType.ADMIN) {
+    if (existingPlaylist.owner.id !== owner.id && !isAdminPlanType(owner.planType)) {
       throw new ForbiddenException('No tienes permisos para editar esta playlist');
     }
 

@@ -10,7 +10,7 @@ import { PaginatedGuestsResponseDto } from './dto/guest-pagination.dto';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { PlansGuard } from 'src/users/guards/plans.guard';
 import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
@@ -20,7 +20,7 @@ export class GuestsController {
   constructor(private readonly guestsService: GuestsService) { }
 
   @Post()
-  @AllowedPlans(UserPlanType.ADMIN)
+  @AllowedPlans(...ADMIN_PLAN_TYPES)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({

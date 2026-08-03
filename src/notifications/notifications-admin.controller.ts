@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { PlansGuard } from 'src/users/guards/plans.guard';
 import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
 import { NotificationsService } from './notifications.service';
 import { CreateNotificationAdminDto } from './dto/create-notification-admin.dto';
 import { NotificationPaginationDto } from './dto/notification-pagination.dto';
@@ -11,7 +11,7 @@ import { NotificationsGateway } from './notifications.gateway';
 
 @ApiTags('Notificaciones (Admin)')
 @UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(UserPlanType.ADMIN)
+@AllowedPlans(...ADMIN_PLAN_TYPES)
 @Controller('notifications/admin')
 export class NotificationsAdminController {
   constructor(

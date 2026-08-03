@@ -8,7 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { isAdminPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { IntellectualProperty } from 'src/intellectual-property/entities/intellectual-property.entity';
@@ -221,7 +221,7 @@ export class SplitService {
   /** Verifica que el usuario autenticado sea autor del track (o admin del sistema). */
   private assertOwnership(track: Track, user: JwtPayload): void {
     const isAuthor = track.authors?.some((author) => author.id === user.id);
-    if (!isAuthor && user.planType !== UserPlanType.ADMIN) {
+    if (!isAuthor && !isAdminPlanType(user.planType)) {
       throw new ForbiddenException('No tienes permisos para gestionar el split de este track');
     }
   }
@@ -230,7 +230,7 @@ export class SplitService {
   private assertCanView(track: Track, split: Split, user: JwtPayload): void {
     const isTrackAuthor = track.authors?.some((author) => author.id === user.id);
     const isSplitCoauthor = split.authors?.some((author) => author.user?.id === user.id);
-    if (!isTrackAuthor && !isSplitCoauthor && user.planType !== UserPlanType.ADMIN) {
+    if (!isTrackAuthor && !isSplitCoauthor && !isAdminPlanType(user.planType)) {
       throw new ForbiddenException('No tienes permisos para ver este split');
     }
   }

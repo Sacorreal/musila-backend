@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { In, Repository } from 'typeorm';
 import { User } from 'src/users/entities/user.entity';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
 import { AppEventMap } from 'src/shared/events/contracts/app-event-map';
 import { EventListener } from 'src/shared/events/decorators/event-listener.decorator';
 import { NotificationsService } from 'src/notifications/notifications.service';
@@ -20,7 +20,7 @@ export class LicenseCollectionAdminNotifierListener {
   ) {}
 
   private async notifyAdmins(params: { type: string; title: string; message: string; data: Record<string, unknown> }) {
-    const admins = await this.userRepo.find({ where: { planType: UserPlanType.ADMIN } });
+    const admins = await this.userRepo.find({ where: { planType: In(ADMIN_PLAN_TYPES) } });
 
     for (const admin of admins) {
       const notification = await this.notificationsService.createNotification({

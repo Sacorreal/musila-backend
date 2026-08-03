@@ -18,7 +18,7 @@ import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES, UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { PlansGuard } from 'src/users/guards/plans.guard';
 import { AddCollaboratorDto } from './dto/add-collaborator.dto';
 import { PlaylistCollaboratorsService } from './playlist-collaborators.service';
@@ -26,7 +26,7 @@ import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
 
 @ApiTags('Colaboradores de Playlist')
 @UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(UserPlanType.ADMIN, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360, UserPlanType.PLAN_DESCUBRIDOR, UserPlanType.EDITOR)
+@AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360, UserPlanType.PLAN_DESCUBRIDOR, UserPlanType.EDITOR)
 @ApiBearerAuth('JWT-auth')
 @Controller('playlists/:playlistId/collaborators')
 export class PlaylistCollaboratorsController {

@@ -18,7 +18,7 @@ import { PaginatedMusicalGenreResponseDto } from './dto/musical-genre-pagination
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { PlansGuard } from '../users/guards/plans.guard';
 import { AllowedPlans } from '../users/decorators/allowed-plans.decorator';
-import { UserPlanType } from '../users/entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES } from '../users/entities/user-plan-type.enum';
 
 @ApiTags('Géneros Musicales')
 @Controller('musical-genre')
@@ -28,7 +28,7 @@ export class MusicalGenreController {
 
 
 
-  @AllowedPlans(UserPlanType.ADMIN)
+  @AllowedPlans(...ADMIN_PLAN_TYPES)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @Post()
@@ -83,7 +83,7 @@ export class MusicalGenreController {
   }
 
 
-  @AllowedPlans(UserPlanType.ADMIN)
+  @AllowedPlans(...ADMIN_PLAN_TYPES)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @Put(':id')
@@ -112,7 +112,7 @@ export class MusicalGenreController {
 
  
  
-  @AllowedPlans(UserPlanType.ADMIN)
+  @AllowedPlans(...ADMIN_PLAN_TYPES)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @Delete(':id')

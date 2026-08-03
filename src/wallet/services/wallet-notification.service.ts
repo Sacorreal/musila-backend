@@ -1,8 +1,8 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { In, IsNull, Repository } from 'typeorm';
 import { User } from 'src/users/entities/user.entity';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 import { EmailService } from 'src/shared/mail/services/email.service';
@@ -34,7 +34,7 @@ export class WalletNotificationService {
   /** Notifica a todos los admins que hay una nueva solicitud de retiro pendiente. */
   async notifyAdminsRequested(withdrawal: WalletWithdrawal): Promise<void> {
     await this.attempt(withdrawal, async () => {
-      const admins = await this.userRepo.find({ where: { planType: UserPlanType.ADMIN } });
+      const admins = await this.userRepo.find({ where: { planType: In(ADMIN_PLAN_TYPES) } });
       const amountLabel = CURRENCY_FORMATTER.format(withdrawal.amount);
 
       for (const admin of admins) {
@@ -107,7 +107,7 @@ export class WalletNotificationService {
 
   /** Alerta a los admins que no se pudo notificar a un usuario tras agotar los reintentos. */
   async notifyAdminsNotificationExhausted(withdrawal: WalletWithdrawal): Promise<void> {
-    const admins = await this.userRepo.find({ where: { planType: UserPlanType.ADMIN } });
+    const admins = await this.userRepo.find({ where: { planType: In(ADMIN_PLAN_TYPES) } });
     for (const admin of admins) {
       const notification = await this.notificationsService.createNotification({
         recipient: { id: admin.id } as any,

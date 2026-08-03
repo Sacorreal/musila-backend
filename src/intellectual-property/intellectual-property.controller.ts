@@ -8,7 +8,7 @@ import { PaginatedIntellectualPropertyResponseDto } from './dto/intellectual-pro
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { PlansGuard } from 'src/users/guards/plans.guard';
 import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES, UserPlanType } from 'src/users/entities/user-plan-type.enum';
 
 @ApiTags('Propiedad Intelectual')
 @Controller('intellectual-property')
@@ -18,7 +18,7 @@ export class IntellectualPropertyController {
   ) { }
 
   @Post()
-  @AllowedPlans(UserPlanType.ADMIN, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
+  @AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -66,7 +66,7 @@ export class IntellectualPropertyController {
   }
 
   @Put(':id')
-  @AllowedPlans(UserPlanType.ADMIN, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
+  @AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
@@ -86,7 +86,7 @@ export class IntellectualPropertyController {
   }
 
   @Delete(':id')
-  @AllowedPlans(UserPlanType.ADMIN, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
+  @AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.NO_CONTENT)

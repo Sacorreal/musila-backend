@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -108,10 +109,18 @@ export class UsersService {
   async updateUserService(
     id: string,
     { preferredGenres, avatarKey, avatarUrl, ...rest }: UpdateUserInput,
+    actingUser?: { planType: UserPlanType },
   ) {
     const existingUser = await this.findUserWithRelations(id);
 
     if (!existingUser) throw new NotFoundException('El usuario no existe');
+
+    if (
+      rest.planType === UserPlanType.SUPERADMIN &&
+      actingUser?.planType !== UserPlanType.SUPERADMIN
+    ) {
+      throw new ForbiddenException('Solo un superadmin puede otorgar el rol superadmin');
+    }
 
     const oldAvatarKey = existingUser.avatarKey;
     Object.assign(existingUser, rest);

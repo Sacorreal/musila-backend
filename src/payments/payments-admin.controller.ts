@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { PlansGuard } from 'src/users/guards/plans.guard';
 import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
 import { PaymentsService } from './payments.service';
 import { PaymentPaginationDto } from './dto/payment-pagination.dto';
 import { PaymentSourcePaginationDto } from './dto/payment-source-pagination.dto';
@@ -16,7 +16,7 @@ import { PaginationDto } from 'src/shared/dto/pagination.dto';
  */
 @ApiTags('Pagos (Admin)')
 @UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(UserPlanType.ADMIN)
+@AllowedPlans(...ADMIN_PLAN_TYPES)
 @Controller('payments/admin')
 export class PaymentsAdminController {
   constructor(private readonly paymentsService: PaymentsService) {}

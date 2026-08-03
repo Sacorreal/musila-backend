@@ -21,7 +21,7 @@ import { UpdateUserInput } from './dto/update-user.input';
 import { CreateUserInput } from './dto/create-user.input';
 import { AdminStatsDto } from './dto/admin-stats.dto';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { UserPlanType } from './entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES, UserPlanType } from './entities/user-plan-type.enum';
 import { UsersService } from './users.service';
 import { AdminService } from './admin.service';
 import { AuditLogService } from './audit-log.service';
@@ -39,7 +39,7 @@ export class UsersController {
   ) {}
 
   @Get()
-  @AllowedPlans(UserPlanType.ADMIN)
+  @AllowedPlans(...ADMIN_PLAN_TYPES)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Obtener todos los usuarios (Admin)' })
@@ -89,7 +89,7 @@ export class UsersController {
   // ── Admin routes (must be before /:id) ──────────────────────────────
 
   @Get('admin/stats')
-  @AllowedPlans(UserPlanType.ADMIN)
+  @AllowedPlans(...ADMIN_PLAN_TYPES)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Estadísticas generales del sistema (Admin)' })
@@ -99,7 +99,7 @@ export class UsersController {
   }
 
   @Post('admin/create')
-  @AllowedPlans(UserPlanType.ADMIN)
+  @AllowedPlans(...ADMIN_PLAN_TYPES)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Crear usuario administrador (Admin)' })
@@ -110,7 +110,7 @@ export class UsersController {
   }
 
   @Get('admin/audit-log')
-  @AllowedPlans(UserPlanType.ADMIN)
+  @AllowedPlans(...ADMIN_PLAN_TYPES)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Listar registro de auditoría (Admin, solo lectura)' })
@@ -119,7 +119,7 @@ export class UsersController {
   }
 
   @Delete(':id/hard')
-  @AllowedPlans(UserPlanType.ADMIN)
+  @AllowedPlans(...ADMIN_PLAN_TYPES)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiParam({ name: 'id', description: 'UUID del usuario' })
@@ -149,7 +149,7 @@ export class UsersController {
     @CurrentUser() user: JwtPayload,
     @Body() updateUserInput: UpdateUserInput,
   ) {
-    return await this.usersService.updateUserService(user.id, updateUserInput);
+    return await this.usersService.updateUserService(user.id, updateUserInput, user);
   }
 
   @UseGuards(JWTAuthGuard)
@@ -173,7 +173,7 @@ export class UsersController {
     return await this.usersService.findOneUserByIdService(id, user.id);
   }
 
-  @AllowedPlans(UserPlanType.ADMIN)
+  @AllowedPlans(...ADMIN_PLAN_TYPES)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @Put(':id')
   @ApiBearerAuth('JWT-auth')
@@ -182,11 +182,12 @@ export class UsersController {
   async updateUserByIdController(
     @Body() updateUserInput: UpdateUserInput,
     @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() actingUser: JwtPayload,
   ) {
-    return await this.usersService.updateUserService(id, updateUserInput);
+    return await this.usersService.updateUserService(id, updateUserInput, actingUser);
   }
 
-  @AllowedPlans(UserPlanType.ADMIN)
+  @AllowedPlans(...ADMIN_PLAN_TYPES)
   @UseGuards(JWTAuthGuard, PlansGuard)
   @Delete(':id')
   @ApiBearerAuth('JWT-auth')

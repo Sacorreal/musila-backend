@@ -9,7 +9,7 @@ import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Mood } from 'src/moods/entities/mood.entity';
 import { Theme } from 'src/themes/entities/theme.entity';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { ADMIN_PLAN_TYPES, UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import { CreateTrackInput } from './dto/create-track.input';
@@ -245,7 +245,7 @@ export class TracksService {
 
     // 1. Determinar si el usuario tiene acceso a todas las canciones (RBAC)
     const hasGlobalAccess = [
-      UserPlanType.ADMIN,
+      ...ADMIN_PLAN_TYPES,
       UserPlanType.PLAN_DESCUBRIDOR,
       UserPlanType.PLAN_360,
       UserPlanType.INVITADO

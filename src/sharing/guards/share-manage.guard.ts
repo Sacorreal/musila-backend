@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { Playlist } from 'src/playlists/entities/playlist.entity';
 import { Track } from 'src/tracks/entities/track.entity';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { isAdminPlanType } from 'src/users/entities/user-plan-type.enum';
 import { ShareLink } from '../entities/share-link.entity';
 
 interface ShareManageRequest {
@@ -41,7 +41,7 @@ export class ShareManageGuard implements CanActivate {
       throw new ForbiddenException('Usuario no autenticado');
     }
 
-    if (user.planType === UserPlanType.ADMIN) {
+    if (isAdminPlanType(user.planType)) {
       return true;
     }
 

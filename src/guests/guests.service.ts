@@ -10,7 +10,7 @@ import { User } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { InvitesService } from 'src/invites/invites.service';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { isAdminPlanType } from 'src/users/entities/user-plan-type.enum';
 
 import bcrypt from 'bcrypt';
 
@@ -26,7 +26,7 @@ export class GuestsService {
   ) { }
 
   private assertCanManageGuest(guest: Guest, currentUser: JwtPayload): void {
-    const isAdmin = currentUser.planType === UserPlanType.ADMIN;
+    const isAdmin = isAdminPlanType(currentUser.planType);
     const isInviter = guest.invited_by?.id === currentUser.id;
     if (!isAdmin && !isInviter) {
       throw new ForbiddenException('No tienes permiso para gestionar este invitado');
@@ -140,7 +140,7 @@ export class GuestsService {
    */
   async findAllGuestsService(filterDto: GuestFilterDto, currentUser: JwtPayload) {
     const { limit, offset, search } = filterDto;
-    const isAdmin = currentUser.planType === UserPlanType.ADMIN;
+    const isAdmin = isAdminPlanType(currentUser.planType);
 
     const qb = this.guestsRepository
       .createQueryBuilder('guest')
