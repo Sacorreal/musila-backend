@@ -41,6 +41,9 @@ export interface LicenseContractTemplateInput {
   royaltyPercentage: number;
   distributionFormats: LicenseDistributionFormat[];
   advanceDistribution?: { authorName: string; percentage: number }[] | null;
+  customInfo?: string | null;
+  customAmount?: number | null;
+  customCurrency?: string | null;
   generatedAt: Date;
   /** Solo presente en la versión final, una vez que todas las partes firmaron. */
   signatures?: LicenseContractTemplateSignature[];
@@ -155,6 +158,19 @@ export function buildLicenseContractParagraphs(input: LicenseContractTemplateInp
       ? `Cada coautor firma electrónicamente su autorización individual: ${coauthors.map((a) => a.legalName).join(', ')}.`
       : 'No aplica: la obra tiene un único autor.',
   ];
+
+  if (input.customInfo) {
+    const amountText =
+      input.customAmount && input.customAmount > 0
+        ? ` Adicionalmente, las partes acuerdan un pago de ${formatCurrency(input.customAmount, input.customCurrency ?? 'COP')} por este concepto.`
+        : '';
+    const notaLegalIndex = paragraphs.findIndex((p) => p.startsWith('Nota legal'));
+    paragraphs.splice(
+      notaLegalIndex,
+      0,
+      `UNDÉCIMA — INFORMACIÓN ADICIONAL PACTADA POR LAS PARTES. ${input.customInfo}${amountText}`,
+    );
+  }
 
   if (input.signatures && input.signatures.length > 0) {
     paragraphs.push('FIRMAS ELECTRÓNICAS');

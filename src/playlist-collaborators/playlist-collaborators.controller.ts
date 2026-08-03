@@ -26,7 +26,7 @@ import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
 
 @ApiTags('Colaboradores de Playlist')
 @UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360, UserPlanType.PLAN_DESCUBRIDOR, UserPlanType.EDITOR)
+@AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360, UserPlanType.PLAN_DESCUBRIDOR, UserPlanType.PLAN_PUBLISHER)
 @ApiBearerAuth('JWT-auth')
 @Controller('playlists/:playlistId/collaborators')
 export class PlaylistCollaboratorsController {

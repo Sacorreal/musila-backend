@@ -3,14 +3,18 @@ import { Type } from 'class-transformer';
 import {
   ArrayMinSize,
   IsArray,
+  IsBoolean,
   IsDateString,
   IsEnum,
+  IsIn,
   IsInt,
+  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
   Max,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 import { LicenseTerritoryMode } from '../entities/license-territory-mode.enum';
@@ -79,4 +83,28 @@ export class UpsertLicenseContractTermsDto {
   @ValidateNested({ each: true })
   @Type(() => LicenseAdvanceDistributionInputDto)
   advanceDistribution?: LicenseAdvanceDistributionInputDto[];
+
+  @ApiProperty({ required: false, description: 'Indica si el licenciante agrega información/condiciones personalizadas' })
+  @IsOptional()
+  @IsBoolean()
+  hasCustomInfo?: boolean;
+
+  @ApiProperty({ required: false, description: 'Texto libre con información personalizada del contrato, sin límite de caracteres' })
+  @IsOptional()
+  @ValidateIf((o) => o.hasCustomInfo)
+  @IsNotEmpty({ message: 'Ingresa la información personalizada o desactiva la opción' })
+  @IsString()
+  customInfo?: string;
+
+  @ApiProperty({ required: false, description: 'Valor adicional a pagar asociado a la información personalizada' })
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 }, { message: 'El valor debe ser un número válido' })
+  @Min(0)
+  customAmount?: number;
+
+  @ApiProperty({ required: false, enum: ['COP', 'USD'], description: 'Moneda del valor adicional' })
+  @IsOptional()
+  @ValidateIf((o) => !!o.customAmount && o.customAmount > 0)
+  @IsIn(['COP', 'USD'], { message: 'La moneda debe ser COP o USD' })
+  customCurrency?: string;
 }

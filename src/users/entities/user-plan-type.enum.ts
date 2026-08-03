@@ -5,7 +5,7 @@ export enum UserPlanType {
   PLAN_360 = 'plan_360',
   PLAN_DESCUBRIDOR = 'plan_descubridor',
   INVITADO = 'invitado',
-  EDITOR = 'editor',
+  PLAN_PUBLISHER = 'plan_publisher',
 }
 
 /** Planes con privilegios administrativos: superadmin hereda todo lo que tiene admin. */

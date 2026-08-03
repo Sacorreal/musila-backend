@@ -205,6 +205,10 @@ export class LicenseContractsService {
       royaltyPercentage: dto.royaltyPercentage,
       distributionFormats: dto.distributionFormats,
       advanceDistribution,
+      hasCustomInfo: dto.hasCustomInfo ?? false,
+      customInfo: dto.hasCustomInfo ? (dto.customInfo ?? null) : null,
+      customAmount: dto.hasCustomInfo ? (dto.customAmount ?? null) : null,
+      customCurrency: dto.hasCustomInfo ? (dto.customCurrency ?? null) : null,
       status: LicenseContractStatus.DRAFT,
       paymentStatus,
       documentKey: null,
@@ -645,6 +649,9 @@ export class LicenseContractsService {
             percentage: entry.percentage,
           }))
         : null,
+      customInfo: contract.hasCustomInfo ? contract.customInfo : null,
+      customAmount: contract.hasCustomInfo ? contract.customAmount : null,
+      customCurrency: contract.hasCustomInfo ? contract.customCurrency : null,
       generatedAt: contract.generatedAt ?? new Date(),
     };
   }

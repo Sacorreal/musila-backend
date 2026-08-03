@@ -65,7 +65,7 @@ const PLAN_PRICES: Record<UserPlanType, number> = {
   [UserPlanType.SUPERADMIN]: 0,
   [UserPlanType.ADMIN]: 0,
   [UserPlanType.INVITADO]: 0,
-  [UserPlanType.EDITOR]: 0,
+  [UserPlanType.PLAN_PUBLISHER]: 0,
 };
 
 const ANNUAL_PLAN_PRICES: Record<UserPlanType, number> = {
@@ -75,7 +75,7 @@ const ANNUAL_PLAN_PRICES: Record<UserPlanType, number> = {
   [UserPlanType.SUPERADMIN]: 0,
   [UserPlanType.ADMIN]: 0,
   [UserPlanType.INVITADO]: 0,
-  [UserPlanType.EDITOR]: 0,
+  [UserPlanType.PLAN_PUBLISHER]: 0,
 };
 
 @Injectable()

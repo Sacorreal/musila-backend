@@ -90,6 +90,18 @@ export class LicenseContract {
   @Column({ type: 'jsonb', name: 'advance_distribution', nullable: true })
   advanceDistribution: LicenseAdvanceDistributionEntry[] | null;
 
+  @Column({ type: 'boolean', name: 'has_custom_info', default: false })
+  hasCustomInfo: boolean;
+
+  @Column({ type: 'text', name: 'custom_info', nullable: true })
+  customInfo: string | null;
+
+  @Column({ type: 'numeric', precision: 12, scale: 2, name: 'custom_amount', nullable: true })
+  customAmount: number | null;
+
+  @Column({ type: 'varchar', length: 3, name: 'custom_currency', nullable: true })
+  customCurrency: string | null;
+
   // ── Estado ───────────────────────────────────────────────────────────────
 
   @ApiProperty({ enum: LicenseContractStatus })
