@@ -43,6 +43,8 @@ import { CertificatesModule } from './certificates/certificates.module';
 import { WalletModule } from './wallet/wallet.module';
 import { FollowsModule } from './follows/follows.module';
 import { SharingModule } from './sharing/sharing.module';
+import { StaffAuthorizationModule } from './staff-authorization/staff-authorization.module';
+import { StaffAuditModule } from './staff-audit/staff-audit.module';
 
 @Module({
   imports: [
@@ -90,6 +92,8 @@ import { SharingModule } from './sharing/sharing.module';
     WalletModule,
     FollowsModule,
     SharingModule,
+    StaffAuthorizationModule,
+    StaffAuditModule,
   ],
   controllers: [AppController],
   providers: [

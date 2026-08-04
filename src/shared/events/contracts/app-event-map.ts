@@ -428,4 +428,36 @@ export interface AppEventMap {
     userAgent?: string;
   }
 
+  // 🛡️ STAFF AUTHORIZATION (roles y permisos internos)
+
+  'staff-role.permissions.changed': {
+    staffRoleId: string;
+  }
+
+  'staff-role.deleted': {
+    staffRoleId: string;
+  }
+
+  'staff-assignment.changed': {
+    userId: string;
+  }
+
+  'staff.audit.captured': {
+    actorUserId: string;
+    actorName: string;
+    actorRoleName?: string;
+    module: string;
+    action: string;
+    httpMethod?: string;
+    route?: string;
+    entityType?: string;
+    entityId?: string;
+    statusCode?: number;
+    outcome: 'success' | 'failure';
+    ipAddress?: string;
+    userAgent?: string;
+    metadata?: Record<string, any>;
+    durationMs?: number;
+  }
+
 }
