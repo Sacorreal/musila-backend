@@ -13,6 +13,10 @@
  *   SEED_ADMIN_PASSWORD=<password> SEED_ADMIN_CITIZEN_ID=<numero-de-documento> \
  *   npm run seed:admin
  *
+ * Uso en desarrollo (DB remota, p. ej. Supabase):
+ *   SEED_ADMIN_PASSWORD=<password> SEED_ADMIN_CITIZEN_ID=<numero-de-documento> \
+ *   npm run seed:admin:dev
+ *
  * Uso en producción:
  *   CONFIRM_PRODUCTION_SEED=yes \
  *   SEED_ADMIN_EMAIL=admin@musila.com SEED_ADMIN_PASSWORD=<password-fuerte> \
@@ -46,6 +50,8 @@ if (nodeEnv === 'local') {
   dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 } else if (nodeEnv === 'production') {
   dotenv.config({ path: path.resolve(__dirname, '../.env.production') });
+} else if (nodeEnv === 'development') {
+  dotenv.config({ path: path.resolve(__dirname, '../.env') });
 } else {
   dotenv.config();
 }
