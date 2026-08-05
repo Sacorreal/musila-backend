@@ -6,7 +6,6 @@ import {
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { GuestsService } from 'src/guests/guests.service';
@@ -42,31 +41,20 @@ export class AuthService {
     private readonly paymentsService: PaymentsService,
     private readonly affiliatesService: AffiliatesService,
     private readonly auditLogService: AuditLogService,
-    private readonly configService: ConfigService,
   ) {}
 
   /**
-   * Verifica el token del widget de Cloudflare Turnstile contra su API.
-   * Se ejecuta antes de cualquier consulta a la base de datos para descartar
-   * tráfico de bots lo más barato posible.
+   * Trampa de tiempo anti-bot: rechaza envíos que llegan antes de que un
+   * humano razonablemente pudiera completar el formulario. Complementa al
+   * honeypot `companyWebsite`. Usa el mismo mensaje genérico que este para
+   * no revelar el mecanismo a un atacante.
    */
-  private async verifyTurnstileToken(token: string, ip: string): Promise<void> {
-    const secret = this.configService.get<string>('TURNSTILE_SECRET_KEY');
-    if (!secret) {
-      this.logger.error('TURNSTILE_SECRET_KEY no está configurado');
-      throw new BadRequestException('Verificación anti-bot no disponible, intenta más tarde');
-    }
+  private static readonly MIN_FORM_FILL_TIME_MS = 3000;
 
-    const params = new URLSearchParams({ secret, response: token, remoteip: ip });
-    const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params,
-    });
-    const result = (await response.json()) as { success: boolean };
-
-    if (!result.success) {
-      throw new BadRequestException('No se pudo verificar que eres humano, intenta de nuevo');
+  private assertHumanTiming(formStartedAt?: number): void {
+    if (formStartedAt === undefined) return;
+    if (Date.now() - formStartedAt < AuthService.MIN_FORM_FILL_TIME_MS) {
+      throw new BadRequestException('Solicitud inválida');
     }
   }
 
@@ -107,7 +95,7 @@ export class AuthService {
   }
 
   async registerService(user: RegisterAuthDto, ip: string, userAgent?: string) {
-    await this.verifyTurnstileToken(user.turnstileToken, ip);
+    this.assertHumanTiming(user.formStartedAt);
 
     const userExists = await this.usersService.findUserBycitizenIDService(
       user.citizenID,
@@ -122,7 +110,7 @@ export class AuthService {
       externalReference,
       referralCode,
       companyWebsite: _companyWebsite, // honeypot: nunca se persiste
-      turnstileToken: _turnstileToken, // solo para verificación, nunca se persiste
+      formStartedAt: _formStartedAt, // solo para verificación de timing, nunca se persiste
       ...userFields
     } = user;
 

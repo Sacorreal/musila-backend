@@ -17,7 +17,6 @@ function baseDto(overrides: Partial<RegisterAuthDto> = {}) {
     citizenID: '12345678',
     planType: UserPlanType.PLAN_AUTOR,
     role: MusicRole.COMPOSITOR,
-    turnstileToken: 'fake-token',
     ...overrides,
   });
 }

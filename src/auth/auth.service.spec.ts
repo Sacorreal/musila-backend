@@ -7,7 +7,6 @@ import { PaymentsService } from 'src/payments/payments.service';
 import { AffiliatesService } from 'src/affiliates/affiliates.service';
 import { AuditLogService } from 'src/users/audit-log.service';
 import { JwtService } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
 import { ConflictException, GoneException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import bcrypt from 'bcrypt'
 
@@ -21,10 +20,6 @@ describe('AuthService', () => {
   beforeEach(async () => {
     guestsService = { findGuestByCitizenIDForAuth: jest.fn() }
     eventBus = { emit: jest.fn() }
-
-    global.fetch = jest.fn().mockResolvedValue({
-      json: () => Promise.resolve({ success: true }),
-    }) as any
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [AuthService,
@@ -50,7 +45,6 @@ describe('AuthService', () => {
         { provide: PaymentsService, useValue: { linkUserToPayment: jest.fn() } },
         { provide: AffiliatesService, useValue: { attributeReferral: jest.fn() } },
         { provide: AuditLogService, useValue: { log: jest.fn() } },
-        { provide: ConfigService, useValue: { get: jest.fn().mockReturnValue('fake-secret') } },
       ],
     }).compile();
 
@@ -102,11 +96,7 @@ describe('AuthService', () => {
   })
 
   describe('registerService', () => {
-    it('Debe lanzar BadRequestException si el token de Turnstile es inválido', async () => {
-      (global.fetch as jest.Mock).mockResolvedValueOnce({
-        json: () => Promise.resolve({ success: false }),
-      })
-
+    it('Debe lanzar BadRequestException si el formulario se envía demasiado rápido (trampa de tiempo anti-bot)', async () => {
       await expect(
         authService.registerService({
           citizenID: '123456789',
@@ -114,9 +104,9 @@ describe('AuthService', () => {
           password: '123456',
           repeatPassword: '123456',
           name: 'test',
-          turnstileToken: 'bad-token',
+          formStartedAt: Date.now(),
         } as any, '127.0.0.1')
-      ).rejects.toThrow('No se pudo verificar que eres humano, intenta de nuevo')
+      ).rejects.toThrow('Solicitud inválida')
 
       expect(usersService.findUserBycitizenIDService).not.toHaveBeenCalled()
     })

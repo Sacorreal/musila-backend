@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { ArrayMaxSize, IsArray, IsEmail, IsEmpty, IsEnum, IsIn, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength, ValidateNested } from "class-validator";
+import { ArrayMaxSize, IsArray, IsEmail, IsEmpty, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
 import { UserPlanType } from "src/users/entities/user-plan-type.enum";
 import { MusicRole } from "src/users/entities/music-role.enum";
@@ -164,10 +164,12 @@ export class RegisterAuthDto {
     @IsEmpty({ message: 'Solicitud inválida' })
     companyWebsite?: string;
 
-    @ApiProperty({ description: 'Token resuelto por el widget de Cloudflare Turnstile en el frontend.' })
-    @IsString({ message: 'El token de verificación es inválido' })
-    @IsNotEmpty({ message: 'Debes completar la verificación anti-bot' })
-    turnstileToken: string;
+    @ApiPropertyOptional({
+        description: 'Timestamp (epoch ms) de cuándo se mostró el formulario al usuario. Trampa de tiempo anti-bot: no mostrar en la UI real.',
+    })
+    @IsOptional()
+    @IsNumber()
+    formStartedAt?: number;
 
     @ApiPropertyOptional({ example: ['uuid1', 'uuid2'], description: 'IDs de géneros preferidos' })
     @IsArray()
