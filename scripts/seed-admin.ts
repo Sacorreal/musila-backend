@@ -13,7 +13,7 @@
  *   SEED_ADMIN_PASSWORD=<password> SEED_ADMIN_CITIZEN_ID=<numero-de-documento> \
  *   npm run seed:admin
  *
- * Uso en desarrollo (DB remota, p. ej. Supabase):
+ * Uso en desarrollo (usa las mismas credenciales de .env.local que NODE_ENV=local):
  *   SEED_ADMIN_PASSWORD=<password> SEED_ADMIN_CITIZEN_ID=<numero-de-documento> \
  *   npm run seed:admin:dev
  *
@@ -32,10 +32,14 @@
  *   SEED_ADMIN_NAME, SEED_ADMIN_LAST_NAME
  *   SEED_ADMIN_PLAN_TYPE = superadmin | admin   (default: superadmin)
  *
- * La conexión sigue el mismo esquema que src/shared/config/database/data-source.ts:
- *   - local:       .env.local  (DB_HOST/DB_PORT/DB_USERNAME/DB_PASSWORD/DB_NAME)
- *   - development: .env        (DATABASE_URL, con SSL)
- *   - production:  .env.production (DB_URL, con SSL)
+ * La conexión:
+ *   - local/development: .env.local  (DB_HOST/DB_PORT/DB_USERNAME/DB_PASSWORD/DB_NAME)
+ *   - production:        .env.production (DB_URL, con SSL)
+ *
+ * NODE_ENV=development reutiliza .env.local (a diferencia de
+ * src/shared/config/database/data-source.ts, que para ese entorno lee .env
+ * con DATABASE_URL) porque las credenciales de siembra de este equipo viven
+ * en .env.local.
  */
 
 import * as dotenv from 'dotenv';
@@ -46,12 +50,10 @@ import { generateMcid } from '../src/creator-id/utils/generate-mcid.util';
 
 const nodeEnv = process.env.NODE_ENV || 'local';
 
-if (nodeEnv === 'local') {
+if (nodeEnv === 'local' || nodeEnv === 'development') {
   dotenv.config({ path: path.resolve(__dirname, '../.env.local') });
 } else if (nodeEnv === 'production') {
   dotenv.config({ path: path.resolve(__dirname, '../.env.production') });
-} else if (nodeEnv === 'development') {
-  dotenv.config({ path: path.resolve(__dirname, '../.env') });
 } else {
   dotenv.config();
 }
@@ -99,26 +101,21 @@ const ADMIN = {
 };
 
 function getClientConfig(): ClientConfig {
-  switch (nodeEnv) {
-    case 'production':
-      return {
-        connectionString: process.env.DB_URL,
-        ssl: { rejectUnauthorized: false },
-      };
-    case 'development':
-      return {
-        connectionString: process.env.DATABASE_URL,
-        ssl: { rejectUnauthorized: false },
-      };
-    default:
-      return {
-        host: process.env.DB_HOST,
-        port: process.env.DB_PORT ? +process.env.DB_PORT : 5432,
-        user: process.env.DB_USERNAME,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-      };
+  if (nodeEnv === 'production') {
+    return {
+      connectionString: process.env.DB_URL,
+      ssl: { rejectUnauthorized: false },
+    };
   }
+
+  // local y development comparten .env.local, sin DATABASE_URL.
+  return {
+    host: process.env.DB_HOST,
+    port: process.env.DB_PORT ? +process.env.DB_PORT : 5432,
+    user: process.env.DB_USERNAME,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME,
+  };
 }
 
 async function generateUniqueMcid(client: Client): Promise<string> {
@@ -166,12 +163,16 @@ async function main() {
   if (existing.rowCount > 0) {
     const row = existing.rows[0];
     userId = row.id;
+    const hashedPassword = await bcrypt.hash(ADMIN.password, 10);
     await client.query(
-      'UPDATE users SET plan_type = $1, citizen_id = $2 WHERE id = $3',
-      [planType, ADMIN.citizenID, userId],
+      'UPDATE users SET plan_type = $1, citizen_id = $2, password = $3 WHERE id = $4',
+      [planType, ADMIN.citizenID, hashedPassword, userId],
     );
     console.log(`✔ Usuario actualizado → plan_type=${planType} (id: ${userId})`);
     console.log(`  Número de documento (login): ${ADMIN.citizenID}`);
+    if (nodeEnv !== 'production') {
+      console.log(`  Password: ${ADMIN.password}`);
+    }
   } else {
     const hashedPassword = await bcrypt.hash(ADMIN.password, 10);
     const musilaCreatorId = await generateUniqueMcid(client);
