@@ -78,6 +78,8 @@ export class TracksService {
       audioUrl,
       coverKey,
       coverUrl,
+      sheetMusicKey,
+      sheetMusicUrl,
       externalsIds,
       ...rest
     } = createTrackInput;
@@ -190,6 +192,8 @@ export class TracksService {
       coverKey: coverKey ?? null,
       year: new Date().getFullYear(),
       coverUrl: coverUrl ?? null,
+      sheetMusicKey: sheetMusicKey ?? null,
+      sheetMusicUrl: sheetMusicUrl ?? null,
     } as any);
 
     const saved = await this.saveAndReturnWithRelations(newTrack as unknown as Track);

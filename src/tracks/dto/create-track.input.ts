@@ -120,6 +120,14 @@ export class CreateTrackInput {
   @IsOptional()
   coverUrl?: string
 
+  @ApiPropertyOptional({ description: 'Llave de almacenamiento de la partitura en PDF (opcional)' })
+  @IsOptional()
+  sheetMusicKey?: string
+
+  @ApiPropertyOptional({ description: 'URL pública de la partitura en PDF (opcional)' })
+  @IsOptional()
+  sheetMusicUrl?: string
+
   @ApiPropertyOptional({
     type: [ExternalIdInput],
     description:

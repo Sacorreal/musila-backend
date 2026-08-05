@@ -109,6 +109,12 @@ export class TrackResponseDto {
   @ApiProperty({ nullable: true })
   coverKey?: string;
 
+  @ApiProperty({ nullable: true })
+  sheetMusicUrl?: string;
+
+  @ApiProperty({ nullable: true })
+  sheetMusicKey?: string;
+
   @ApiProperty({ type: [TrackAuthorDto], description: 'Autores del track' })
   authors: TrackAuthorDto[];
 
@@ -154,6 +160,8 @@ export class TrackResponseDto {
     dto.theme = track.theme ? ThemeTrackDto.fromEntity(track.theme) : null;
     dto.isFeat = track.isFeat;
     dto.coverKey = track.coverKey;
+    dto.sheetMusicUrl = track.sheetMusicUrl;
+    dto.sheetMusicKey = track.sheetMusicKey;
     dto.authors = track.authors?.map((u) => TrackAuthorDto.fromUser(u)) ?? [];
     dto.intellectualProperties = track.intellectualProperties ?? [];
     dto.playlists = (track.playlists ?? []) as unknown[];

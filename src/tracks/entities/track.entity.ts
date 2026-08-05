@@ -101,6 +101,12 @@ export class Track {
   @Column('varchar', { nullable: true, name: 'cover_key' })
   coverKey?: string
 
+  @Column('varchar', { nullable: true, name: 'sheet_music_key' })
+  sheetMusicKey?: string;
+
+  @Column('varchar', { nullable: true, name: 'sheet_music_url' })
+  sheetMusicUrl?: string;
+
   @CreateDateColumn({
     name: 'created_at',
     type: 'timestamp',
