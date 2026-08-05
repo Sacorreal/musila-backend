@@ -1,13 +1,32 @@
 /**
- * Script de seed para crear (o promover) el primer usuario administrador.
+ * Script de seed para crear (o promover) el primer usuario superadmin.
+ *
+ * El privilegio de administración vive en la columna `plan_type`
+ * (`UserPlanType`), no en `role` (que es un dato descriptivo de tipo
+ * `MusicRole`: compositor/intérprete/etc. y no acepta 'admin'/'superadmin').
+ * `StaffPermissionGuard` da acceso total a cualquier usuario con
+ * `plan_type = 'superadmin'`, así que basta con esa columna — además se
+ * sincroniza `staff_user_roles` con el rol interno "Super Admin" para que
+ * el usuario también aparezca correctamente en el panel de staff.
  *
  * Uso local:
- *   npx ts-node -r tsconfig-paths/register scripts/seed-admin.ts
+ *   SEED_ADMIN_PASSWORD=<password> SEED_ADMIN_CITIZEN_ID=<numero-de-documento> \
+ *   npm run seed:admin
  *
  * Uso en producción:
- *   NODE_ENV=production CONFIRM_PRODUCTION_SEED=yes \
+ *   CONFIRM_PRODUCTION_SEED=yes \
  *   SEED_ADMIN_EMAIL=admin@musila.com SEED_ADMIN_PASSWORD=<password-fuerte> \
- *   npx ts-node -r tsconfig-paths/register scripts/seed-admin.ts
+ *   SEED_ADMIN_CITIZEN_ID=<numero-de-documento> \
+ *   npm run seed:admin:prod
+ *
+ * SEED_ADMIN_PASSWORD y SEED_ADMIN_CITIZEN_ID son obligatorios en todos los
+ * entornos (sin default): el login (`LoginAuthDto`) se hace con el número de
+ * documento (citizenID) + password, no con el email — el email es solo un
+ * dato de contacto. Sin estos valores explícitos el script no arranca.
+ *
+ * Variables opcionales:
+ *   SEED_ADMIN_NAME, SEED_ADMIN_LAST_NAME
+ *   SEED_ADMIN_PLAN_TYPE = superadmin | admin   (default: superadmin)
  *
  * La conexión sigue el mismo esquema que src/shared/config/database/data-source.ts:
  *   - local:       .env.local  (DB_HOST/DB_PORT/DB_USERNAME/DB_PASSWORD/DB_NAME)
@@ -19,6 +38,7 @@ import * as dotenv from 'dotenv';
 import * as bcrypt from 'bcrypt';
 import { Client, ClientConfig } from 'pg';
 import * as path from 'path';
+import { generateMcid } from '../src/creator-id/utils/generate-mcid.util';
 
 const nodeEnv = process.env.NODE_ENV || 'local';
 
@@ -37,12 +57,39 @@ if (nodeEnv === 'production' && process.env.CONFIRM_PRODUCTION_SEED !== 'yes') {
   process.exit(1);
 }
 
+const VALID_PLAN_TYPES = ['superadmin', 'admin'] as const;
+type AdminPlanType = (typeof VALID_PLAN_TYPES)[number];
+
+const requestedPlanType = (process.env.SEED_ADMIN_PLAN_TYPE || 'superadmin').toLowerCase();
+if (!VALID_PLAN_TYPES.includes(requestedPlanType as AdminPlanType)) {
+  console.error(
+    `✘ SEED_ADMIN_PLAN_TYPE inválido: "${requestedPlanType}". Valores permitidos: ${VALID_PLAN_TYPES.join(', ')}.`,
+  );
+  process.exit(1);
+}
+const planType = requestedPlanType as AdminPlanType;
+const staffRoleSlug = planType === 'superadmin' ? 'super-admin' : 'admin';
+
+if (!process.env.SEED_ADMIN_CITIZEN_ID) {
+  console.error(
+    '✘ SEED_ADMIN_CITIZEN_ID es obligatorio: es el número de documento con el que se inicia sesión (LoginAuthDto.citizenID).',
+  );
+  process.exit(1);
+}
+
+if (!process.env.SEED_ADMIN_PASSWORD) {
+  console.error(
+    '✘ SEED_ADMIN_PASSWORD es obligatorio: es la contraseña con la que se inicia sesión (LoginAuthDto.password).',
+  );
+  process.exit(1);
+}
+
 const ADMIN = {
   name: process.env.SEED_ADMIN_NAME || 'Juan',
   lastName: process.env.SEED_ADMIN_LAST_NAME || 'Pérez',
   email: process.env.SEED_ADMIN_EMAIL || 'admin@musila.com',
-  password: process.env.SEED_ADMIN_PASSWORD || 'miContraseña123',
-  citizenID: process.env.SEED_ADMIN_CITIZEN_ID || 'ADMIN001',
+  password: process.env.SEED_ADMIN_PASSWORD,
+  citizenID: process.env.SEED_ADMIN_CITIZEN_ID,
 };
 
 function getClientConfig(): ClientConfig {
@@ -68,44 +115,79 @@ function getClientConfig(): ClientConfig {
   }
 }
 
+async function generateUniqueMcid(client: Client): Promise<string> {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const candidate = generateMcid();
+    const { rowCount } = await client.query(
+      'SELECT 1 FROM users WHERE musila_creator_id = $1',
+      [candidate],
+    );
+    if (rowCount === 0) return candidate;
+  }
+  throw new Error('No se pudo generar un Musila Creator ID único, intenta de nuevo');
+}
+
+async function syncStaffRole(client: Client, userId: string): Promise<void> {
+  const role = await client.query('SELECT id FROM staff_roles WHERE slug = $1', [staffRoleSlug]);
+  if (role.rowCount === 0) {
+    console.warn(
+      `⚠ No existe el rol interno "${staffRoleSlug}" en staff_roles (¿faltan migraciones por correr?). Se omite la sincronización de staff_user_roles.`,
+    );
+    return;
+  }
+
+  await client.query(
+    `INSERT INTO staff_user_roles (user_id, staff_role_id, assigned_at)
+     VALUES ($1, $2, NOW())
+     ON CONFLICT (user_id) DO UPDATE SET staff_role_id = EXCLUDED.staff_role_id, updated_at = NOW()`,
+    [userId, role.rows[0].id],
+  );
+}
+
 async function main() {
   const client = new Client(getClientConfig());
 
   await client.connect();
   console.log(`✔ Conectado a la base de datos (NODE_ENV=${nodeEnv})`);
 
-  // Verificar si ya existe
   const existing = await client.query(
-    'SELECT id, email, role FROM users WHERE email = $1',
+    'SELECT id, email, plan_type FROM users WHERE email = $1',
     [ADMIN.email],
   );
 
+  let userId: string;
+
   if (existing.rowCount > 0) {
     const row = existing.rows[0];
-    // Siempre sincroniza role y citizen_id para garantizar acceso
+    userId = row.id;
     await client.query(
-      'UPDATE users SET role = $1, citizen_id = $2 WHERE id = $3',
-      ['admin', ADMIN.citizenID, row.id],
+      'UPDATE users SET plan_type = $1, citizen_id = $2 WHERE id = $3',
+      [planType, ADMIN.citizenID, userId],
     );
-    console.log(`✔ Usuario actualizado → role=admin, citizenID=${ADMIN.citizenID} (id: ${row.id})`);
-    await client.end();
-    return;
+    console.log(`✔ Usuario actualizado → plan_type=${planType} (id: ${userId})`);
+    console.log(`  Número de documento (login): ${ADMIN.citizenID}`);
+  } else {
+    const hashedPassword = await bcrypt.hash(ADMIN.password, 10);
+    const musilaCreatorId = await generateUniqueMcid(client);
+
+    const result = await client.query(
+      `INSERT INTO users (name, last_name, email, password, plan_type, role, citizen_id, musila_creator_id, is_verified, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, 'compositor', $6, $7, true, NOW(), NOW())
+       RETURNING id`,
+      [ADMIN.name, ADMIN.lastName, ADMIN.email, hashedPassword, planType, ADMIN.citizenID, musilaCreatorId],
+    );
+
+    userId = result.rows[0].id;
+    console.log(`✔ Usuario ${planType} creado — id: ${userId}`);
+    console.log(`  Número de documento (login): ${ADMIN.citizenID}`);
+    console.log(`  Email: ${ADMIN.email}`);
+    console.log(`  Musila Creator ID: ${musilaCreatorId}`);
+    if (nodeEnv !== 'production') {
+      console.log(`  Password: ${ADMIN.password}`);
+    }
   }
 
-  // Crear usuario nuevo
-  const hashedPassword = await bcrypt.hash(ADMIN.password, 10);
-  const result = await client.query(
-    `INSERT INTO users (name, last_name, email, password, role, citizen_id, is_verified, created_at, updated_at)
-     VALUES ($1, $2, $3, $4, 'admin', $5, true, NOW(), NOW())
-     RETURNING id`,
-    [ADMIN.name, ADMIN.lastName, ADMIN.email, hashedPassword, ADMIN.citizenID],
-  );
-
-  console.log(`✔ Administrador creado — id: ${result.rows[0].id}`);
-  console.log(`  Email: ${ADMIN.email}`);
-  if (nodeEnv !== 'production') {
-    console.log(`  Password: ${ADMIN.password}`);
-  }
+  await syncStaffRole(client, userId);
 
   await client.end();
 }
