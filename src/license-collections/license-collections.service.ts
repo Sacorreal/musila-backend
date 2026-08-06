@@ -15,6 +15,8 @@ import { PaymentLinkTokenService } from './services/payment-link-token.service';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { EmailService } from 'src/shared/mail/services/email.service';
+import { LegalProofService } from 'src/shared/legal-proof/legal-proof.service';
+import { LegalEntityType } from 'src/shared/legal-proof/entities/legal-entity-type.enum';
 
 const DEFAULT_MAX_SEND_ATTEMPTS = 3;
 const ACTIVE_STATUSES = [CollectionStatus.PENDIENTE, CollectionStatus.ENLACE_ENVIADO];
@@ -40,6 +42,7 @@ export class LicenseCollectionsService {
     private readonly notificationsService: NotificationsService,
     private readonly emailService: EmailService,
     private readonly configService: ConfigService,
+    private readonly legalProofService: LegalProofService,
   ) {
     this.maxSendAttempts = this.configService.get<number>(
       'LICENSE_COLLECTION_MAX_SEND_ATTEMPTS',
@@ -358,6 +361,8 @@ export class LicenseCollectionsService {
       paidAt: collection.paidAt,
     });
 
+    await this.generateInstallmentLegalProof(collection);
+
     if (!collection.licenseContract) return;
 
     const siblings = await this.collectionRepo.find({
@@ -370,5 +375,34 @@ export class LicenseCollectionsService {
       licenseContractId: collection.licenseContract.id,
       requestedTrackId: collection.requestedTrack.id,
     });
+  }
+
+  /** Evidencia legal del pago de una cuota/anticipo: hash + timestamp de un snapshot del pago confirmado. */
+  private async generateInstallmentLegalProof(collection: LicenseCollection): Promise<void> {
+    const snapshot = {
+      event: 'license.collection.installment.paid',
+      collectionId: collection.id,
+      requestedTrackId: collection.requestedTrack.id,
+      licenseContractId: collection.licenseContract?.id ?? null,
+      installmentNumber: collection.installmentNumber,
+      amount: Number(collection.amount),
+      paidAt: collection.paidAt,
+    };
+    const buffer = Buffer.from(JSON.stringify(snapshot));
+    const fileName = `license-payment-${collection.id}.json`;
+
+    try {
+      await this.legalProofService.generateProof({
+        file: { buffer, fileName, mimeType: 'application/json' },
+        metadataPayload: { size: buffer.length, mimeType: 'application/json', fileName },
+        context: {
+          entityType: LegalEntityType.LICENSE_PAYMENT,
+          entityId: collection.id,
+          requestedByUserId: collection.requestedTrack.requester?.id,
+        },
+      });
+    } catch (error) {
+      this.logger.error(`No se pudo generar evidencia legal para el pago ${collection.id}`, error as Error);
+    }
   }
 }

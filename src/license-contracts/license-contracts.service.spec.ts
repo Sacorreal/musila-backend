@@ -353,6 +353,75 @@ describe('LicenseContractsService', () => {
         'license.contract.fulfilled',
         expect.objectContaining({ isrc: 'US-ABC-27-00001' }),
       );
+      expect(legalProofService.generateProof).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({
+            entityType: 'isrc_registration',
+            entityId: 'track-1',
+            requestedByUserId: requester.id,
+          }),
+        }),
+      );
+    });
+
+    it('marca el contrato como FULFILLED igual aunque falle la generación de evidencia legal', async () => {
+      contractRepo.findOne
+        .mockResolvedValueOnce({
+          id: 'contract-1',
+          status: LicenseContractStatus.EXPIRED,
+          requestedTrack,
+          validityDate: new Date(Date.now() - 1000),
+          signatories: [],
+        })
+        .mockResolvedValueOnce({ id: 'contract-1', status: LicenseContractStatus.FULFILLED, requestedTrack, signatories: [] });
+      legalProofService.generateProof.mockRejectedValue(new Error('timestamp provider down'));
+
+      await expect(
+        service.confirmRecording('contract-1', requester.id, { isrc: 'US-ABC-27-00001' }),
+      ).resolves.toBeDefined();
+
+      expect(contractRepo.save).toHaveBeenCalledWith(expect.objectContaining({ status: LicenseContractStatus.FULFILLED }));
+    });
+  });
+
+  describe('evaluateValidityForContract', () => {
+    it('marca FULFILLED y genera evidencia legal si el track ya tiene ISRC', async () => {
+      const contractWithIsrc = {
+        id: 'contract-1',
+        status: LicenseContractStatus.SIGNED,
+        requestedTrack: {
+          ...requestedTrack,
+          track: { ...track, externalsIds: [{ type: 'ISRC', value: 'US-ABC-27-00002' }] },
+        },
+        validityDate: new Date(Date.now() - 1000),
+      };
+
+      await service.evaluateValidityForContract(contractWithIsrc as any);
+
+      expect(contractRepo.save).toHaveBeenCalledWith(expect.objectContaining({ status: LicenseContractStatus.FULFILLED }));
+      expect(legalProofService.generateProof).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({
+            entityType: 'isrc_registration',
+            entityId: 'track-1',
+            requestedByUserId: undefined,
+          }),
+        }),
+      );
+    });
+
+    it('marca EXPIRED sin generar evidencia legal si el track no tiene ISRC', async () => {
+      const contractWithoutIsrc = {
+        id: 'contract-1',
+        status: LicenseContractStatus.SIGNED,
+        requestedTrack: { ...requestedTrack, track: { ...track, externalsIds: [] } },
+        validityDate: new Date(Date.now() - 1000),
+      };
+
+      await service.evaluateValidityForContract(contractWithoutIsrc as any);
+
+      expect(contractRepo.save).toHaveBeenCalledWith(expect.objectContaining({ status: LicenseContractStatus.EXPIRED }));
+      expect(legalProofService.generateProof).not.toHaveBeenCalled();
     });
   });
 });

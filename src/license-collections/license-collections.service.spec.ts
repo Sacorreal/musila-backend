@@ -13,6 +13,7 @@ import { PaymentLinkTokenService } from './services/payment-link-token.service';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { NotificationsService } from 'src/notifications/notifications.service';
 import { EmailService } from 'src/shared/mail/services/email.service';
+import { LegalProofService } from 'src/shared/legal-proof/legal-proof.service';
 
 const makeMockRepo = (overrides: Record<string, jest.Mock> = {}) => ({
   find: jest.fn().mockResolvedValue([]),
@@ -41,6 +42,7 @@ describe('LicenseCollectionsService', () => {
   let eventBus: { emit: jest.Mock };
   let notificationsService: { createNotification: jest.Mock };
   let emailService: { sendLicenseCollectionPaymentLinkEmail: jest.Mock };
+  let legalProofService: { generateProof: jest.Mock };
 
   beforeEach(async () => {
     collectionRepo = makeMockRepo();
@@ -53,6 +55,7 @@ describe('LicenseCollectionsService', () => {
     eventBus = { emit: jest.fn() };
     notificationsService = { createNotification: jest.fn().mockResolvedValue({}) };
     emailService = { sendLicenseCollectionPaymentLinkEmail: jest.fn().mockResolvedValue(undefined) };
+    legalProofService = { generateProof: jest.fn().mockResolvedValue({}) };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -63,6 +66,7 @@ describe('LicenseCollectionsService', () => {
         { provide: EventBusService, useValue: eventBus },
         { provide: NotificationsService, useValue: notificationsService },
         { provide: EmailService, useValue: emailService },
+        { provide: LegalProofService, useValue: legalProofService },
         {
           provide: ConfigService,
           useValue: {
@@ -188,6 +192,57 @@ describe('LicenseCollectionsService', () => {
       collectionRepo.findOne.mockResolvedValue(null);
       await service.markPaidFromRequestedTrack('track-request-id');
       expect(collectionRepo.save).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('markCollectionPaid', () => {
+    const paidCollection = () => ({
+      id: 'collection-id',
+      status: CollectionStatus.ENLACE_ENVIADO,
+      installmentNumber: 1,
+      amount: 50000,
+      requestedTrack: baseRequestedTrack(),
+      licenseContract: null,
+    });
+
+    it('genera evidencia legal con entityType LICENSE_PAYMENT tras marcar la cuota como pagada', async () => {
+      collectionRepo.findOne.mockResolvedValue(paidCollection());
+
+      await service.markCollectionPaid('collection-id');
+
+      expect(eventBus.emit).toHaveBeenCalledWith(
+        'license.collection.installment.paid',
+        expect.objectContaining({ collectionId: 'collection-id' }),
+      );
+      expect(legalProofService.generateProof).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({ entityType: 'license_payment', entityId: 'collection-id' }),
+        }),
+      );
+    });
+
+    it('marca la cuota como pagada igual aunque falle la generación de evidencia legal', async () => {
+      collectionRepo.findOne.mockResolvedValue(paidCollection());
+      legalProofService.generateProof.mockRejectedValue(new Error('timestamp provider down'));
+
+      await expect(service.markCollectionPaid('collection-id')).resolves.toBeUndefined();
+
+      expect(collectionRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ status: CollectionStatus.PAGADO }),
+      );
+    });
+
+    it('emite license.contract.fully_paid cuando todas las cuotas del contrato quedan pagadas', async () => {
+      const collection = { ...paidCollection(), licenseContract: { id: 'contract-id' } };
+      collectionRepo.findOne.mockResolvedValue(collection);
+      collectionRepo.find.mockResolvedValue([{ status: CollectionStatus.PAGADO }]);
+
+      await service.markCollectionPaid('collection-id');
+
+      expect(eventBus.emit).toHaveBeenCalledWith(
+        'license.contract.fully_paid',
+        expect.objectContaining({ licenseContractId: 'contract-id' }),
+      );
     });
   });
 

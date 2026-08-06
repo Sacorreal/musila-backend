@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,6 +16,8 @@ import { IntellectualProperty } from 'src/intellectual-property/entities/intelle
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { OtpVerificationService } from 'src/shared/otp-verification/otp-verification.service';
 import { OtpPurpose } from 'src/shared/otp-verification/otp-purpose.enum';
+import { LegalProofService } from 'src/shared/legal-proof/legal-proof.service';
+import { LegalEntityType } from 'src/shared/legal-proof/entities/legal-entity-type.enum';
 
 import { Split } from './entities/split.entity';
 import { SplitAuthor } from './entities/split-author.entity';
@@ -29,6 +32,8 @@ const PERCENTAGE_TOTAL = 100;
 
 @Injectable()
 export class SplitService {
+  private readonly logger = new Logger(SplitService.name);
+
   constructor(
     @InjectRepository(Split)
     private readonly splitRepository: Repository<Split>,
@@ -42,6 +47,7 @@ export class SplitService {
     private readonly intellectualPropertyRepository: Repository<IntellectualProperty>,
     private readonly eventBus: EventBusService,
     private readonly otpVerificationService: OtpVerificationService,
+    private readonly legalProofService: LegalProofService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -313,6 +319,8 @@ export class SplitService {
     split.intellectualProperty = savedIp;
     await this.splitRepository.save(split);
 
+    await this.generateSplitLegalProof(split);
+
     this.eventBus.emit('split.completed', {
       splitId: split.id,
       trackId: split.track.id,
@@ -321,5 +329,37 @@ export class SplitService {
       createdByName: split.createdBy.name,
       createdByEmail: split.createdBy.email,
     });
+  }
+
+  /** Evidencia legal del split completado: hash + timestamp de un snapshot de autores/porcentajes/firmas. */
+  private async generateSplitLegalProof(split: Split): Promise<void> {
+    const snapshot = {
+      event: 'split.completed',
+      splitId: split.id,
+      trackId: split.track.id,
+      completedAt: new Date().toISOString(),
+      authors: split.authors.map((author) => ({
+        userId: author.user.id,
+        percentage: Number(author.percentage),
+        role: author.role,
+        signedAt: author.signedAt,
+      })),
+    };
+    const buffer = Buffer.from(JSON.stringify(snapshot));
+    const fileName = `split-${split.id}.json`;
+
+    try {
+      await this.legalProofService.generateProof({
+        file: { buffer, fileName, mimeType: 'application/json' },
+        metadataPayload: { size: buffer.length, mimeType: 'application/json', fileName },
+        context: {
+          entityType: LegalEntityType.CO_AUTHORSHIP,
+          entityId: split.id,
+          requestedByUserId: split.createdBy.id,
+        },
+      });
+    } catch (error) {
+      this.logger.error(`No se pudo generar evidencia legal para el split ${split.id}`, error as Error);
+    }
   }
 }

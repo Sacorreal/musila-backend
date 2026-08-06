@@ -123,6 +123,14 @@ export interface AppEventMap {
     requesterName: string;
   }
 
+  'track.request.approved': {
+    requestId: string;
+    chatId: string;
+    trackTitle: string;
+    requesterId: string;
+    approvedByUserId: string;
+  }
+
   'track.request.price.set': {
     requestId: string;
     chatId: string;

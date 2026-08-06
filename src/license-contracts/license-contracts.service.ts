@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
@@ -69,6 +69,8 @@ interface AuthorEntry {
 
 @Injectable()
 export class LicenseContractsService {
+  private readonly logger = new Logger(LicenseContractsService.name);
+
   constructor(
     @InjectRepository(LicenseContract)
     private readonly contractRepo: Repository<LicenseContract>,
@@ -436,6 +438,8 @@ export class LicenseContractsService {
     contract.fulfilledAt = new Date();
     await this.contractRepo.save(contract);
 
+    await this.registerIsrcLegalProof(contract, dto.isrc, userId);
+
     const otherParty = isOwner ? contract.requestedTrack.requester : contract.requestedTrack.owner;
 
     this.eventBus.emit('license.contract.fulfilled', {
@@ -509,17 +513,50 @@ export class LicenseContractsService {
    */
   async evaluateValidityForContract(contract: LicenseContract): Promise<void> {
     const track = contract.requestedTrack.track;
-    const hasIsrc = (track.externalsIds ?? []).some((entry) => entry.type === 'ISRC');
+    const isrcEntry = (track.externalsIds ?? []).find((entry) => entry.type === 'ISRC');
 
-    if (hasIsrc) {
+    if (isrcEntry) {
       await this.trackRepo.update(track.id, { isAvailable: false });
       contract.status = LicenseContractStatus.FULFILLED;
       contract.fulfilledAt = new Date();
       await this.contractRepo.save(contract);
+      await this.registerIsrcLegalProof(contract, isrcEntry.value);
       return;
     }
 
     await this.markExpired(contract);
+  }
+
+  /** Evidencia legal del ISRC confirmado (manual o detectado automáticamente): hash + timestamp de un snapshot del hecho. */
+  private async registerIsrcLegalProof(
+    contract: LicenseContract,
+    isrc: string,
+    confirmedByUserId?: string,
+  ): Promise<void> {
+    const snapshot = {
+      event: 'license.contract.fulfilled',
+      contractId: contract.id,
+      trackId: contract.requestedTrack.track.id,
+      isrc,
+      confirmedByUserId: confirmedByUserId ?? null,
+      fulfilledAt: contract.fulfilledAt,
+    };
+    const buffer = Buffer.from(JSON.stringify(snapshot));
+    const fileName = `isrc-${contract.id}.json`;
+
+    try {
+      await this.legalProofService.generateProof({
+        file: { buffer, fileName, mimeType: 'application/json' },
+        metadataPayload: { size: buffer.length, mimeType: 'application/json', fileName },
+        context: {
+          entityType: LegalEntityType.ISRC_REGISTRATION,
+          entityId: contract.requestedTrack.track.id,
+          requestedByUserId: confirmedByUserId,
+        },
+      });
+    } catch (error) {
+      this.logger.error(`No se pudo generar evidencia legal para el ISRC del contrato ${contract.id}`, error as Error);
+    }
   }
 
   private async markExpired(contract: LicenseContract): Promise<void> {

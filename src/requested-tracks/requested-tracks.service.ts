@@ -188,6 +188,13 @@ export class RequestedTracksService {
         OtpPurpose.REQUESTED_TRACK_APPROVAL,
         id,
       );
+      this.eventBus.emit('track.request.approved', {
+        requestId: id,
+        chatId: existingRequestedTrack.chat?.id || '',
+        trackTitle: existingRequestedTrack.track.title,
+        requesterId: existingRequestedTrack.requester.id,
+        approvedByUserId: actingUserId,
+      });
     }
 
     Object.assign(existingRequestedTrack, updateRequestedTrackInput)

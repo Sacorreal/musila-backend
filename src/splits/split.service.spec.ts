@@ -15,6 +15,7 @@ describe('SplitService', () => {
   let ipRepo: any;
   let eventBus: { emit: jest.Mock };
   let otpVerificationService: { assertAndConsumeVerification: jest.Mock };
+  let legalProofService: { generateProof: jest.Mock };
 
   const admin: JwtPayload = { id: 'author-1', email: 'author1@musila.com', name: 'Autor Uno', planType: UserPlanType.PLAN_AUTOR };
   const coauthorUser = { id: 'author-2', email: 'author2@musila.com', name: 'Autor', lastName: 'Dos' };
@@ -40,6 +41,7 @@ describe('SplitService', () => {
     };
     eventBus = { emit: jest.fn() };
     otpVerificationService = { assertAndConsumeVerification: jest.fn().mockResolvedValue(undefined) };
+    legalProofService = { generateProof: jest.fn().mockResolvedValue({ legalProofId: 'proof-1' }) };
 
     service = new SplitService(
       splitRepo,
@@ -49,6 +51,7 @@ describe('SplitService', () => {
       ipRepo,
       eventBus as any,
       otpVerificationService as any,
+      legalProofService as any,
     );
   });
 
@@ -145,6 +148,24 @@ describe('SplitService', () => {
       await service.approveSplitAuthor('split-1', coauthorPayload);
 
       expect(ipRepo.save).toHaveBeenCalled();
+      expect(legalProofService.generateProof).toHaveBeenCalledWith(
+        expect.objectContaining({
+          context: expect.objectContaining({ entityType: 'co_authorship', entityId: 'split-1' }),
+        }),
+      );
+      expect(eventBus.emit).toHaveBeenCalledWith('split.completed', expect.objectContaining({ splitId: 'split-1' }));
+    });
+
+    it('completa el split igual aunque falle la generación de evidencia legal', async () => {
+      const split = pendingSplit();
+      splitRepo.findOne
+        .mockResolvedValueOnce(split)
+        .mockResolvedValueOnce({ ...split, status: SplitStatus.COMPLETED });
+      legalProofService.generateProof.mockRejectedValue(new Error('timestamp provider down'));
+
+      const coauthorPayload: JwtPayload = { id: coauthorUser.id, email: coauthorUser.email, name: coauthorUser.name, planType: UserPlanType.PLAN_AUTOR };
+
+      await expect(service.approveSplitAuthor('split-1', coauthorPayload)).resolves.toBeDefined();
       expect(eventBus.emit).toHaveBeenCalledWith('split.completed', expect.objectContaining({ splitId: 'split-1' }));
     });
 
