@@ -4,11 +4,11 @@ import { Repository } from 'typeorm';
 import { StorageService } from 'src/shared/storage/storage.service';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { withTimeout } from 'src/shared/utils/with-timeout.util';
+import { TimestampService } from 'src/shared/timestamp/timestamp.service';
 import { LegalProof } from './entities/legal-proof.entity';
 import { LegalProofStatus } from './entities/legal-proof-status.enum';
 import { FileMetadataService } from './services/file-metadata.service';
 import { FileHashService } from './services/file-hash.service';
-import { OpenTimestampsService } from './services/opentimestamps.service';
 import { LEGAL_PROOF_TIMEOUTS } from './constants/legal-proof.constants';
 import { GenerateLegalProofInput } from './interfaces/legal-proof-input.interface';
 import { GenerateLegalProofResult, LegalProofPartialError } from './interfaces/legal-proof-output.interface';
@@ -22,7 +22,7 @@ export class LegalProofService {
     @InjectRepository(LegalProof) private readonly repo: Repository<LegalProof>,
     private readonly fileMetadataService: FileMetadataService,
     private readonly fileHashService: FileHashService,
-    private readonly openTimestampsService: OpenTimestampsService,
+    private readonly timestampService: TimestampService,
     private readonly storageService: StorageService,
     private readonly eventBus: EventBusService,
   ) {}
@@ -121,17 +121,17 @@ export class LegalProofService {
     errors: LegalProofPartialError[],
   ): Promise<{ otsKey: string | null; status: LegalProofStatus }> {
     try {
-      const { otsBytes } = await this.openTimestampsService.stamp(sha256Hash);
+      const { evidence } = await this.timestampService.createTimestamp(Buffer.from(sha256Hash, 'hex'));
       const uploadResult = await this.storageService.uploadBuffer({
         key: `legal-proofs/${context.entityType}/${context.entityId}/${sha256Hash}.ots`,
-        buffer: otsBytes,
+        buffer: evidence,
         contentType: 'application/octet-stream',
       });
       return { otsKey: uploadResult.key, status: LegalProofStatus.PENDING };
     } catch (error) {
       errors.push({ step: 'timestamp', message: (error as Error).message, occurredAt: new Date() });
       this.logger.error(
-        `OpenTimestamps falló para ${context.entityType}:${context.entityId} tras reintentos`,
+        `Timestamp falló para ${context.entityType}:${context.entityId} tras reintentos`,
         error as Error,
       );
       return { otsKey: null, status: LegalProofStatus.FAILED };

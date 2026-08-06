@@ -1,9 +1,3 @@
 export const LEGAL_PROOF_TIMEOUTS = {
-  OPENTIMESTAMPS_MS: 8_000,
   TOTAL_PROCESS_MS: 30_000,
-} as const;
-
-export const OPENTIMESTAMPS_RETRY = {
-  MAX_RETRIES: 3,
-  BASE_DELAY_MS: 1_000,
 } as const;

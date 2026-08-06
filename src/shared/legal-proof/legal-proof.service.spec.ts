@@ -10,7 +10,7 @@ describe('LegalProofService', () => {
   let repo: { create: jest.Mock; save: jest.Mock };
   let fileMetadataService: { extract: jest.Mock };
   let fileHashService: { computeSha256: jest.Mock };
-  let openTimestampsService: { stamp: jest.Mock };
+  let timestampService: { createTimestamp: jest.Mock };
   let storageService: { uploadBuffer: jest.Mock };
   let eventBus: { emit: jest.Mock };
 
@@ -39,7 +39,9 @@ describe('LegalProofService', () => {
     };
     fileMetadataService = { extract: jest.fn().mockReturnValue({ size: 20, mimeType: 'audio/mpeg', fileName: 'track.mp3' }) };
     fileHashService = { computeSha256: jest.fn().mockResolvedValue('a'.repeat(64)) };
-    openTimestampsService = { stamp: jest.fn().mockResolvedValue({ otsBytes: Buffer.from('ots') }) };
+    timestampService = {
+      createTimestamp: jest.fn().mockResolvedValue({ provider: 'opentimestamps', evidence: Buffer.from('ots') }),
+    };
     storageService = {
       uploadBuffer: jest.fn().mockResolvedValue({ key: 'develop/legal-proofs/track/entity-id-1/hash.ots', publicUrl: 'https://x/y' }),
     };
@@ -49,7 +51,7 @@ describe('LegalProofService', () => {
       repo as any,
       fileMetadataService as any,
       fileHashService as any,
-      openTimestampsService as any,
+      timestampService as any,
       storageService as any,
       eventBus as any,
     );
@@ -60,7 +62,7 @@ describe('LegalProofService', () => {
 
     expect(fileMetadataService.extract).toHaveBeenCalledWith(baseInput.metadataPayload);
     expect(fileHashService.computeSha256).toHaveBeenCalledWith(baseInput.file.buffer);
-    expect(openTimestampsService.stamp).toHaveBeenCalledWith('a'.repeat(64));
+    expect(timestampService.createTimestamp).toHaveBeenCalledWith(Buffer.from('a'.repeat(64), 'hex'));
     expect(storageService.uploadBuffer).toHaveBeenCalledWith(
       expect.objectContaining({ key: 'legal-proofs/track/entity-id-1/' + 'a'.repeat(64) + '.ots' }),
     );
@@ -86,15 +88,15 @@ describe('LegalProofService', () => {
     await expect(service.generateProof(baseInput)).rejects.toThrow(UnprocessableEntityException);
 
     expect(repo.save).not.toHaveBeenCalled();
-    expect(openTimestampsService.stamp).not.toHaveBeenCalled();
+    expect(timestampService.createTimestamp).not.toHaveBeenCalled();
     expect(eventBus.emit).toHaveBeenCalledWith(
       'legal-proof.failed',
       expect.objectContaining({ entityType: 'track', entityId: 'entity-id-1', reason: 'metadata payload inválido' }),
     );
   });
 
-  it('si OpenTimestamps falla tras los reintentos, persiste status FAILED sin lanzar excepción', async () => {
-    openTimestampsService.stamp.mockRejectedValue(new Error('calendar servers unreachable'));
+  it('si el timestamp falla tras los reintentos, persiste status FAILED sin lanzar excepción', async () => {
+    timestampService.createTimestamp.mockRejectedValue(new Error('calendar servers unreachable'));
 
     const result = await service.generateProof(baseInput);
 

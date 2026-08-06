@@ -5,6 +5,7 @@
 declare module 'javascript-opentimestamps' {
   export class DetachedTimestampFile {
     static fromHash(op: unknown, hash: Buffer): DetachedTimestampFile;
+    static deserialize(buffer: Buffer | Uint8Array | number[] | ArrayBuffer): DetachedTimestampFile;
     serializeToBytes(): Uint8Array;
   }
 
@@ -12,5 +13,17 @@ declare module 'javascript-opentimestamps' {
     class OpSHA256 {}
   }
 
+  export interface VerifyChainResult {
+    timestamp: number;
+    height: number;
+  }
+
+  export type VerifyResult = Record<string, VerifyChainResult>;
+
   export function stamp(detached: DetachedTimestampFile): Promise<void>;
+  export function verify(
+    detachedStamped: DetachedTimestampFile,
+    detachedOriginal: DetachedTimestampFile,
+    options?: Record<string, unknown>,
+  ): Promise<VerifyResult>;
 }
