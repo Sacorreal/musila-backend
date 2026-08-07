@@ -9,19 +9,46 @@ import {
   PrimaryGeneratedColumn,
   ManyToMany,
   JoinTable,
+  Column,
 } from 'typeorm';
 
 import { Message } from './message.entity';
 import { Guest } from 'src/guests/entities/guest.entity';
+import { User } from 'src/users/entities/user.entity';
+import { ChatType } from '../types/chat.types';
 
 @Entity({ name: 'chat' })
 export class Chat {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => RequestedTrack, (rt) => rt.chat, { onDelete: 'CASCADE' })
+  @Column({
+    type: 'enum',
+    enum: ChatType,
+    default: ChatType.REQUEST,
+  })
+  type: ChatType;
+
+  @OneToOne(() => RequestedTrack, (rt) => rt.chat, {
+    onDelete: 'CASCADE',
+    nullable: true,
+  })
   @JoinColumn()
-  request: RequestedTrack;
+  request?: RequestedTrack | null;
+
+  @ManyToMany(() => User, { cascade: false })
+  @JoinTable({
+    name: 'chat_participants',
+    joinColumn: {
+      name: 'chat_id',
+      referencedColumnName: 'id',
+    },
+    inverseJoinColumn: {
+      name: 'user_id',
+      referencedColumnName: 'id',
+    },
+  })
+  participants?: User[];
 
   @OneToMany(() => Message, (m) => m.chat)
   messages?: Message[];
