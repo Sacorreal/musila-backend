@@ -17,7 +17,7 @@ export interface CertificateTrackSnapshot {
   trackId: string;
   title: string;
   genre: string;
-  subGenre: string | null;
+  ritmo: string | null;
   publishedAt: string;
 }
 

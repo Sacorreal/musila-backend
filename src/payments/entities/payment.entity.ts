@@ -30,6 +30,7 @@ export enum PaymentType {
 
 export enum PaymentProviderName {
   WOMPI = 'wompi',
+  STRIPE = 'stripe',
 }
 
 @Index(['userId', 'createdAt'])

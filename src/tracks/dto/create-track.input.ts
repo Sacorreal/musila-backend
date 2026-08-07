@@ -38,11 +38,11 @@ export class CreateTrackInput {
 
   @ApiPropertyOptional({
     example: 'Rock Progresivo',
-    description: 'Subgénero musical de la canción'
+    description: 'Ritmo musical de la canción'
   })
-  @IsString({ message: 'El subgénero debe ser un texto válido' })
+  @IsString({ message: 'El ritmo debe ser un texto válido' })
   @IsOptional()
-  subGenre?: string;
+  ritmo?: string;
 
   @ApiPropertyOptional({
     example: 'https://ejemplo.com/imagenes/bohemian-rhapsody.jpg',

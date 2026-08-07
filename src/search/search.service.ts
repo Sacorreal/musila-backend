@@ -59,7 +59,7 @@ export class SearchService {
                     where: [
                         { genre: startsWith },
                         { genre: contains },
-                        { subGenre: Raw(alias => `"${alias.replace('.', '"."')}"::text ILIKE :q`, { q: `%${query}%` }) }
+                        { ritmo: Raw(alias => `"${alias.replace('.', '"."')}"::text ILIKE :q`, { q: `%${query}%` }) }
                     ],
                     order: { genre: 'ASC' },
                     take,

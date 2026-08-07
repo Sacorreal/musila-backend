@@ -53,7 +53,7 @@ export function buildCertificatePdfInput(params: BuildCertificatePdfInputParams)
           { key: 'title', header: 'Título' },
           { key: 'publishedAt', header: 'Fecha de publicación' },
           { key: 'genre', header: 'Género' },
-          { key: 'subGenre', header: 'Subgénero' },
+          { key: 'ritmo', header: 'Ritmo' },
           { key: 'trackId', header: 'ID de la canción' },
         ],
         rows: [
@@ -61,7 +61,7 @@ export function buildCertificatePdfInput(params: BuildCertificatePdfInputParams)
             title: trackSnapshot.title,
             publishedAt: formatPublishedAt(trackSnapshot.publishedAt),
             genre: trackSnapshot.genre,
-            subGenre: trackSnapshot.subGenre ?? FALLBACK,
+            ritmo: trackSnapshot.ritmo ?? FALLBACK,
             trackId: trackSnapshot.trackId,
           },
         ],

@@ -75,7 +75,7 @@ export class CertificatesService {
       trackId: track.id,
       title: track.title,
       genre: track.genre?.genre ?? '—',
-      subGenre: track.subGenre ?? null,
+      ritmo: track.ritmo ?? null,
       publishedAt: track.createdAt.toISOString(),
     };
 

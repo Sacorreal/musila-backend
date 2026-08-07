@@ -101,6 +101,11 @@ export class PaymentsService {
     private readonly licenseCollectionsService: LicenseCollectionsService,
   ) {}
 
+  /** Nombre del proveedor de pago activo, para persistir en `Payment.provider`. */
+  private get activeProviderName(): PaymentProviderName {
+    return this.provider.name as unknown as PaymentProviderName;
+  }
+
   private webAppUrl(): string {
     const nodeEnv = this.configService.get<string>('NODE_ENV', 'local');
     const key =
@@ -232,7 +237,7 @@ export class PaymentsService {
     await this.requestedTrackRepo.save(track);
 
     await this.paymentRepo.save({
-      provider: PaymentProviderName.WOMPI,
+      provider: this.activeProviderName,
       userId,
       status: PaymentStatus.PENDING,
       amount: amountInCents / 100,
@@ -288,7 +293,7 @@ export class PaymentsService {
     }
 
     await this.paymentRepo.save({
-      provider: PaymentProviderName.WOMPI,
+      provider: this.activeProviderName,
       userId,
       status: PaymentStatus.PENDING,
       amount: amountInCents / 100,
@@ -395,7 +400,7 @@ export class PaymentsService {
     }
 
     const paymentData: Omit<Partial<Payment>, 'user'> = {
-      provider: PaymentProviderName.WOMPI,
+      provider: this.activeProviderName,
       wompiTransactionId: parsed.transactionId,
       userId: pending?.userId,
       status: paymentStatus,
@@ -462,7 +467,7 @@ export class PaymentsService {
     }
 
     const paymentData: Omit<Partial<Payment>, 'user'> = {
-      provider: PaymentProviderName.WOMPI,
+      provider: this.activeProviderName,
       wompiTransactionId: parsed.transactionId,
       userId: track.requester?.id,
       status: paymentStatus,
@@ -515,7 +520,7 @@ export class PaymentsService {
     }
 
     const paymentData: Omit<Partial<Payment>, 'user'> = {
-      provider: PaymentProviderName.WOMPI,
+      provider: this.activeProviderName,
       wompiTransactionId: parsed.transactionId,
       userId: collection.requestedTrack.requester?.id,
       status: paymentStatus,
@@ -681,7 +686,7 @@ export class PaymentsService {
     newExpiry.setDate(newExpiry.getDate() + days);
 
     const savedPayment = await this.paymentRepo.save({
-      provider: PaymentProviderName.WOMPI,
+      provider: this.activeProviderName,
       wompiTransactionId: result.transactionId,
       paymentSourceId: source.id,
       userId,

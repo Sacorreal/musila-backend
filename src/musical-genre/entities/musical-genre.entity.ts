@@ -19,7 +19,7 @@ export class MusicalGenre {
   genre: string;
 
   @Column({ type: 'text', nullable: true, array: true })
-  subGenre?: string[];
+  ritmo?: string[];
 
   @Column({ type: 'text', nullable: true })
   slug?: string;
@@ -48,9 +48,9 @@ export class MusicalGenre {
   deletedAt?: Date;
 
   @AfterLoad()
-  ensureSubGenreIsArray() {
-    if (!this.subGenre) {
-      this.subGenre = [];
+  ensureRitmoIsArray() {
+    if (!this.ritmo) {
+      this.ritmo = [];
     }
   }
 }

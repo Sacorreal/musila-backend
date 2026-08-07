@@ -20,10 +20,10 @@ export class FilterTrackDto extends PaginationDto {
   @IsOptional()
   genreId?: string;
 
-  @ApiPropertyOptional({ description: 'Filtrar por subgénero musical', example: 'Rock alternativo', type: String })
+  @ApiPropertyOptional({ description: 'Filtrar por ritmo musical', example: 'Rock alternativo', type: String })
   @IsString()
   @IsOptional()
-  subGenre?: string;
+  ritmo?: string;
 
   @ApiPropertyOptional({ description: 'Filtrar por idioma', example: 'es', type: String })
   @IsString()

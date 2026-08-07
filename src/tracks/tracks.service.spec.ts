@@ -81,7 +81,7 @@ describe('TracksService - createTrackService', () => {
   let service: TracksService;
   let eventBus: { emit: jest.Mock };
 
-  const mockGenre = { id: 'genre-1', genre: 'Rock', subGenre: [] };
+  const mockGenre = { id: 'genre-1', genre: 'Rock', ritmo: [] };
   const mockAuthors = [{ id: 'author-1' }];
   const mockMoods = [{ id: 'mood-1' }];
   const savedTrack = {

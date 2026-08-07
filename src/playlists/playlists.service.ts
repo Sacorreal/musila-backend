@@ -92,7 +92,7 @@ export class PlaylistsService {
       tracks: playlist.tracks?.map((track) => {
         if (!track.genre) return track;
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { subGenre, createdAt, updatedAt, deletedAt, ...genreWithoutSensitiveFields } = track.genre;
+        const { ritmo, createdAt, updatedAt, deletedAt, ...genreWithoutSensitiveFields } = track.genre;
         return { ...track, genre: genreWithoutSensitiveFields };
       }),
     }));

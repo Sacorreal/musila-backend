@@ -70,7 +70,7 @@ export class TracksService {
   ): Promise<TrackResponseDto> {
     const {
       genreId,
-      subGenre,
+      ritmo,
       authorsIds,
       moodsIds,
       themeId,
@@ -97,23 +97,23 @@ export class TracksService {
         'El género musical no existe',
       );
 
-    // Si el cliente envía un subgénero, lo validamos contra la lista del género.
-    // Si no envía subgénero, no forzamos validación ni bloqueamos la creación.
-    if (subGenre) {
-      if (genre.subGenre && genre.subGenre.length > 0) {
-        const isValidSubGenre = genre.subGenre.some(
-          (sg) => sg.toLowerCase() === subGenre.toLowerCase(),
+    // Si el cliente envía un ritmo, lo validamos contra la lista del género.
+    // Si no envía ritmo, no forzamos validación ni bloqueamos la creación.
+    if (ritmo) {
+      if (genre.ritmo && genre.ritmo.length > 0) {
+        const isValidRitmo = genre.ritmo.some(
+          (sg) => sg.toLowerCase() === ritmo.toLowerCase(),
         );
 
-        if (!isValidSubGenre) {
+        if (!isValidRitmo) {
           throw new BadRequestException(
-            `El subgénero "${subGenre}" no pertenece al género "${genre.genre}". ` +
-            `Los subgéneros válidos son: ${genre.subGenre.join(', ')}.`,
+            `El ritmo "${ritmo}" no pertenece al género "${genre.genre}". ` +
+            `Los ritmos válidos son: ${genre.ritmo.join(', ')}.`,
           );
         }
       } else {
         throw new BadRequestException(
-          `El género "${genre.genre}" no tiene subgéneros definidos para asociar un subgénero.`,
+          `El género "${genre.genre}" no tiene ritmos definidos para asociar un ritmo.`,
         );
       }
     }
@@ -182,7 +182,7 @@ export class TracksService {
     const newTrack = this.tracksRepository.create({
       ...rest,
       genre,
-      subGenre,
+      ritmo,
       authors,
       moods,
       theme: theme ?? null,
@@ -241,7 +241,7 @@ export class TracksService {
       offset,
       isGospel,
       language,
-      subGenre,
+      ritmo,
       genreId,
       isAvailable,
       title,
@@ -263,7 +263,7 @@ export class TracksService {
       ...(effectiveIsAvailable !== undefined && { isAvailable: effectiveIsAvailable }),
       ...(isGospel !== undefined && { isGospel }),
       ...(language && { language }),
-      ...(subGenre && { subGenre }),
+      ...(ritmo && { ritmo }),
       ...(genreId && { genre: { id: genreId } }),
       ...(title && { title: ILike(`%${title}%`) }),
       // 3. Restricción de propietario: Si NO tiene acceso global, filtra por su ID

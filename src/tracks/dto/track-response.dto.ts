@@ -65,7 +65,7 @@ export class TrackResponseDto {
   genre: string;
 
   @ApiProperty({ example: 'Pop rock', nullable: true })
-  subGenre?: string;
+  ritmo?: string;
 
   @ApiProperty({ nullable: true })
   coverUrl?: string;
@@ -145,7 +145,7 @@ export class TrackResponseDto {
     dto.id = track.id;
     dto.title = track.title;
     dto.genre = track.genre?.genre ?? null;
-    dto.subGenre = track.subGenre;
+    dto.ritmo = track.ritmo;
     dto.coverUrl = track.coverUrl;
     dto.audioUrl = track.audioUrl;
     dto.year = track.year;

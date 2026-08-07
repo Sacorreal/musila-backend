@@ -35,8 +35,8 @@ export class Track {
   })
   genre: MusicalGenre;
 
-  @Column('varchar', { name: 'sub_genre', nullable: true })
-  subGenre?: string;
+  @Column('varchar', { name: 'ritmo', nullable: true })
+  ritmo?: string;
 
   @Column({ type: 'varchar', nullable: true })
   coverUrl?: string;

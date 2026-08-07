@@ -15,9 +15,10 @@ import { PaymentsService } from './payments.service';
 import { ReceiptService } from './receipt.service';
 import { PlanExpiryNotificationsService } from './plan-expiry-notifications.service';
 import { SubscriptionRenewalService } from './subscription-renewal.service';
-import { PAYMENT_PROVIDER } from './domain/payment-provider.interface';
 import { WompiProvider } from './providers/wompi/wompi.provider';
 import { WompiSignatureService } from './providers/wompi/wompi-signature.service';
+import { StripeProvider } from './providers/stripe/stripe.provider';
+import { paymentProviderFactory } from './payment-provider.factory';
 
 @Module({
   imports: [
@@ -40,8 +41,10 @@ import { WompiSignatureService } from './providers/wompi/wompi-signature.service
     PlanExpiryNotificationsService,
     SubscriptionRenewalService,
     WompiSignatureService,
-    // Proveedor de pago activo. Sustituir aquí para cambiar de pasarela.
-    { provide: PAYMENT_PROVIDER, useClass: WompiProvider },
+    WompiProvider,
+    StripeProvider,
+    // Proveedor de pago activo, seleccionado vía PAYMENT_PROVIDER (env var).
+    paymentProviderFactory,
   ],
   exports: [PaymentsService],
 })
