@@ -7,6 +7,7 @@ import { withTimeout } from 'src/shared/utils/with-timeout.util';
 import { TimestampService } from 'src/shared/timestamp/timestamp.service';
 import { LegalProof } from './entities/legal-proof.entity';
 import { LegalProofStatus } from './entities/legal-proof-status.enum';
+import { LegalEntityType } from './entities/legal-entity-type.enum';
 import { FileMetadataService } from './services/file-metadata.service';
 import { FileHashService } from './services/file-hash.service';
 import { LEGAL_PROOF_TIMEOUTS } from './constants/legal-proof.constants';
@@ -39,6 +40,21 @@ export class LegalProofService {
       LEGAL_PROOF_TIMEOUTS.TOTAL_PROCESS_MS,
       'legal-proof generation exceeded 30s timeout',
     );
+  }
+
+  /**
+   * Metadata extraída de la evidencia legal más reciente de una entidad —
+   * reutilizable por cualquier consumidor que necesite un dato ya calculado
+   * al generar la evidencia (ej. duración real de un audio, extraída por
+   * `TrackLegalProofListener` al crear el track) sin acoplarse a la tabla
+   * `legal_proofs`.
+   */
+  async findLatestMetadata(entityType: LegalEntityType, entityId: string): Promise<ExtractedFileMetadata | null> {
+    const proof = await this.repo.findOne({
+      where: { entityType, entityId },
+      order: { createdAt: 'DESC' },
+    });
+    return (proof?.metadata as ExtractedFileMetadata | undefined) ?? null;
   }
 
   private async run(input: GenerateLegalProofInput): Promise<GenerateLegalProofResult> {

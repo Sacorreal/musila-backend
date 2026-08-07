@@ -265,6 +265,10 @@ export class StorageService {
       'application/x-pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+
+      // ZIP (paquete generado del Expediente de Registro)
+      'application/zip',
+      'application/x-zip-compressed',
     ];
   
     if (!allowedMimeTypes.includes(fileType)) {
@@ -298,6 +302,10 @@ export class StorageService {
       'application/msword': 'doc',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
         'docx',
+
+      // ZIP
+      'application/zip': 'zip',
+      'application/x-zip-compressed': 'zip',
     };
   
     return mimeMap[fileType] || fileType.split('/')[1];

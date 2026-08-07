@@ -468,4 +468,42 @@ export interface AppEventMap {
     durationMs?: number;
   }
 
+  // 📁 EXPEDIENTE DE REGISTRO
+
+  'registration-file.created': {
+    registrationFileId: string;
+    trackId: string;
+    caseNumber: string;
+    createdByUserId: string;
+    activeProfileKeys: string[];
+  }
+
+  'registration-file.status-changed': {
+    registrationFileId: string;
+    trackId: string;
+    caseNumber: string;
+    previousStatus: string;
+    status: string;
+  }
+
+  'registration-file.profile-status-changed': {
+    registrationFileId: string;
+    profileKey: string;
+    status: string;
+    officialRegistryNumber?: string | null;
+  }
+
+  'registration-file.generated': {
+    registrationFileId: string;
+    caseNumber: string;
+    pdfUrl: string;
+    zipUrl: string;
+  }
+
+  'publishing-contract.created': {
+    publishingContractId: string;
+    ownerId: string;
+    publisherName: string;
+  }
+
 }

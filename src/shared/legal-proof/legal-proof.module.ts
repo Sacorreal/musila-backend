@@ -11,6 +11,6 @@ import { FileHashService } from './services/file-hash.service';
 @Module({
   imports: [TypeOrmModule.forFeature([LegalProof]), ConfigModule, TimestampModule],
   providers: [LegalProofService, FileMetadataService, FileHashService],
-  exports: [LegalProofService],
+  exports: [LegalProofService, FileHashService],
 })
 export class LegalProofModule {}

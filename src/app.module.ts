@@ -45,6 +45,8 @@ import { FollowsModule } from './follows/follows.module';
 import { SharingModule } from './sharing/sharing.module';
 import { StaffAuthorizationModule } from './staff-authorization/staff-authorization.module';
 import { StaffAuditModule } from './staff-audit/staff-audit.module';
+import { PublishingContractsModule } from './publishing-contracts/publishing-contracts.module';
+import { RegistrationFileModule } from './registration-file/registration-file.module';
 
 @Module({
   imports: [
@@ -94,6 +96,8 @@ import { StaffAuditModule } from './staff-audit/staff-audit.module';
     SharingModule,
     StaffAuthorizationModule,
     StaffAuditModule,
+    PublishingContractsModule,
+    RegistrationFileModule,
   ],
   controllers: [AppController],
   providers: [

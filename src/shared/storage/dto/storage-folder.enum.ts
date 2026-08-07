@@ -7,4 +7,7 @@ export enum StorageFolder {
   CHAT = 'chat',
   BLOG_ARTICLE_COVER = 'blog/articles/covers',
   BLOG_AUTHOR_AVATAR = 'blog/authors/avatars',
+  REGISTRATION_FILE_DOCUMENTS = 'registration-file/documents',
+  REGISTRATION_FILE_GENERATED = 'registration-file/generated',
+  PUBLISHING_CONTRACT_DOCS = 'publishing-contracts/documents',
 }
