@@ -15,6 +15,7 @@ import { RegistrationFileStatus } from './entities/registration-file-status.enum
 import { RegistrationFileParticipant } from './entities/registration-file-participant.entity';
 import { RegistrationNumberService } from './registration-number.service';
 import { CreateRegistrationFileDto } from './dto/create-registration-file.dto';
+import { ListRegistrationFilesDto } from './dto/list-registration-files.dto';
 import { UpdateGeneralInfoDto } from './dto/update-general-info.dto';
 import { UpdateParticipantsDto } from './dto/update-participants.dto';
 import { UpdatePhonogramDto } from './dto/update-phonogram.dto';
@@ -28,6 +29,26 @@ export interface RegistrationFileSummary {
   id: string;
   caseNumber: string;
   status: RegistrationFileStatus;
+}
+
+/** Fila del listado centralizado de expedientes (buscador/panel de gestión). */
+export interface RegistrationFileListItem {
+  id: string;
+  caseNumber: string;
+  title: string;
+  status: RegistrationFileStatus;
+  trackId: string;
+  completenessPercentage: number | null;
+  activeProfileKeys: string[];
+  updatedAt: Date;
+  ownerName: string;
+}
+
+export interface PaginatedRegistrationFiles {
+  data: RegistrationFileListItem[];
+  total: number;
+  page: number;
+  limit: number;
 }
 
 @Injectable()
@@ -134,6 +155,65 @@ export class RegistrationFileService {
     const registrationFile = await this.findWithRelationsOrFail(id);
     this.assertOwnership(registrationFile.track, user);
     return registrationFile;
+  }
+
+  /**
+   * Listado centralizado de expedientes con búsqueda, filtros y paginación.
+   * Mismo criterio de autorización que `assertOwnership`: el admin ve todos los
+   * expedientes de la plataforma (con filtro opcional por propietario) y el
+   * autor solo aquellos cuyo track lo incluye como autor. La completitud sale
+   * del snapshot cacheado en la entidad (no se recalcula por fila).
+   */
+  async findAllForUser(query: ListRegistrationFilesDto, user: JwtPayload): Promise<PaginatedRegistrationFiles> {
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 10;
+    const isAdmin = isAdminPlanType(user.planType);
+
+    const qb = this.registrationFileRepository
+      .createQueryBuilder('rf')
+      .leftJoinAndSelect('rf.track', 'track')
+      .leftJoinAndSelect('rf.createdBy', 'createdBy')
+      .orderBy('rf.updatedAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    if (isAdmin) {
+      if (query.ownerId) {
+        qb.leftJoin('track.authors', 'author').andWhere('author.id = :ownerId', { ownerId: query.ownerId });
+      }
+    } else {
+      qb.leftJoin('track.authors', 'author').andWhere('author.id = :userId', { userId: user.id });
+    }
+
+    const search = query.search?.trim();
+    if (search) {
+      qb.andWhere('(rf.caseNumber ILIKE :q OR rf.internalCode ILIKE :q OR rf.title ILIKE :q)', {
+        q: `%${search}%`,
+      });
+    }
+
+    if (query.status) {
+      qb.andWhere('rf.status = :status', { status: query.status });
+    }
+
+    const [rows, total] = await qb.getManyAndCount();
+
+    return {
+      data: rows.map((rf) => ({
+        id: rf.id,
+        caseNumber: rf.caseNumber,
+        title: rf.title,
+        status: rf.status,
+        trackId: rf.track.id,
+        completenessPercentage: rf.completenessSnapshot?.overallPercentage ?? null,
+        activeProfileKeys: rf.activeProfileKeys,
+        updatedAt: rf.updatedAt,
+        ownerName: [rf.createdBy?.name, rf.createdBy?.lastName].filter(Boolean).join(' ').trim() || '—',
+      })),
+      total,
+      page,
+      limit,
+    };
   }
 
   async updateGeneralInfo(id: string, dto: UpdateGeneralInfoDto, user: JwtPayload): Promise<RegistrationFile> {

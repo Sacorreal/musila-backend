@@ -29,6 +29,7 @@ import { RegistrationFileDocumentService } from './services/registration-file-do
 import { RegistrationFileProfileStatusService } from './services/registration-file-profile-status.service';
 import { REGISTRATION_PROVIDER, RegistrationProvider } from './domain/registration-provider.interface';
 import { CreateRegistrationFileDto } from './dto/create-registration-file.dto';
+import { ListRegistrationFilesDto } from './dto/list-registration-files.dto';
 import { AddRegistrationFileDocumentDto } from './dto/add-registration-file-document.dto';
 import { MarkProfileRegisteredDto } from './dto/mark-profile-registered.dto';
 import { UpdateGeneralInfoDto } from './dto/update-general-info.dto';
@@ -77,6 +78,16 @@ export class RegistrationFileController {
     const ids = (trackIds ?? '').split(',').map((id) => id.trim()).filter(Boolean);
     const summaries = await this.registrationFileService.getSummariesForTracks(ids);
     return Object.fromEntries(summaries);
+  }
+
+  // ─── GET /registration-files ────────────────────────────────────────────────
+  @Get('registration-files')
+  @ApiOperation({
+    summary: 'Listar expedientes con búsqueda, filtros y paginación (admin: todos; autor: los suyos)',
+  })
+  @ApiResponse({ status: 200, description: 'Listado paginado { data, total, page, limit }' })
+  findAll(@Query() query: ListRegistrationFilesDto, @CurrentUser() user: JwtPayload) {
+    return this.registrationFileService.findAllForUser(query, user);
   }
 
   // ─── GET /tracks/:trackId/registration-file ────────────────────────────────
