@@ -9,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Res,
   StreamableFile,
   UseGuards,
@@ -66,6 +67,16 @@ export class RegistrationFileController {
     @CurrentUser() user: JwtPayload,
   ) {
     return this.registrationFileService.createForTrack(trackId, dto, user);
+  }
+
+  // ─── GET /tracks/registration-files/summary ─────────────────────────────────
+  @Get('tracks/registration-files/summary')
+  @ApiOperation({ summary: 'Estado de expediente por track, en lote (evita N+1 en listados)' })
+  @ApiResponse({ status: 200, description: 'Mapa trackId -> { id, caseNumber, status }' })
+  async getSummariesForTracks(@Query('trackIds') trackIds: string) {
+    const ids = (trackIds ?? '').split(',').map((id) => id.trim()).filter(Boolean);
+    const summaries = await this.registrationFileService.getSummariesForTracks(ids);
+    return Object.fromEntries(summaries);
   }
 
   // ─── GET /tracks/:trackId/registration-file ────────────────────────────────

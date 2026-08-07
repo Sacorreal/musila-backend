@@ -1,6 +1,6 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { isAdminPlanType } from 'src/users/entities/user-plan-type.enum';
 import { Track } from 'src/tracks/entities/track.entity';
@@ -23,6 +23,12 @@ import { UpdateDerivativeWorkDto } from './dto/update-derivative-work.dto';
 import { UpdateCommissionedWorkDto } from './dto/update-commissioned-work.dto';
 import { UpdateAiUsageDto } from './dto/update-ai-usage.dto';
 import { mapCoauthorRoleToParticipantRole } from './utils/coauthor-role-mapper.util';
+
+export interface RegistrationFileSummary {
+  id: string;
+  caseNumber: string;
+  status: RegistrationFileStatus;
+}
 
 @Injectable()
 export class RegistrationFileService {
@@ -102,6 +108,26 @@ export class RegistrationFileService {
       throw new NotFoundException('Este track no tiene un expediente de registro');
     }
     return registrationFile;
+  }
+
+  /**
+   * Batch liviano para listados como "Mis canciones" — evita N+1 requests de
+   * estado por fila. Mismo criterio que `CertificatesService.getStatusesForTracks`.
+   */
+  async getSummariesForTracks(trackIds: string[]): Promise<Map<string, RegistrationFileSummary>> {
+    if (!trackIds.length) return new Map();
+
+    const registrationFiles = await this.registrationFileRepository.find({
+      where: { track: { id: In(trackIds) } },
+      relations: ['track'],
+    });
+
+    return new Map(
+      registrationFiles.map((rf) => [
+        rf.track.id,
+        { id: rf.id, caseNumber: rf.caseNumber, status: rf.status },
+      ]),
+    );
   }
 
   async findOne(id: string, user: JwtPayload): Promise<RegistrationFile> {
