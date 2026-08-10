@@ -19,8 +19,8 @@ import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { StaffAuditInterceptor } from 'src/staff-audit/interceptors/staff-audit.interceptor';
 import { AuditAction } from 'src/staff-audit/decorators/audit-action.decorator';
-import { RequireStaffPermission } from './decorators/require-staff-permission.decorator';
-import { StaffPermissionGuard } from './guards/staff-permission.guard';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { StaffMembersService } from './staff-members.service';
 import { InviteStaffMemberDto } from './dto/invite-staff-member.dto';
 import { AssignStaffRoleDto } from './dto/assign-staff-role.dto';
@@ -43,16 +43,16 @@ export class StaffMembersController {
   }
 
   @Get()
-  @UseGuards(StaffPermissionGuard)
-  @RequireStaffPermission('system:staff:view')
+  @UseGuards(AuthorizationGuard)
+  @RequireCapability(['platform.staff.view', 'platform.roles.view'], 'OR')
   @ApiOperation({ summary: 'Listar el equipo con su rol interno activo (Flow 1)' })
   findAll(@Query() pagination: StaffMemberPaginationDto) {
     return this.staffMembersService.findAll(pagination);
   }
 
   @Post('invite')
-  @UseGuards(StaffPermissionGuard)
-  @RequireStaffPermission('system:staff:manage')
+  @UseGuards(AuthorizationGuard)
+  @RequireCapability('platform.staff.manage')
   @AuditAction('staff-members:invite')
   @ApiOperation({ summary: 'Invitar por correo a alguien no registrado y asignarle un rol interno (Flow 1)' })
   invite(@Body() dto: InviteStaffMemberDto, @CurrentUser() user: JwtPayload) {
@@ -60,8 +60,8 @@ export class StaffMembersController {
   }
 
   @Post(':userId/assign-role')
-  @UseGuards(StaffPermissionGuard)
-  @RequireStaffPermission('system:staff:manage')
+  @UseGuards(AuthorizationGuard)
+  @RequireCapability('platform.staff.manage')
   @AuditAction('staff-members:assign-role')
   @ApiParam({ name: 'userId' })
   @ApiOperation({ summary: 'Asignar o cambiar el rol interno de un usuario ya existente (Flow 1)' })
@@ -74,8 +74,8 @@ export class StaffMembersController {
   }
 
   @Delete(':userId/role')
-  @UseGuards(StaffPermissionGuard)
-  @RequireStaffPermission('system:staff:manage')
+  @UseGuards(AuthorizationGuard)
+  @RequireCapability('platform.staff.manage')
   @AuditAction('staff-members:revoke-role')
   @ApiParam({ name: 'userId' })
   @ApiOperation({ summary: 'Revocar el rol interno de un miembro del equipo' })

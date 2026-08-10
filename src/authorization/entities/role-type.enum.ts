@@ -1,0 +1,5 @@
+export enum RoleType {
+  PLATFORM = 'PLATFORM',
+  ORGANIZATION = 'ORGANIZATION',
+  ROSTER = 'ROSTER',
+}

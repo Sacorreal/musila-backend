@@ -5,21 +5,21 @@ import { PlansGuard } from 'src/users/guards/plans.guard';
 import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
 import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
 import { StaffAuditInterceptor } from 'src/staff-audit/interceptors/staff-audit.interceptor';
-import { RequireStaffPermission } from './decorators/require-staff-permission.decorator';
-import { StaffPermissionGuard } from './guards/staff-permission.guard';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { StaffPermissionsService } from './staff-permissions.service';
 
 @ApiTags('Staff · Permisos')
 @ApiBearerAuth('JWT-auth')
 @AllowedPlans(...ADMIN_PLAN_TYPES)
-@UseGuards(JWTAuthGuard, PlansGuard, StaffPermissionGuard)
+@UseGuards(JWTAuthGuard, PlansGuard, AuthorizationGuard)
 @UseInterceptors(StaffAuditInterceptor)
 @Controller('staff/permissions')
 export class StaffPermissionsController {
   constructor(private readonly staffPermissionsService: StaffPermissionsService) {}
 
   @Get()
-  @RequireStaffPermission('system:roles:view', 'system:staff:view')
+  @RequireCapability(['platform.roles.view', 'platform.staff.view'], 'OR')
   @ApiOperation({ summary: 'Catálogo de permisos disponibles, agrupado por módulo' })
   findAll() {
     return this.staffPermissionsService.findAllGroupedByModule();

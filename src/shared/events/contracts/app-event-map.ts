@@ -506,4 +506,23 @@ export interface AppEventMap {
     publisherName: string;
   }
 
+  // 🔐 AUTHORIZATION ENGINE (capabilities, roles, memberships, subscriptions)
+
+  'authorization.role.updated': {
+    roleId: string;
+  }
+
+  'authorization.capability.updated': {
+    capabilityId: string;
+  }
+
+  'authorization.membership.updated': {
+    userId: string;
+  }
+
+  'authorization.subscription.updated': {
+    subjectType: string;
+    subjectId: string;
+  }
+
 }

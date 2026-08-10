@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { EntitlementService } from 'src/entitlements/entitlement.service';
+import { UserPlanSubscriptionSyncService } from 'src/entitlements/user-plan-subscription-sync.service';
 import { PlanLimitsService } from 'src/shared/plan-limits/plan-limits.service';
 import { UserPlan } from './entities/user-plan.enum';
 import { UserPlanType } from './entities/user-plan-type.enum';
@@ -24,6 +26,8 @@ export class PlanService {
     @InjectRepository(Payment)
     private readonly paymentRepo: Repository<Payment>,
     private readonly planLimitsService: PlanLimitsService,
+    private readonly entitlementService: EntitlementService,
+    private readonly subscriptionSyncService: UserPlanSubscriptionSyncService,
   ) {}
 
   async getPlanStatus(userId: string) {
@@ -57,6 +61,8 @@ export class PlanService {
       await this.userRepo.update(userId, { plan: UserPlan.FREE, planExpiresAt: undefined });
       user.plan = UserPlan.FREE;
       user.planExpiresAt = undefined;
+      // Mantiene coherente la Subscription del motor de autorización (doble escritura).
+      await this.subscriptionSyncService.syncFromUser(userId);
     }
 
     let daysRemaining: number | null = null;
@@ -66,6 +72,10 @@ export class PlanService {
 
     const features = PLAN_FEATURES[`${user.planType}_${user.plan}`] ?? [];
     const usage = await this.planLimitsService.getUsageForPlanType(user.planType, user.plan, userId);
+    // Entitlements reales del motor de autorización (aditivo: no rompe el shape legacy).
+    const entitlements = await this.entitlementService.getEffectiveEntitlements(
+      this.entitlementService.userSubject(userId),
+    );
 
     return {
       plan: user.plan,
@@ -78,6 +88,7 @@ export class PlanService {
       daysRemaining,
       features,
       usage,
+      entitlements,
     };
   }
 

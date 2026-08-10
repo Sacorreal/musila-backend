@@ -1,0 +1,8 @@
+export enum OrganizationType {
+  LABEL = 'LABEL',
+  PUBLISHER = 'PUBLISHER',
+  MANAGEMENT = 'MANAGEMENT',
+  AGENCY = 'AGENCY',
+  MUSIC_LIBRARY = 'MUSIC_LIBRARY',
+  OTHER = 'OTHER',
+}

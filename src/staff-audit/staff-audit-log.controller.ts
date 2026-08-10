@@ -7,8 +7,8 @@ import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
 import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { StaffPermissionGuard } from 'src/staff-authorization/guards/staff-permission.guard';
-import { RequireStaffPermission } from 'src/staff-authorization/decorators/require-staff-permission.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
 import { StaffAuditLogService } from './staff-audit-log.service';
 import { StaffAuditLogFilterDto } from './dto/staff-audit-log-filter.dto';
 import { ExportStaffAuditLogDto } from './dto/export-staff-audit-log.dto';
@@ -22,7 +22,7 @@ import { buildPdfHttpHeaders } from 'src/shared/pdf/utils/pdf-http-headers.util'
 @ApiTags('Staff · Auditoría')
 @ApiBearerAuth('JWT-auth')
 @AllowedPlans(...ADMIN_PLAN_TYPES)
-@UseGuards(JWTAuthGuard, PlansGuard, StaffPermissionGuard)
+@UseGuards(JWTAuthGuard, PlansGuard, AuthorizationGuard)
 @UseInterceptors(StaffAuditInterceptor)
 @Controller('staff/audit-log')
 export class StaffAuditLogController {
@@ -32,7 +32,7 @@ export class StaffAuditLogController {
   ) {}
 
   @Get()
-  @RequireStaffPermission('audit:view')
+  @RequireCapability('platform.audit.view')
   @AuditAction('audit:query')
   @ApiOperation({ summary: 'Listar el registro de auditoría de staff, con filtros (Flow 5)' })
   findAll(@Query() filter: StaffAuditLogFilterDto) {
@@ -40,7 +40,7 @@ export class StaffAuditLogController {
   }
 
   @Get('export')
-  @RequireStaffPermission('audit:export')
+  @RequireCapability('platform.audit.export')
   @AuditAction('audit:export')
   @ApiOperation({ summary: 'Exportar el registro de auditoría de staff a CSV o PDF' })
   async export(

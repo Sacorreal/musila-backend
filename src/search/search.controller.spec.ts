@@ -1,4 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { SearchController } from './search.controller';
 import { SearchService } from './search.service';
 
@@ -12,7 +14,12 @@ describe('SearchController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [SearchController],
       providers: [{ provide: SearchService, useValue: searchService }],
-    }).compile();
+    })
+      .overrideGuard(JWTAuthGuard)
+      .useValue({ canActivate: () => true })
+      .overrideGuard(AuthorizationGuard)
+      .useValue({ canActivate: () => true })
+      .compile();
 
     controller = module.get<SearchController>(SearchController);
   });

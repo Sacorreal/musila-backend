@@ -9,6 +9,7 @@ import {
   Put,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 
 import {
@@ -29,13 +30,16 @@ import { UsersService } from 'src/users/users.service';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { TracksService } from './tracks.service';
-import { ADMIN_PLAN_TYPES, UserPlanType, isAdminPlanType } from '../users/entities/user-plan-type.enum';
+import { UserPlanType, isAdminPlanType } from '../users/entities/user-plan-type.enum';
 
 import { PaginatedTracksResponseDto, TrackResponseDto } from './dto/track-response.dto'
 import { PlansGuard } from 'src/users/guards/plans.guard';
 import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
 import { EmailVerifiedGuard } from 'src/users/guards/email-verified.guard';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
+import { ConsumeEntitlement } from 'src/entitlements/decorators/consume-entitlement.decorator';
+import { EntitlementConsumeInterceptor } from 'src/entitlements/interceptors/entitlement-consume.interceptor';
 
 @ApiTags('Tracks')
 @UseGuards(JWTAuthGuard, PlansGuard)
@@ -47,9 +51,10 @@ export class TracksController {
   ) {}
 
   @Post()
-  @AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
-  @UseGuards(EmailVerifiedGuard)
-  @PlanLimit('tracks')
+  @RequireCapability('track.create')
+  @ConsumeEntitlement('tracks.publish')
+  @UseGuards(EmailVerifiedGuard, AuthorizationGuard)
+  @UseInterceptors(EntitlementConsumeInterceptor)
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: CreateTrackInput })  
     @ApiOperation({

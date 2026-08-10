@@ -20,8 +20,8 @@ import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { StaffAuditInterceptor } from 'src/staff-audit/interceptors/staff-audit.interceptor';
 import { AuditAction } from 'src/staff-audit/decorators/audit-action.decorator';
-import { RequireStaffPermission } from './decorators/require-staff-permission.decorator';
-import { StaffPermissionGuard } from './guards/staff-permission.guard';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { StaffRolesService } from './staff-roles.service';
 import { CreateStaffRoleDto } from './dto/create-staff-role.dto';
 import { UpdateStaffRoleDto } from './dto/update-staff-role.dto';
@@ -30,21 +30,21 @@ import { StaffRolePaginationDto } from './dto/staff-role-pagination.dto';
 @ApiTags('Staff · Roles')
 @ApiBearerAuth('JWT-auth')
 @AllowedPlans(...ADMIN_PLAN_TYPES)
-@UseGuards(JWTAuthGuard, PlansGuard, StaffPermissionGuard)
+@UseGuards(JWTAuthGuard, PlansGuard, AuthorizationGuard)
 @UseInterceptors(StaffAuditInterceptor)
 @Controller('staff/roles')
 export class StaffRolesController {
   constructor(private readonly staffRolesService: StaffRolesService) {}
 
   @Get()
-  @RequireStaffPermission('system:roles:view', 'system:staff:view')
+  @RequireCapability(['platform.roles.view', 'platform.staff.view'], 'OR')
   @ApiOperation({ summary: 'Listar roles internos (base + personalizados)' })
   findAll(@Query() pagination: StaffRolePaginationDto) {
     return this.staffRolesService.findAll(pagination);
   }
 
   @Get(':id')
-  @RequireStaffPermission('system:roles:view', 'system:staff:view')
+  @RequireCapability(['platform.roles.view', 'platform.staff.view'], 'OR')
   @ApiParam({ name: 'id' })
   @ApiOperation({ summary: 'Obtener el detalle de un rol interno, con sus permisos' })
   findOne(@Param('id', ParseUUIDPipe) id: string) {
@@ -52,7 +52,7 @@ export class StaffRolesController {
   }
 
   @Post()
-  @RequireStaffPermission('system:roles:manage')
+  @RequireCapability('platform.roles.manage')
   @AuditAction('staff-roles:create')
   @ApiOperation({ summary: 'Crear un rol interno personalizado (Flow 3)' })
   create(@Body() dto: CreateStaffRoleDto, @CurrentUser() user: JwtPayload) {
@@ -60,7 +60,7 @@ export class StaffRolesController {
   }
 
   @Patch(':id')
-  @RequireStaffPermission('system:roles:manage')
+  @RequireCapability('platform.roles.manage')
   @AuditAction('staff-roles:update')
   @ApiParam({ name: 'id' })
   @ApiOperation({ summary: 'Editar nombre, descripción o permisos de un rol interno' })
@@ -69,7 +69,7 @@ export class StaffRolesController {
   }
 
   @Delete(':id')
-  @RequireStaffPermission('system:roles:manage')
+  @RequireCapability('platform.roles.manage')
   @AuditAction('staff-roles:delete')
   @ApiParam({ name: 'id' })
   @ApiOperation({ summary: 'Eliminar un rol interno personalizado sin miembros asignados' })

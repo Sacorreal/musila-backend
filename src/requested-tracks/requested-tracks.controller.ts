@@ -3,7 +3,7 @@ import { RequestedTracksService } from './requested-tracks.service';
 import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
 import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
 import { SetLicensePriceDto } from './dto/set-license-price.dto';
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards, UseInterceptors, Query } from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { LicenseType } from './entities/license-type.enum';
@@ -15,8 +15,11 @@ import { PaginationDto} from '../shared/dto/pagination.dto'
 import { PaginatedRequestedTracksResponseDto } from './dto/requested-track-pagination.dto';
 import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
 import { ADMIN_PLAN_TYPES, UserPlanType } from 'src/users/entities/user-plan-type.enum';
-import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
 import { EmailVerifiedGuard } from 'src/users/guards/email-verified.guard';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
+import { ConsumeEntitlement } from 'src/entitlements/decorators/consume-entitlement.decorator';
+import { EntitlementConsumeInterceptor } from 'src/entitlements/interceptors/entitlement-consume.interceptor';
 
 @ApiTags('Pistas Solicitadas')
 @UseGuards(JWTAuthGuard, PlansGuard)
@@ -28,9 +31,10 @@ export class RequestedTracksController {
 
 
   @Post()
-  @AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_360, UserPlanType.PLAN_DESCUBRIDOR, UserPlanType.INVITADO)
-  @UseGuards(EmailVerifiedGuard)
-  @PlanLimit('requests')
+  @RequireCapability('license.request')
+  @ConsumeEntitlement('license.request')
+  @UseGuards(EmailVerifiedGuard, AuthorizationGuard)
+  @UseInterceptors(EntitlementConsumeInterceptor)
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Crear solicitud de pista',

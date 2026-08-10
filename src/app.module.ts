@@ -47,6 +47,9 @@ import { StaffAuthorizationModule } from './staff-authorization/staff-authorizat
 import { StaffAuditModule } from './staff-audit/staff-audit.module';
 import { PublishingContractsModule } from './publishing-contracts/publishing-contracts.module';
 import { RegistrationFileModule } from './registration-file/registration-file.module';
+import { OrganizationsModule } from './organizations/organizations.module';
+import { AuthorizationModule } from './authorization/authorization.module';
+import { EntitlementsModule } from './entitlements/entitlements.module';
 
 @Module({
   imports: [
@@ -98,6 +101,9 @@ import { RegistrationFileModule } from './registration-file/registration-file.mo
     StaffAuditModule,
     PublishingContractsModule,
     RegistrationFileModule,
+    OrganizationsModule,
+    EntitlementsModule,
+    AuthorizationModule,
   ],
   controllers: [AppController],
   providers: [

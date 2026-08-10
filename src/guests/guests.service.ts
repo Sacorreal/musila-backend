@@ -1,4 +1,8 @@
-import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Plan } from 'src/entitlements/entities/plan.entity';
+import { SubjectType } from 'src/entitlements/entities/subject-type.enum';
+import { Subscription } from 'src/entitlements/entities/subscription.entity';
+import { SubscriptionStatus } from 'src/entitlements/entities/subscription-status.enum';
 
 import { RegisterGuestDto } from './dto/register-guest.dto'
 import { UpdateGuestInput } from './dto/update-guest.input';
@@ -18,12 +22,35 @@ const guestRelations: string[] = ['invited_by', 'playlistCollaborations', 'chats
 
 @Injectable()
 export class GuestsService {
+  private readonly logger = new Logger(GuestsService.name);
+
   constructor(
     @InjectRepository(Guest) private readonly guestsRepository: Repository<Guest>,
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
+    @InjectRepository(Plan) private readonly plansRepository: Repository<Plan>,
+    @InjectRepository(Subscription) private readonly subscriptionsRepository: Repository<Subscription>,
     private readonly invitesService: InvitesService,
 
   ) { }
+
+  /** El plan GUEST otorga las capabilities del invitado (marketplace.search, license.request) sin cuotas. */
+  private async assignGuestPlan(guestId: string): Promise<void> {
+    const guestPlan = await this.plansRepository.findOne({ where: { key: 'GUEST' } });
+    if (!guestPlan) {
+      this.logger.warn('Plan GUEST no encontrado; ejecuta los seeds de autorización');
+      return;
+    }
+
+    await this.subscriptionsRepository.save(
+      this.subscriptionsRepository.create({
+        subjectType: SubjectType.USER,
+        subjectId: guestId,
+        planId: guestPlan.id,
+        status: SubscriptionStatus.ACTIVE,
+        startAt: new Date(),
+      }),
+    );
+  }
 
   private assertCanManageGuest(guest: Guest, currentUser: JwtPayload): void {
     const isAdmin = isAdminPlanType(currentUser.planType);
@@ -54,7 +81,9 @@ export class GuestsService {
       invited_by: inviter,
     });
 
-    return this.saveAndReturnWithRelations(newGuest);
+    const savedGuest = await this.saveAndReturnWithRelations(newGuest);
+    await this.assignGuestPlan(savedGuest.id);
+    return savedGuest;
   }
 
   private async findGuestWithRelations(id: string): Promise<Guest> {
@@ -121,6 +150,9 @@ export class GuestsService {
     });
 
     const savedGuest = await this.saveAndReturnWithRelations(newGuest);
+
+    // 5b. Subscription del plan GUEST (capabilities del invitado en el motor de autorización)
+    await this.assignGuestPlan(savedGuest.id);
 
     // 6. Marcar invitación como usada (después de crear guest exitosamente)
     await this.invitesService.markAsUsed(dto.token);
