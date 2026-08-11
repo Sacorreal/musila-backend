@@ -293,6 +293,54 @@ export class PaymentsService {
   }
 
   /**
+   * Preview de la comisión de una solicitud, SIN efectos secundarios (§18: "el
+   * comprador debe conocer el fee antes de pagar"). No consume OTP ni crea
+   * pago ni congela nada. Para compradores B2B resuelve la tarifa configurable;
+   * para usuarios personales devuelve la comisión legacy.
+   */
+  async previewLicenseCommission(
+    requestedTrackId: string,
+    userId: string,
+    organizationId?: string,
+  ) {
+    const track = await this.requestedTrackRepo.findOne({
+      where: { id: requestedTrackId },
+      relations: ['requester'],
+    });
+
+    if (!track) throw new NotFoundException('Solicitud de licencia no encontrada');
+    if (track.requester.id !== userId) throw new BadRequestException('Solo el solicitante puede consultar el pago');
+    if (!track.licensePrice) throw new BadRequestException('El propietario aún no ha establecido un precio');
+
+    const licensePrice = Number(track.licensePrice);
+
+    if (organizationId) {
+      const resolved = await this.commissionService.resolveCommission({
+        organizationId,
+        dealAmount: licensePrice,
+      });
+      return {
+        licensePrice,
+        commission: resolved.amount,
+        commissionRate: resolved.rate,
+        currency: resolved.currency,
+        total: resolved.buyerTotal,
+        isB2B: true,
+      };
+    }
+
+    const commission = Math.round(licensePrice * LICENSE_COMMISSION_RATE * 100) / 100;
+    return {
+      licensePrice,
+      commission,
+      commissionRate: LICENSE_COMMISSION_RATE * 100,
+      currency: CURRENCY,
+      total: licensePrice + commission,
+      isB2B: false,
+    };
+  }
+
+  /**
    * Resuelve la comisión B2B vigente del comprador y la congela en el Deal
    * (§13). No captura errores de dominio (BUYER_ORGANIZATION_TYPE_NOT_SUPPORTED,
    * TRANSACTION_FEE_NOT_CONFIGURED): deben propagarse al comprador antes de

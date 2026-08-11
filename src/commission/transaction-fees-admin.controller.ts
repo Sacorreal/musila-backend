@@ -36,6 +36,13 @@ import { TransactionFeesAdminService } from './transaction-fees-admin.service';
 export class TransactionFeesAdminController {
   constructor(private readonly transactionFeesAdminService: TransactionFeesAdminService) {}
 
+  @Get('transaction-fees')
+  @RequireCapability(PLATFORM_PLANS_MANAGE_CAPABILITY)
+  @ApiOperation({ summary: 'Matriz completa plan × tipo de organización × comisión vigente' })
+  listAll() {
+    return this.transactionFeesAdminService.listAll();
+  }
+
   @Get(':planId/transaction-fee')
   @RequireCapability(PLATFORM_PLANS_MANAGE_CAPABILITY)
   @ApiParam({ name: 'planId' })

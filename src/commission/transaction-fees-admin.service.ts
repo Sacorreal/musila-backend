@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Plan } from '../entitlements/entities/plan.entity';
+import { SubjectType } from '../entitlements/entities/subject-type.enum';
 import { OrganizationType } from '../organizations/entities/organization-type.enum';
 import { isCommissionApplicable } from './commission.constants';
 import { TransactionFeeConfig } from './entities/transaction-fee-config.entity';
@@ -53,6 +54,16 @@ export class TransactionFeesAdminService {
     private readonly planRepository: Repository<Plan>,
     private readonly configService: TransactionFeeConfigService,
   ) {}
+
+  /** GET /admin/plans/transaction-fees — toda la matriz plan × tipo × comisión (§6). */
+  async listAll(): Promise<TransactionFeeView[]> {
+    const plans = await this.planRepository.find({
+      where: { subjectType: SubjectType.ORGANIZATION },
+      order: { key: 'ASC' },
+    });
+    const perPlan = await Promise.all(plans.map((plan) => this.getForPlan(plan.id)));
+    return perPlan.flat();
+  }
 
   /** GET /admin/plans/:planId/transaction-fee — tarifa vigente por tipo de organización (§8). */
   async getForPlan(planId: string): Promise<TransactionFeeView[]> {

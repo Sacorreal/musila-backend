@@ -74,6 +74,17 @@ export class PaymentsController {
     return this.paymentsService.createLicenseInstallmentCheckout(dto, user.id);
   }
 
+  @Get('license-quote/:requestedTrackId')
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Preview del desglose de comisión de una licencia antes de pagar (§18)' })
+  @ApiResponse({ status: 200, description: 'Desglose: precio, comisión, porcentaje y total' })
+  async getLicenseQuote(@Param('requestedTrackId') requestedTrackId: string, @Req() req: Request) {
+    const user = req['user'] as JwtPayload;
+    const organizationId = resolveOrganizationId(req);
+    return this.paymentsService.previewLicenseCommission(requestedTrackId, user.id, organizationId);
+  }
+
   @Get('license-status/:reference')
   @ApiOperation({ summary: 'Consultar estado de pago de licencia por referencia' })
   @ApiResponse({ status: 200, description: 'Estado del pago de licencia' })
