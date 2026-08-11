@@ -11,9 +11,9 @@ import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
 import { RequestedTrack } from './entities/requested-track.entity';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
-import { isAdminPlanType } from '../users/entities/user-plan-type.enum';
 import { PaginationDto } from '../shared/dto/pagination.dto'
 import { Chat } from 'src/chat/entities/chat.entity';
+import { AuthorizationService } from 'src/authorization/authorization.service';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { OtpVerificationService } from 'src/shared/otp-verification/otp-verification.service';
 import { OtpPurpose } from 'src/shared/otp-verification/otp-purpose.enum';
@@ -36,6 +36,7 @@ export class RequestedTracksService {
     private readonly eventBus: EventBusService,
     private readonly dataSource: DataSource,
     private readonly otpVerificationService: OtpVerificationService,
+    private readonly authorizationService: AuthorizationService,
   ) { }
 
   private async findRequestedTrackWithRelations(id: string): Promise<RequestedTrack> {
@@ -130,7 +131,10 @@ export class RequestedTracksService {
   ) {
     const { limit, offset } = paginationDto;
 
-    const isAdmin = !!user && isAdminPlanType(user.planType);
+    const capabilityKeys = user
+      ? await this.authorizationService.getEffectiveCapabilityKeys({ userId: user.id })
+      : [];
+    const isAdmin = capabilityKeys.includes('platform.support.requests.manage');
 
     // Si no es Admin, filtramos para que vea:
     // 1. Solicitudes que él mismo hizo (requester)

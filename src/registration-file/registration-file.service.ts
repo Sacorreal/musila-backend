@@ -2,7 +2,7 @@ import { ConflictException, ForbiddenException, Injectable, NotFoundException } 
 import { InjectDataSource, InjectRepository } from '@nestjs/typeorm';
 import { DataSource, In, Repository } from 'typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { isAdminPlanType } from 'src/users/entities/user-plan-type.enum';
+import { AuthorizationService } from 'src/authorization/authorization.service';
 import { Track } from 'src/tracks/entities/track.entity';
 import { User } from 'src/users/entities/user.entity';
 import { PublishingContract } from 'src/publishing-contracts/entities/publishing-contract.entity';
@@ -69,6 +69,7 @@ export class RegistrationFileService {
     private readonly registrationNumberService: RegistrationNumberService,
     private readonly eventBus: EventBusService,
     private readonly storageService: StorageService,
+    private readonly authorizationService: AuthorizationService,
   ) {}
 
   /**
@@ -79,7 +80,7 @@ export class RegistrationFileService {
    */
   async createForTrack(trackId: string, dto: CreateRegistrationFileDto, user: JwtPayload): Promise<RegistrationFile> {
     const track = await this.findTrackOrFail(trackId);
-    this.assertOwnership(track, user);
+    await this.assertOwnership(track, user);
 
     const existing = await this.registrationFileRepository.findOne({ where: { track: { id: trackId } } });
     if (existing) {
@@ -119,7 +120,7 @@ export class RegistrationFileService {
 
   async findByTrack(trackId: string, user: JwtPayload): Promise<RegistrationFile> {
     const track = await this.findTrackOrFail(trackId);
-    this.assertOwnership(track, user);
+    await this.assertOwnership(track, user);
 
     const registrationFile = await this.registrationFileRepository.findOne({
       where: { track: { id: trackId } },
@@ -153,7 +154,7 @@ export class RegistrationFileService {
 
   async findOne(id: string, user: JwtPayload): Promise<RegistrationFile> {
     const registrationFile = await this.findWithRelationsOrFail(id);
-    this.assertOwnership(registrationFile.track, user);
+    await this.assertOwnership(registrationFile.track, user);
     return registrationFile;
   }
 
@@ -167,7 +168,8 @@ export class RegistrationFileService {
   async findAllForUser(query: ListRegistrationFilesDto, user: JwtPayload): Promise<PaginatedRegistrationFiles> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 10;
-    const isAdmin = isAdminPlanType(user.planType);
+    const capabilityKeys = await this.authorizationService.getEffectiveCapabilityKeys({ userId: user.id });
+    const isAdmin = capabilityKeys.includes('platform.content.tracks.view');
 
     const qb = this.registrationFileRepository
       .createQueryBuilder('rf')
@@ -331,8 +333,14 @@ export class RegistrationFileService {
         relations: ['owner'],
       });
       if (!contract) throw new NotFoundException('El contrato editorial seleccionado no existe');
-      if (contract.owner.id !== registrationFile.createdBy.id && !isAdminPlanType(user.planType)) {
-        throw new ForbiddenException('El contrato editorial seleccionado no te pertenece');
+      if (contract.owner.id !== registrationFile.createdBy.id) {
+        const decision = await this.authorizationService.check(
+          { userId: user.id },
+          { caps: ['platform.content.tracks.view'], operator: 'AND' },
+        );
+        if (!decision.allowed) {
+          throw new ForbiddenException('El contrato editorial seleccionado no te pertenece');
+        }
       }
       registrationFile.publishingContract = contract;
     } else {
@@ -422,9 +430,15 @@ export class RegistrationFileService {
     return registrationFile;
   }
 
-  private assertOwnership(track: Track, user: JwtPayload): void {
+  private async assertOwnership(track: Track, user: JwtPayload): Promise<void> {
     const isAuthor = track.authors?.some((author) => author.id === user.id);
-    if (!isAuthor && !isAdminPlanType(user.planType)) {
+    if (isAuthor) return;
+
+    const decision = await this.authorizationService.check(
+      { userId: user.id },
+      { caps: ['platform.content.tracks.view'], operator: 'AND' },
+    );
+    if (!decision.allowed) {
       throw new ForbiddenException('No tienes permisos para gestionar el expediente de este track');
     }
   }

@@ -6,6 +6,7 @@ import {
   Param,
   Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -17,16 +18,16 @@ import {
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
-import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { ADMIN_PLAN_TYPES, UserPlanType } from 'src/users/entities/user-plan-type.enum';
-import { PlansGuard } from 'src/users/guards/plans.guard';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
+import { ConsumeEntitlement } from 'src/entitlements/decorators/consume-entitlement.decorator';
+import { EntitlementConsumeInterceptor } from 'src/entitlements/interceptors/entitlement-consume.interceptor';
 import { AddCollaboratorDto } from './dto/add-collaborator.dto';
 import { PlaylistCollaboratorsService } from './playlist-collaborators.service';
-import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
 
 @ApiTags('Colaboradores de Playlist')
-@UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360, UserPlanType.PLAN_DESCUBRIDOR, UserPlanType.PLAN_PUBLISHER)
+@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@RequireCapability('playlist.manage')
 @ApiBearerAuth('JWT-auth')
 @Controller('playlists/:playlistId/collaborators')
 export class PlaylistCollaboratorsController {
@@ -36,7 +37,8 @@ export class PlaylistCollaboratorsController {
 
   // ─── POST /playlists/:playlistId/collaborators ─────────────────────────────
   @Post()
-  @PlanLimit('collaborators')
+  @ConsumeEntitlement('collaborators.active')
+  @UseInterceptors(EntitlementConsumeInterceptor)
   @ApiOperation({
     summary: 'Agregar colaborador a playlist',
     description:

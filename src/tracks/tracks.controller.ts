@@ -30,24 +30,23 @@ import { UsersService } from 'src/users/users.service';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { TracksService } from './tracks.service';
-import { UserPlanType, isAdminPlanType } from '../users/entities/user-plan-type.enum';
 
 import { PaginatedTracksResponseDto, TrackResponseDto } from './dto/track-response.dto'
-import { PlansGuard } from 'src/users/guards/plans.guard';
-import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
 import { EmailVerifiedGuard } from 'src/users/guards/email-verified.guard';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
 import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
+import { AuthorizationService } from 'src/authorization/authorization.service';
 import { ConsumeEntitlement } from 'src/entitlements/decorators/consume-entitlement.decorator';
 import { EntitlementConsumeInterceptor } from 'src/entitlements/interceptors/entitlement-consume.interceptor';
 
 @ApiTags('Tracks')
-@UseGuards(JWTAuthGuard, PlansGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard)
 @Controller('tracks')
 export class TracksController {
   constructor(
     private readonly tracksService: TracksService,
     private readonly usersService: UsersService,
+    private readonly authorizationService: AuthorizationService,
   ) {}
 
   @Post()
@@ -95,7 +94,7 @@ export class TracksController {
   } 
   
   @Get('my-tracks')
-  @AllowedPlans(UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
+  @RequireCapability('catalog.view')
   @ApiOperation({
     summary: 'Obtener todos los tracks autoría del usuario logeado'
   })
@@ -172,7 +171,8 @@ export class TracksController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const requesterId = isAdminPlanType(user.planType) ? undefined : user.id;
+    const capabilityKeys = await this.authorizationService.getEffectiveCapabilityKeys({ userId: user.id });
+    const requesterId = capabilityKeys.includes('platform.content.tracks.view') ? undefined : user.id;
     return await this.tracksService.updateTrackService(id, updateTrackInput, requesterId);
   }
 
@@ -195,7 +195,8 @@ export class TracksController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const requesterId = isAdminPlanType(user.planType) ? undefined : user.id;
+    const capabilityKeys = await this.authorizationService.getEffectiveCapabilityKeys({ userId: user.id });
+    const requesterId = capabilityKeys.includes('platform.content.tracks.view') ? undefined : user.id;
     return await this.tracksService.removeTrackService(id, requesterId);
   }
 }

@@ -80,10 +80,16 @@ export class SeedDomainCapabilitiesForMigration1788700000000
         `'360_FREE', '360_PREMIUM', 'DESCUBRIDOR_FREE', 'DESCUBRIDOR_PREMIUM', 'GUEST'`,
         `'playlist.manage', 'invite.create'`,
       ],
-      // license.view + license.manage: el dueño de la obra ve y aprueba las solicitudes recibidas.
+      // license.view: cualquier perfil que cree o reciba solicitudes las consulta
+      // (DESCUBRIDOR es requester; la ruta legacy GET /requested-tracks lo incluía).
+      [
+        `'AUTOR_FREE', 'AUTOR_PREMIUM', '360_FREE', '360_PREMIUM', 'DESCUBRIDOR_FREE', 'DESCUBRIDOR_PREMIUM'`,
+        `'license.view'`,
+      ],
+      // license.manage: solo el dueño de la obra aprueba/tarifa las solicitudes recibidas.
       [
         `'AUTOR_FREE', 'AUTOR_PREMIUM', '360_FREE', '360_PREMIUM'`,
-        `'license.view', 'license.manage'`,
+        `'license.manage'`,
       ],
     ];
 
@@ -195,7 +201,9 @@ export class SeedDomainCapabilitiesForMigration1788700000000
         SELECT "id" FROM "capabilities" WHERE "key" IN ('license.view', 'license.manage')
       )
       AND "plan_id" IN (
-        SELECT "id" FROM "plans" WHERE "key" IN ('AUTOR_FREE', 'AUTOR_PREMIUM', '360_FREE', '360_PREMIUM')
+        SELECT "id" FROM "plans" WHERE "key" IN (
+          'AUTOR_FREE', 'AUTOR_PREMIUM', '360_FREE', '360_PREMIUM', 'DESCUBRIDOR_FREE', 'DESCUBRIDOR_PREMIUM'
+        )
       )
     `);
 

@@ -1,22 +1,19 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { PlansGuard } from 'src/users/guards/plans.guard';
-import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
-import { ADMIN_PLAN_TYPES, UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
 import { PublishingContractsService } from './publishing-contracts.service';
 import { CreatePublishingContractDto } from './dto/create-publishing-contract.dto';
 import { UpdatePublishingContractDto } from './dto/update-publishing-contract.dto';
 
-const AUTHOR_PLANS = [...ADMIN_PLAN_TYPES, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360];
-
 @ApiTags('Contratos Editoriales')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(...AUTHOR_PLANS)
+@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@RequireCapability('catalog.manage')
 @Controller('publishing-contracts')
 export class PublishingContractsController {
   constructor(private readonly publishingContractsService: PublishingContractsService) {}

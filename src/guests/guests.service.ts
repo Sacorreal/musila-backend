@@ -14,7 +14,7 @@ import { User } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { InvitesService } from 'src/invites/invites.service';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { isAdminPlanType } from 'src/users/entities/user-plan-type.enum';
+import { AuthorizationService } from 'src/authorization/authorization.service';
 
 import bcrypt from 'bcrypt';
 
@@ -30,7 +30,7 @@ export class GuestsService {
     @InjectRepository(Plan) private readonly plansRepository: Repository<Plan>,
     @InjectRepository(Subscription) private readonly subscriptionsRepository: Repository<Subscription>,
     private readonly invitesService: InvitesService,
-
+    private readonly authorizationService: AuthorizationService,
   ) { }
 
   /** El plan GUEST otorga las capabilities del invitado (marketplace.search, license.request) sin cuotas. */
@@ -52,10 +52,14 @@ export class GuestsService {
     );
   }
 
-  private assertCanManageGuest(guest: Guest, currentUser: JwtPayload): void {
-    const isAdmin = isAdminPlanType(currentUser.planType);
-    const isInviter = guest.invited_by?.id === currentUser.id;
-    if (!isAdmin && !isInviter) {
+  private async assertCanManageGuest(guest: Guest, currentUser: JwtPayload): Promise<void> {
+    if (guest.invited_by?.id === currentUser.id) return;
+
+    const decision = await this.authorizationService.check(
+      { userId: currentUser.id },
+      { caps: ['platform.users.guests.manage'], operator: 'AND' },
+    );
+    if (!decision.allowed) {
       throw new ForbiddenException('No tienes permiso para gestionar este invitado');
     }
   }
@@ -172,7 +176,8 @@ export class GuestsService {
    */
   async findAllGuestsService(filterDto: GuestFilterDto, currentUser: JwtPayload) {
     const { limit, offset, search } = filterDto;
-    const isAdmin = isAdminPlanType(currentUser.planType);
+    const capabilityKeys = await this.authorizationService.getEffectiveCapabilityKeys({ userId: currentUser.id });
+    const isAdmin = capabilityKeys.includes('platform.users.guests.manage');
 
     const qb = this.guestsRepository
       .createQueryBuilder('guest')
@@ -200,7 +205,7 @@ export class GuestsService {
 
   async updateGuestsService(id: string, updateGuestInput: UpdateGuestInput, currentUser: JwtPayload) {
     const existingGuest = await this.findGuestWithRelations(id)
-    this.assertCanManageGuest(existingGuest, currentUser);
+    await this.assertCanManageGuest(existingGuest, currentUser);
 
     // password requiere hash explícito, nunca se persiste en texto plano.
     const { password, ...rest } = updateGuestInput;
@@ -214,7 +219,7 @@ export class GuestsService {
 
   async removeGuestsService(id: string, currentUser: JwtPayload) {
     const guestToRemove = await this.findGuestWithRelations(id)
-    this.assertCanManageGuest(guestToRemove, currentUser);
+    await this.assertCanManageGuest(guestToRemove, currentUser);
 
     await this.guestsRepository.softRemove(guestToRemove)
 

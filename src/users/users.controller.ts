@@ -16,18 +16,18 @@ import { PaginationDto } from '../shared/dto/pagination.dto';
 import { FilterUserDto } from './dto/filter-user.dto';
 import { PaginatedUsersResponseDto } from './dto/user-pagination.dto';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
 import { UpdateUserInput } from './dto/update-user.input';
 import { CreateUserInput } from './dto/create-user.input';
 import { AdminStatsDto } from './dto/admin-stats.dto';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { ADMIN_PLAN_TYPES, UserPlanType } from './entities/user-plan-type.enum';
+import { UserPlanType } from './entities/user-plan-type.enum';
 import { UsersService } from './users.service';
 import { AdminService } from './admin.service';
 import { AuditLogService } from './audit-log.service';
 import { AuditLogPaginationDto } from './dto/audit-log-pagination.dto';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { PlansGuard } from './guards/plans.guard';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 
 @ApiTags('Usuarios')
 @Controller('users')
@@ -39,8 +39,8 @@ export class UsersController {
   ) {}
 
   @Get()
-  @AllowedPlans(...ADMIN_PLAN_TYPES)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('platform.users.view')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Obtener todos los usuarios (Admin)' })
   @ApiResponse({ status: 200, type: PaginatedUsersResponseDto })
@@ -89,8 +89,8 @@ export class UsersController {
   // ── Admin routes (must be before /:id) ──────────────────────────────
 
   @Get('admin/stats')
-  @AllowedPlans(...ADMIN_PLAN_TYPES)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('platform.users.view')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Estadísticas generales del sistema (Admin)' })
   @ApiResponse({ status: 200, type: AdminStatsDto })
@@ -99,8 +99,8 @@ export class UsersController {
   }
 
   @Post('admin/create')
-  @AllowedPlans(...ADMIN_PLAN_TYPES)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('platform.staff.manage')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Crear usuario administrador (Admin)' })
   @ApiResponse({ status: 201, description: 'Administrador creado exitosamente' })
@@ -110,8 +110,8 @@ export class UsersController {
   }
 
   @Get('admin/audit-log')
-  @AllowedPlans(...ADMIN_PLAN_TYPES)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('platform.audit.view')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Listar registro de auditoría (Admin, solo lectura)' })
   async findAllAuditLogController(@Query() pagination: AuditLogPaginationDto) {
@@ -119,8 +119,8 @@ export class UsersController {
   }
 
   @Delete(':id/hard')
-  @AllowedPlans(...ADMIN_PLAN_TYPES)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('platform.users.delete')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiParam({ name: 'id', description: 'UUID del usuario' })
   @ApiOperation({
@@ -173,8 +173,8 @@ export class UsersController {
     return await this.usersService.findOneUserByIdService(id, user.id);
   }
 
-  @AllowedPlans(...ADMIN_PLAN_TYPES)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('platform.users.edit')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @Put(':id')
   @ApiBearerAuth('JWT-auth')
   @ApiParam({ name: 'id', description: 'UUID del usuario' })
@@ -187,8 +187,8 @@ export class UsersController {
     return await this.usersService.updateUserService(id, updateUserInput, actingUser);
   }
 
-  @AllowedPlans(...ADMIN_PLAN_TYPES)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('platform.users.delete')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @Delete(':id')
   @ApiBearerAuth('JWT-auth')
   @ApiParam({ name: 'id', description: 'UUID del usuario' })

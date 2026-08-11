@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { isAdminPlanType } from 'src/users/entities/user-plan-type.enum';
+import { AuthorizationService } from 'src/authorization/authorization.service';
 import { CollaboratorPermission } from '../entities/collaborator-permission.enum';
 import { PLAYLIST_PERMISSION_KEY } from '../decorators/require-permission.decorator';
 import { PlaylistCollaboratorsService } from '../playlist-collaborators.service';
@@ -24,6 +24,7 @@ export class PlaylistPermissionGuard implements CanActivate {
     private readonly reflector: Reflector,
     private readonly collaboratorsService: PlaylistCollaboratorsService,
     private readonly sharingService: SharingService,
+    private readonly authorizationService: AuthorizationService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -53,8 +54,12 @@ export class PlaylistPermissionGuard implements CanActivate {
       throw new NotFoundException('ID de la playlist no especificado en la ruta');
     }
 
-    // 1. ADMIN de sistema tiene acceso total
-    if (isAdminPlanType(user.planType)) {
+    // 1. El staff con moderación de playlists tiene acceso total
+    const moderation = await this.authorizationService.check(
+      { userId: user.id },
+      { caps: ['platform.playlists.moderate'], operator: 'AND' },
+    );
+    if (moderation.allowed) {
       return true;
     }
 

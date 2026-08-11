@@ -3,13 +3,16 @@ import { InjectRepository } from '@nestjs/typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { Guest } from 'src/guests/entities/guest.entity';
 import { Track } from 'src/tracks/entities/track.entity';
-import { UserPlanType, isAdminPlanType } from 'src/users/entities/user-plan-type.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { In, Repository } from 'typeorm';
 import { CreatePlaylistInput } from './dto/create-playlist.input';
 import { UpdatePlaylistInput } from './dto/update-playlist.input';
 import { Playlist } from './entities/playlist.entity';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
+import { AuthorizationService } from 'src/authorization/authorization.service';
+import { UsageService } from 'src/entitlements/usage.service';
+import { SubjectType } from 'src/entitlements/entities/subject-type.enum';
 
 
 
@@ -25,7 +28,8 @@ export class PlaylistsService {
     private readonly guestsRepository: Repository<Guest>,
     @InjectRepository(Track)
     private readonly tracksRepository: Repository<Track>,
-    
+    private readonly authorizationService: AuthorizationService,
+    private readonly usageService: UsageService,
   ) {}
 
   private async findPlaylistWithRelations(id: string): Promise<Playlist> {
@@ -47,8 +51,10 @@ export class PlaylistsService {
   }
 
   async createPlaylistsService(createPlaylistInput: CreatePlaylistInput, user: JwtPayload): Promise<Playlist> {
+    const capabilityKeys = await this.authorizationService.getEffectiveCapabilityKeys({ userId: user.id });
+    const canModerate = capabilityKeys.includes('platform.playlists.moderate');
     const ownerId =
-      isAdminPlanType(user.planType) && createPlaylistInput.ownerId
+      canModerate && createPlaylistInput.ownerId
         ? createPlaylistInput.ownerId
         : user.id;
 
@@ -70,9 +76,11 @@ export class PlaylistsService {
     const { limit, offset } = paginationDto;
 
     // 1. Construimos la condición de búsqueda dinámicamente según el rol
+    const capabilityKeys = await this.authorizationService.getEffectiveCapabilityKeys({ userId: user.id });
+    const canModerate = capabilityKeys.includes('platform.playlists.moderate');
     const whereCondition =
-      isAdminPlanType(user.planType)
-        ? {} // Un admin ve todas las playlists del sistema
+      canModerate
+        ? {} // El staff con moderación ve todas las playlists del sistema
         : user.planType === UserPlanType.INVITADO
           ? { collaborators: { guest: { id: user.id } } } // Si es invitado, busca en la tabla intermedia
           : { owner: { id: user.id } }; // Para el resto, busca por propietario
@@ -111,9 +119,18 @@ export class PlaylistsService {
   ) {
     const existingPlaylist = await this.findPlaylistWithRelations(id);
 
-    // 1. Autorización: Evitar que un usuario modifique playlists de otros
-    if (existingPlaylist.owner.id !== owner.id && !isAdminPlanType(owner.planType)) {
-      throw new ForbiddenException('No tienes permisos para editar esta playlist');
+    // 1. Autorización: el dueño (scope OWN) o el staff con playlist.manage (scope PLATFORM).
+    const decision = await this.authorizationService.checkResource(
+      { userId: owner.id },
+      'playlist.manage',
+      { ownerId: existingPlaylist.owner.id },
+    );
+    if (!decision.allowed) {
+      throw new ForbiddenException({
+        message: 'No tienes permisos para editar esta playlist',
+        code: decision.code,
+        capability: 'playlist.manage',
+      });
     }
 
     // Extraemos los IDs y descartamos 'ownerId' del body por seguridad
@@ -150,6 +167,15 @@ export class PlaylistsService {
     const playlistToRemove = await this.findPlaylistWithRelations(id);
 
     await this.playlistRepository.softRemove(playlistToRemove);
+
+    // Libera la cuota de "playlists activas" del dueño (period NONE → 'lifetime').
+    if (playlistToRemove.owner?.id) {
+      await this.usageService.refund(
+        { type: SubjectType.USER, id: playlistToRemove.owner.id },
+        'playlists.active',
+        'lifetime',
+      );
+    }
 
     return playlistToRemove;
   }

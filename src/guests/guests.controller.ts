@@ -8,9 +8,8 @@ import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } fro
 import { ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { PaginatedGuestsResponseDto } from './dto/guest-pagination.dto';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { PlansGuard } from 'src/users/guards/plans.guard';
-import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
@@ -20,8 +19,8 @@ export class GuestsController {
   constructor(private readonly guestsService: GuestsService) { }
 
   @Post()
-  @AllowedPlans(...ADMIN_PLAN_TYPES)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('platform.users.guests.manage')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Crear invitado directamente (Admin)',

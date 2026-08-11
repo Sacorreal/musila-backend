@@ -2,7 +2,7 @@ import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/commo
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { isAdminPlanType } from 'src/users/entities/user-plan-type.enum';
+import { AuthorizationService } from 'src/authorization/authorization.service';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 
 import { PublishingContract } from './entities/publishing-contract.entity';
@@ -15,6 +15,7 @@ export class PublishingContractsService {
     @InjectRepository(PublishingContract)
     private readonly publishingContractRepository: Repository<PublishingContract>,
     private readonly eventBus: EventBusService,
+    private readonly authorizationService: AuthorizationService,
   ) {}
 
   async create(dto: CreatePublishingContractDto, user: JwtPayload): Promise<PublishingContract> {
@@ -52,7 +53,7 @@ export class PublishingContractsService {
       relations: ['owner'],
     });
     if (!contract) throw new NotFoundException('El contrato editorial no existe');
-    this.assertOwnership(contract, user);
+    await this.assertOwnership(contract, user);
     return contract;
   }
 
@@ -73,9 +74,13 @@ export class PublishingContractsService {
     await this.publishingContractRepository.softDelete(contract.id);
   }
 
-  private assertOwnership(contract: PublishingContract, user: JwtPayload): void {
-    const isOwner = contract.owner?.id === user.id;
-    if (!isOwner && !isAdminPlanType(user.planType)) {
+  private async assertOwnership(contract: PublishingContract, user: JwtPayload): Promise<void> {
+    const decision = await this.authorizationService.checkResource(
+      { userId: user.id },
+      'catalog.manage',
+      { ownerId: contract.owner?.id },
+    );
+    if (!decision.allowed) {
       throw new ForbiddenException('No tienes permisos sobre este contrato editorial');
     }
   }

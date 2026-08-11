@@ -9,8 +9,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { Guest } from 'src/guests/entities/guest.entity';
 import { Playlist } from 'src/playlists/entities/playlist.entity';
-import { isAdminPlanType } from 'src/users/entities/user-plan-type.enum';
 import { Repository } from 'typeorm';
+import { AuthorizationService } from 'src/authorization/authorization.service';
+import { UsageService } from 'src/entitlements/usage.service';
+import { SubjectType } from 'src/entitlements/entities/subject-type.enum';
 import { AddCollaboratorDto } from './dto/add-collaborator.dto';
 import { CollaboratorPermission } from './entities/collaborator-permission.enum';
 import { PlaylistCollaborator } from './entities/playlist-collaborator.entity';
@@ -26,7 +28,8 @@ export class PlaylistCollaboratorsService {
     private readonly playlistRepository: Repository<Playlist>,
     @InjectRepository(Guest)
     private readonly guestRepository: Repository<Guest>,
-   
+    private readonly authorizationService: AuthorizationService,
+    private readonly usageService: UsageService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -48,11 +51,11 @@ export class PlaylistCollaboratorsService {
   ): Promise<PlaylistCollaborator> {
     // 1. Validar playlist y propiedad
     const playlist = await this.findPlaylistOrFail(playlistId);
-    this.assertOwnership(playlist, user);
+    await this.assertOwnership(playlist, user);
 
     // 2. Validar guest y que pertenezca al usuario
     const guest = await this.findGuestOrFail(dto.guestId);
-    this.assertGuestBelongsToUser(guest, user);
+    await this.assertGuestBelongsToUser(guest, user);
 
     // 3. Verificar que el guest no sea ya colaborador
     const existingCollaborator = await this.collaboratorRepository.findOne({
@@ -87,14 +90,14 @@ export class PlaylistCollaboratorsService {
     user: JwtPayload,
   ): Promise<PlaylistCollaborator[]> {
     const playlist = await this.findPlaylistOrFail(playlistId);
-    this.assertOwnership(playlist, user);
+    await this.assertOwnership(playlist, user);
 
     const addedCollaborators: PlaylistCollaborator[] = [];
 
     for (const collabDto of dto.collaborators) {
       try {
         const guest = await this.findGuestOrFail(collabDto.guestId);
-        this.assertGuestBelongsToUser(guest, user);
+        await this.assertGuestBelongsToUser(guest, user);
 
         const existingCollaborator = await this.collaboratorRepository.findOne({
           where: { playlist: { id: playlistId }, guest: { id: collabDto.guestId } },
@@ -129,7 +132,7 @@ export class PlaylistCollaboratorsService {
   ): Promise<{ message: string }> {
     // 1. Validar playlist y propiedad
     const playlist = await this.findPlaylistOrFail(playlistId);
-    this.assertOwnership(playlist, user);
+    await this.assertOwnership(playlist, user);
 
     // 2. Buscar la relación
     const collaborator = await this.collaboratorRepository.findOne({
@@ -140,6 +143,15 @@ export class PlaylistCollaboratorsService {
     }
 
     await this.collaboratorRepository.remove(collaborator);
+
+    // Libera la cuota de "colaboradores activos" del dueño de la playlist.
+    if (playlist.owner?.id) {
+      await this.usageService.refund(
+        { type: SubjectType.USER, id: playlist.owner.id },
+        'collaborators.active',
+        'lifetime',
+      );
+    }
 
     return { message: 'Colaborador eliminado exitosamente' };
   }
@@ -153,7 +165,7 @@ export class PlaylistCollaboratorsService {
   ): Promise<PlaylistCollaborator[]> {
     // Validar playlist y propiedad
     const playlist = await this.findPlaylistOrFail(playlistId);
-    this.assertOwnership(playlist, user);
+    await this.assertOwnership(playlist, user);
 
     return this.collaboratorRepository.find({
       where: { playlist: { id: playlistId } },
@@ -231,17 +243,29 @@ export class PlaylistCollaboratorsService {
   /**
    * Verifica que el usuario autenticado sea dueño de la playlist (o admin).
    */
-  private assertOwnership(playlist: Playlist, user: JwtPayload): void {
-    if (playlist.owner.id !== user.id && !isAdminPlanType(user.planType)) {
+  private async assertOwnership(playlist: Playlist, user: JwtPayload): Promise<void> {
+    const decision = await this.authorizationService.checkResource(
+      { userId: user.id },
+      'playlist.manage',
+      { ownerId: playlist.owner.id },
+    );
+    if (!decision.allowed) {
       throw new ForbiddenException('No tienes permisos para gestionar esta playlist');
     }
   }
 
   /**
-   * Verifica que el guest haya sido invitado por el usuario autenticado.
+   * Verifica que el guest haya sido invitado por el usuario autenticado
+   * (o que el usuario sea staff con moderación de playlists).
    */
-  private assertGuestBelongsToUser(guest: Guest, user: JwtPayload): void {
-    if (guest.invited_by.id !== user.id && !isAdminPlanType(user.planType)) {
+  private async assertGuestBelongsToUser(guest: Guest, user: JwtPayload): Promise<void> {
+    if (guest.invited_by.id === user.id) return;
+
+    const decision = await this.authorizationService.check(
+      { userId: user.id },
+      { caps: ['platform.playlists.moderate'], operator: 'AND' },
+    );
+    if (!decision.allowed) {
       throw new ForbiddenException('Este invitado no pertenece a tu red de colaboradores');
     }
   }

@@ -8,13 +8,10 @@ import { ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } fr
 
 import { LicenseType } from './entities/license-type.enum';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { PlansGuard } from 'src/users/guards/plans.guard';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { PaginationDto} from '../shared/dto/pagination.dto'
 import { PaginatedRequestedTracksResponseDto } from './dto/requested-track-pagination.dto';
-import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { ADMIN_PLAN_TYPES, UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { EmailVerifiedGuard } from 'src/users/guards/email-verified.guard';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
 import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
@@ -22,7 +19,7 @@ import { ConsumeEntitlement } from 'src/entitlements/decorators/consume-entitlem
 import { EntitlementConsumeInterceptor } from 'src/entitlements/interceptors/entitlement-consume.interceptor';
 
 @ApiTags('Pistas Solicitadas')
-@UseGuards(JWTAuthGuard, PlansGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard)
 @Controller('requested-tracks')
 export class RequestedTracksController {
   constructor(
@@ -71,7 +68,7 @@ export class RequestedTracksController {
   }
 
   @Get()
-  @AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_360, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_DESCUBRIDOR)
+  @RequireCapability('license.view')
   @ApiOperation({
     summary: 'Obtener todas las solicitudes de pistas',
     description: 'Obtiene la lista completa de solicitudes de pistas musicales en el sistema.',
@@ -89,7 +86,7 @@ export class RequestedTracksController {
   }
 
   @Get(':id')
-  @AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_360, UserPlanType.PLAN_AUTOR)
+  @RequireCapability('license.view')
   @ApiOperation({
     summary: 'Obtener una solicitud de pista por ID',
     description: 'Obtiene la información detallada de una solicitud de pista específica por su ID.',
@@ -105,7 +102,7 @@ export class RequestedTracksController {
   }
 
   @Put(':id')
-  @AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_360, UserPlanType.PLAN_AUTOR)
+  @RequireCapability('license.manage')
   @ApiOperation({
     summary: 'Actualizar solicitud de pista',
     description: 'Actualiza la información de una solicitud de pista existente, como el estado o el tipo de licencia.',
@@ -127,7 +124,7 @@ export class RequestedTracksController {
 
 
   @Patch(':id/price')
-  @AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_360, UserPlanType.PLAN_AUTOR)
+  @RequireCapability('license.manage')
   @ApiOperation({
     summary: 'Establecer precio de licencia',
     description: 'Permite al propietario de la pista establecer el precio de la licencia en COP.',
@@ -144,7 +141,7 @@ export class RequestedTracksController {
   }
 
   @Delete(':id')
-  @AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_360, UserPlanType.PLAN_AUTOR)
+  @RequireCapability('license.manage')
   @ApiOperation({
     summary: 'Eliminar solicitud de pista',
     description: 'Elimina una solicitud de pista del sistema por su ID.',

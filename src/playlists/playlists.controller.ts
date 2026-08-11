@@ -8,6 +8,7 @@ import {
   Put,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../users/decorators/current-user.decorator';
@@ -16,28 +17,29 @@ import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { CreatePlaylistInput } from './dto/create-playlist.input';
 import { UpdatePlaylistInput } from './dto/update-playlist.input';
 import { PlaylistsService } from './playlists.service';
-import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { ADMIN_PLAN_TYPES, UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { PlansGuard } from 'src/users/guards/plans.guard';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
+import { ConsumeEntitlement } from 'src/entitlements/decorators/consume-entitlement.decorator';
+import { EntitlementConsumeInterceptor } from 'src/entitlements/interceptors/entitlement-consume.interceptor';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
 import { PaginatedPlaylistsResponseDto } from './dto/playlist-pagination.dto';
-import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
 import { PlaylistPermissionGuard } from 'src/playlist-collaborators/guards/playlist-permission.guard';
 import { RequirePlaylistPermission } from 'src/playlist-collaborators/decorators/require-permission.decorator';
 import { CollaboratorPermission } from 'src/playlist-collaborators/entities/collaborator-permission.enum';
 import { EmailVerifiedGuard } from 'src/users/guards/email-verified.guard';
 
 @ApiTags('Listas de Reproducción')
-@UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_360, UserPlanType.PLAN_DESCUBRIDOR, UserPlanType.INVITADO)
+@UseGuards(JWTAuthGuard, AuthorizationGuard)
 @Controller('playlists')
 export class PlaylistsController {
   constructor(private readonly playlistsService: PlaylistsService) {}
 
   @Post()
+  @RequireCapability('playlist.manage')
+  @ConsumeEntitlement('playlists.active')
   @UseGuards(EmailVerifiedGuard)
-  @PlanLimit('playlists')
+  @UseInterceptors(EntitlementConsumeInterceptor)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Crear nueva lista de reproducción',
@@ -59,7 +61,8 @@ export class PlaylistsController {
     );
   }
 
-  @Get() 
+  @Get()
+  @RequireCapability('playlist.manage')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Obtener todas las listas de reproducción',

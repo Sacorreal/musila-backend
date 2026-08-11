@@ -16,6 +16,7 @@ import { MusicRole } from './entities/music-role.enum';
 import { User } from './entities/user.entity';
 import { StorageService } from '../shared/storage/storage.service';
 import { CreatorIdService } from '../creator-id/creator-id.service';
+import { AuthorizationService } from 'src/authorization/authorization.service';
 import { Follow } from 'src/follows/entities/follow.entity';
 
 import { PaginationDto } from '../shared/dto/pagination.dto';
@@ -39,6 +40,7 @@ export class UsersService {
     private readonly followsRepository: Repository<Follow>,
     private readonly storageService: StorageService,
     private readonly creatorIdService: CreatorIdService,
+    private readonly authorizationService: AuthorizationService,
   ) { }
 
   // =============================
@@ -109,17 +111,27 @@ export class UsersService {
   async updateUserService(
     id: string,
     { preferredGenres, avatarKey, avatarUrl, ...rest }: UpdateUserInput,
-    actingUser?: { planType: UserPlanType },
+    actingUser?: { id?: string; planType?: UserPlanType },
   ) {
     const existingUser = await this.findUserWithRelations(id);
 
     if (!existingUser) throw new NotFoundException('El usuario no existe');
 
-    if (
-      rest.planType === UserPlanType.SUPERADMIN &&
-      actingUser?.planType !== UserPlanType.SUPERADMIN
-    ) {
-      throw new ForbiddenException('Solo un superadmin puede otorgar el rol superadmin');
+    if (rest.planType === UserPlanType.SUPERADMIN) {
+      // Preferimos la capability (platform.staff.manage, exclusiva de SUPER_ADMIN);
+      // los llamadores legacy de staff que solo pasan planType conservan su chequeo.
+      const allowed = actingUser?.id
+        ? (
+            await this.authorizationService.check(
+              { userId: actingUser.id },
+              { caps: ['platform.staff.manage'], operator: 'AND' },
+            )
+          ).allowed
+        : actingUser?.planType === UserPlanType.SUPERADMIN;
+
+      if (!allowed) {
+        throw new ForbiddenException('Solo un usuario con gestión de staff puede otorgar el rol superadmin');
+      }
     }
 
     const oldAvatarKey = existingUser.avatarKey;

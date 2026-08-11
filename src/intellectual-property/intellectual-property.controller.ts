@@ -6,9 +6,8 @@ import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, 
 import { PaginationDto } from '../shared/dto/pagination.dto';
 import { PaginatedIntellectualPropertyResponseDto } from './dto/intellectual-property-pagination.dto';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { PlansGuard } from 'src/users/guards/plans.guard';
-import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { ADMIN_PLAN_TYPES, UserPlanType } from 'src/users/entities/user-plan-type.enum';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 
 @ApiTags('Propiedad Intelectual')
 @Controller('intellectual-property')
@@ -18,8 +17,8 @@ export class IntellectualPropertyController {
   ) { }
 
   @Post()
-  @AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('catalog.manage')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Crear registro de propiedad intelectual',
@@ -66,8 +65,8 @@ export class IntellectualPropertyController {
   }
 
   @Put(':id')
-  @AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('catalog.manage')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Actualizar registro de propiedad intelectual',
@@ -86,8 +85,8 @@ export class IntellectualPropertyController {
   }
 
   @Delete(':id')
-  @AllowedPlans(...ADMIN_PLAN_TYPES, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('catalog.manage')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({

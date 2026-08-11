@@ -17,10 +17,9 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { PlansGuard } from 'src/users/guards/plans.guard';
-import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
-import { ADMIN_PLAN_TYPES, UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
 import { RegistrationFileService } from './registration-file.service';
@@ -40,12 +39,10 @@ import { UpdateDerivativeWorkDto } from './dto/update-derivative-work.dto';
 import { UpdateCommissionedWorkDto } from './dto/update-commissioned-work.dto';
 import { UpdateAiUsageDto } from './dto/update-ai-usage.dto';
 
-const AUTHOR_PLANS = [...ADMIN_PLAN_TYPES, UserPlanType.PLAN_AUTOR, UserPlanType.PLAN_360];
-
 @ApiTags('Expediente de Registro')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(...AUTHOR_PLANS)
+@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@RequireCapability('catalog.manage')
 @Controller()
 export class RegistrationFileController {
   constructor(

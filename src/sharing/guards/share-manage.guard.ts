@@ -10,7 +10,7 @@ import { Repository } from 'typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { Playlist } from 'src/playlists/entities/playlist.entity';
 import { Track } from 'src/tracks/entities/track.entity';
-import { isAdminPlanType } from 'src/users/entities/user-plan-type.enum';
+import { AuthorizationService } from 'src/authorization/authorization.service';
 import { ShareLink } from '../entities/share-link.entity';
 
 interface ShareManageRequest {
@@ -31,6 +31,7 @@ export class ShareManageGuard implements CanActivate {
     @InjectRepository(Playlist) private readonly playlistRepository: Repository<Playlist>,
     @InjectRepository(Track) private readonly trackRepository: Repository<Track>,
     @InjectRepository(ShareLink) private readonly shareLinkRepository: Repository<ShareLink>,
+    private readonly authorizationService: AuthorizationService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -41,7 +42,11 @@ export class ShareManageGuard implements CanActivate {
       throw new ForbiddenException('Usuario no autenticado');
     }
 
-    if (isAdminPlanType(user.planType)) {
+    const sharingManagement = await this.authorizationService.check(
+      { userId: user.id },
+      { caps: ['platform.support.sharing.manage'], operator: 'AND' },
+    );
+    if (sharingManagement.allowed) {
       return true;
     }
 

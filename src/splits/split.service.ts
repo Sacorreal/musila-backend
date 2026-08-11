@@ -9,7 +9,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { isAdminPlanType } from 'src/users/entities/user-plan-type.enum';
+import { AuthorizationService } from 'src/authorization/authorization.service';
 import { User } from 'src/users/entities/user.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { IntellectualProperty } from 'src/intellectual-property/entities/intellectual-property.entity';
@@ -48,6 +48,7 @@ export class SplitService {
     private readonly eventBus: EventBusService,
     private readonly otpVerificationService: OtpVerificationService,
     private readonly legalProofService: LegalProofService,
+    private readonly authorizationService: AuthorizationService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -63,7 +64,7 @@ export class SplitService {
    */
   async createSplit(trackId: string, dto: CreateSplitDto, user: JwtPayload): Promise<Split> {
     const track = await this.findTrackOrFail(trackId);
-    this.assertOwnership(track, user);
+    await this.assertOwnership(track, user);
 
     const existingSplit = await this.splitRepository.findOne({ where: { track: { id: trackId } } });
     if (existingSplit) {
@@ -107,7 +108,7 @@ export class SplitService {
       throw new NotFoundException('No hay un split registrado para este track');
     }
 
-    this.assertCanView(track, split, user);
+    await this.assertCanView(track, split, user);
 
     return split;
   }
@@ -118,7 +119,7 @@ export class SplitService {
    */
   async updateSplit(splitId: string, dto: UpdateSplitDto, user: JwtPayload): Promise<Split> {
     const split = await this.findSplitWithRelationsOrFail(splitId);
-    this.assertOwnership(split.track, user);
+    await this.assertOwnership(split.track, user);
 
     if (split.status !== SplitStatus.BLOCKED) {
       throw new BadRequestException('Solo se puede editar un split que fue rechazado por un coautor');
@@ -224,19 +225,31 @@ export class SplitService {
     return split;
   }
 
-  /** Verifica que el usuario autenticado sea autor del track (o admin del sistema). */
-  private assertOwnership(track: Track, user: JwtPayload): void {
+  /** Verifica que el usuario sea autor del track (o staff con gestión de splits). */
+  private async assertOwnership(track: Track, user: JwtPayload): Promise<void> {
     const isAuthor = track.authors?.some((author) => author.id === user.id);
-    if (!isAuthor && !isAdminPlanType(user.planType)) {
+    if (isAuthor) return;
+
+    const decision = await this.authorizationService.check(
+      { userId: user.id },
+      { caps: ['platform.billing.splits.manage'], operator: 'AND' },
+    );
+    if (!decision.allowed) {
       throw new ForbiddenException('No tienes permisos para gestionar el split de este track');
     }
   }
 
-  /** El track owner/admin y cualquier coautor listado pueden ver el split. */
-  private assertCanView(track: Track, split: Split, user: JwtPayload): void {
+  /** El autor del track, cualquier coautor listado o el staff con gestión de splits pueden ver el split. */
+  private async assertCanView(track: Track, split: Split, user: JwtPayload): Promise<void> {
     const isTrackAuthor = track.authors?.some((author) => author.id === user.id);
     const isSplitCoauthor = split.authors?.some((author) => author.user?.id === user.id);
-    if (!isTrackAuthor && !isSplitCoauthor && !isAdminPlanType(user.planType)) {
+    if (isTrackAuthor || isSplitCoauthor) return;
+
+    const decision = await this.authorizationService.check(
+      { userId: user.id },
+      { caps: ['platform.billing.splits.manage'], operator: 'AND' },
+    );
+    if (!decision.allowed) {
       throw new ForbiddenException('No tienes permisos para ver este split');
     }
   }
