@@ -1,9 +1,8 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { PlansGuard } from 'src/users/guards/plans.guard';
-import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { BlogAuthorsService } from './blog-authors.service';
 import { CreateBlogAuthorDto } from './dto/create-blog-author.dto';
 import { UpdateBlogAuthorDto } from './dto/update-blog-author.dto';
@@ -11,8 +10,8 @@ import { BlogAuthorPaginationDto } from './dto/blog-author-pagination.dto';
 
 @ApiTags('Blog Authors (Admin)')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(...ADMIN_PLAN_TYPES)
+@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@RequireCapability('platform.blog.authors.manage')
 @Controller('blog/admin/authors')
 export class BlogAuthorsAdminController {
   constructor(private readonly blogAuthorsService: BlogAuthorsService) { }

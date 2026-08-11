@@ -1,9 +1,8 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { PlansGuard } from 'src/users/guards/plans.guard';
-import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { PaymentsService } from './payments.service';
 import { PaymentPaginationDto } from './dto/payment-pagination.dto';
 import { PaymentSourcePaginationDto } from './dto/payment-source-pagination.dto';
@@ -15,8 +14,8 @@ import { PaginationDto } from 'src/shared/dto/pagination.dto';
  * este controller nunca expone create/update/delete, por integridad financiera y PCI-DSS.
  */
 @ApiTags('Pagos (Admin)')
-@UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(...ADMIN_PLAN_TYPES)
+@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@RequireCapability('platform.billing.payments.view')
 @Controller('payments/admin')
 export class PaymentsAdminController {
   constructor(private readonly paymentsService: PaymentsService) {}

@@ -16,17 +16,16 @@ import { ThemesService } from './themes.service';
 import { PaginationDto } from '../shared/dto/pagination.dto';
 import { PaginatedThemeResponseDto } from './dto/theme-pagination.dto';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { PlansGuard } from '../users/guards/plans.guard';
-import { AllowedPlans } from '../users/decorators/allowed-plans.decorator';
-import { ADMIN_PLAN_TYPES } from '../users/entities/user-plan-type.enum';
+import { RequireCapability } from '../authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from '../authorization/guards/authorization.guard';
 
 @ApiTags('Temas')
 @Controller('themes')
 export class ThemesController {
   constructor(private readonly themesService: ThemesService) {}
 
-  @AllowedPlans(...ADMIN_PLAN_TYPES)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('platform.content.themes.manage')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @Post()
   @ApiOperation({
@@ -67,8 +66,8 @@ export class ThemesController {
     return await this.themesService.findOneThemeService(id);
   }
 
-  @AllowedPlans(...ADMIN_PLAN_TYPES)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('platform.content.themes.manage')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @Put(':id')
   @ApiOperation({
@@ -88,8 +87,8 @@ export class ThemesController {
     return await this.themesService.updateThemeService(id, updateThemeInput);
   }
 
-  @AllowedPlans(...ADMIN_PLAN_TYPES)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('platform.content.themes.manage')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @Delete(':id')
   @ApiOperation({

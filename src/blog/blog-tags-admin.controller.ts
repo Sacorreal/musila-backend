@@ -1,9 +1,8 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { PlansGuard } from 'src/users/guards/plans.guard';
-import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
 import { BlogTagsService } from './blog-tags.service';
 import { CreateBlogTagDto } from './dto/create-blog-tag.dto';
@@ -11,8 +10,8 @@ import { UpdateBlogTagDto } from './dto/update-blog-tag.dto';
 
 @ApiTags('Blog Tags (Admin)')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(...ADMIN_PLAN_TYPES)
+@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@RequireCapability('platform.blog.tags.manage')
 @Controller('blog/admin/tags')
 export class BlogTagsAdminController {
   constructor(private readonly blogTagsService: BlogTagsService) { }

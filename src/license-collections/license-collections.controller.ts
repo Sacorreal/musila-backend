@@ -1,9 +1,8 @@
 import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { PlansGuard } from 'src/users/guards/plans.guard';
-import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
-import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { LicenseCollectionsService } from './license-collections.service';
 import { CreateLicenseCollectionDto } from './dto/create-license-collection.dto';
 import { LicenseCollectionPaginationDto } from './dto/license-collection-pagination.dto';
@@ -14,8 +13,8 @@ import { LicenseCollectionPaginationDto } from './dto/license-collection-paginat
  * pago y el marcado de vencimiento ocurren automáticamente vía scheduler.
  */
 @ApiTags('Gestión de Cobros (Admin)')
-@UseGuards(JWTAuthGuard, PlansGuard)
-@AllowedPlans(...ADMIN_PLAN_TYPES)
+@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@RequireCapability('platform.billing.license-collections.manage')
 @Controller('license-collections')
 export class LicenseCollectionsController {
   constructor(private readonly collectionsService: LicenseCollectionsService) {}

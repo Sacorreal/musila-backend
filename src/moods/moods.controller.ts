@@ -16,17 +16,16 @@ import { MoodsService } from './moods.service';
 import { PaginationDto } from '../shared/dto/pagination.dto';
 import { PaginatedMoodResponseDto } from './dto/mood-pagination.dto';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { PlansGuard } from '../users/guards/plans.guard';
-import { AllowedPlans } from '../users/decorators/allowed-plans.decorator';
-import { ADMIN_PLAN_TYPES } from '../users/entities/user-plan-type.enum';
+import { RequireCapability } from '../authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from '../authorization/guards/authorization.guard';
 
 @ApiTags('Moods')
 @Controller('moods')
 export class MoodsController {
   constructor(private readonly moodsService: MoodsService) {}
 
-  @AllowedPlans(...ADMIN_PLAN_TYPES)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('platform.content.moods.manage')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @Post()
   @ApiOperation({
@@ -67,8 +66,8 @@ export class MoodsController {
     return await this.moodsService.findOneMoodService(id);
   }
 
-  @AllowedPlans(...ADMIN_PLAN_TYPES)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('platform.content.moods.manage')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @Put(':id')
   @ApiOperation({
@@ -88,8 +87,8 @@ export class MoodsController {
     return await this.moodsService.updateMoodService(id, updateMoodInput);
   }
 
-  @AllowedPlans(...ADMIN_PLAN_TYPES)
-  @UseGuards(JWTAuthGuard, PlansGuard)
+  @RequireCapability('platform.content.moods.manage')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
   @ApiBearerAuth('JWT-auth')
   @Delete(':id')
   @ApiOperation({
