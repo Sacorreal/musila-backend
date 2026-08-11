@@ -242,6 +242,18 @@ export class AuthService {
   }
 
   /**
+   * Emite una sesión (JWT) para un usuario ya autenticado por Passkey (§11).
+   * La verificación criptográfica la realiza `PasskeyService`; aquí solo se
+   * reutiliza el mecanismo de sesión existente sin duplicar lógica de tokens.
+   */
+  async issuePasskeySession(userId: string): Promise<{ token: string }> {
+    const user = await this.usersService.findOneUserService(userId);
+    if (!user) throw new UnauthorizedException('Usuario no encontrado');
+    const token = await this.createToken(user);
+    return { token };
+  }
+
+  /**
    * Genera token JWT unificado para User o Guest.
    */
   private async createToken(account: User | Guest): Promise<string> {
