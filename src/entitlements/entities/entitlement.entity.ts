@@ -6,6 +6,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { OrganizationType } from '../../organizations/entities/organization-type.enum';
 import { EntitlementPeriod } from './entitlement-period.enum';
 import { EntitlementScope } from './entitlement-scope.enum';
 import { EntitlementType } from './entitlement-type.enum';
@@ -43,6 +44,19 @@ export class Entitlement {
   @ApiProperty({ required: false })
   @Column('text', { nullable: true })
   description?: string;
+
+  /**
+   * Restringe a qué tipos de organización aplica el entitlement (§2/§3).
+   * `null`/vacío = sin restricción por tipo. Para
+   * `marketplace.transaction_fee` vale `['LABEL', 'MANAGEMENT']`.
+   */
+  @ApiProperty({ enum: OrganizationType, isArray: true, required: false, nullable: true })
+  @Column('jsonb', { name: 'applies_to_organization_types', nullable: true })
+  appliesToOrganizationTypes?: OrganizationType[] | null;
+
+  @ApiProperty({ example: true })
+  @Column('boolean', { name: 'is_active', default: true })
+  isActive: boolean;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

@@ -52,6 +52,8 @@ import {
   ProviderTransactionStatus,
 } from './domain/payment-provider.types';
 import { LICENSE_COMMISSION_RATE } from 'src/shared/billing/license-commission.constants';
+import { CommissionService } from 'src/commission/commission.service';
+import type { ResolvedCommission } from 'src/commission/commission.types';
 import { LicenseCollectionsService } from 'src/license-collections/license-collections.service';
 import { LicenseCollection } from 'src/license-collections/entities/license-collection.entity';
 import { CollectionStatus } from 'src/license-collections/entities/collection-status.enum';
@@ -99,6 +101,7 @@ export class PaymentsService {
     private readonly eventBus: EventBusService,
     private readonly otpVerificationService: OtpVerificationService,
     private readonly licenseCollectionsService: LicenseCollectionsService,
+    private readonly commissionService: CommissionService,
   ) {}
 
   /** Nombre del proveedor de pago activo, para persistir en `Payment.provider`. */
@@ -196,7 +199,11 @@ export class PaymentsService {
 
   // ─── Checkout de licencia ─────────────────────────────────────────────────────
 
-  async createLicenseCheckout(dto: CreateLicenseCheckoutDto, userId: string) {
+  async createLicenseCheckout(
+    dto: CreateLicenseCheckoutDto,
+    userId: string,
+    organizationId?: string,
+  ) {
     const track = await this.requestedTrackRepo.findOne({
       where: { id: dto.requestedTrackId },
       relations: ['requester', 'owner', 'track', 'chat'],
@@ -214,8 +221,19 @@ export class PaymentsService {
       dto.requestedTrackId,
     );
 
-    const licensePriceInCents = Math.round(Number(track.licensePrice) * 100);
-    const commissionInCents = Math.round(licensePriceInCents * LICENSE_COMMISSION_RATE);
+    const licensePrice = Number(track.licensePrice);
+    const licensePriceInCents = Math.round(licensePrice * 100);
+
+    // §17: si el comprador actúa como organización (LABEL/MANAGEMENT), la
+    // comisión sale del entitlement configurable por plan y se congela en el
+    // Deal. Los usuarios personales conservan la comisión legacy.
+    const frozen = organizationId
+      ? await this.resolveAndFreezeCommission(track, organizationId, licensePrice)
+      : null;
+
+    const commissionInCents = frozen
+      ? Math.round(frozen.amount * 100)
+      : Math.round(licensePriceInCents * LICENSE_COMMISSION_RATE);
     const amountInCents = licensePriceInCents + commissionInCents;
     const reference = randomUUID();
 
@@ -236,6 +254,21 @@ export class PaymentsService {
     track.licensePaymentStatus = LicensePaymentStatus.PENDING;
     await this.requestedTrackRepo.save(track);
 
+    if (frozen) {
+      // §24: el snapshot ya está persistido; se notifica el congelamiento.
+      this.eventBus.emit('marketplace.commission.frozen', {
+        requestedTrackId: track.id,
+        buyerOrganizationId: frozen.organizationId,
+        buyerPlanId: frozen.planId,
+        buyerSubscriptionId: frozen.subscriptionId,
+        rate: frozen.rate,
+        amount: frozen.amount,
+        currency: frozen.currency,
+        licenseAmount: frozen.licenseAmount,
+        occurredAt: new Date(),
+      });
+    }
+
     await this.paymentRepo.save({
       provider: this.activeProviderName,
       userId,
@@ -252,10 +285,30 @@ export class PaymentsService {
     return {
       widget: { publicKey, currency: CURRENCY, amountInCents, reference, signature, redirectUrl },
       externalReference: reference,
-      licensePrice: Number(track.licensePrice),
+      licensePrice,
       commission: commissionInCents / 100,
+      commissionRate: frozen ? frozen.rate : LICENSE_COMMISSION_RATE * 100,
       total: amountInCents / 100,
     };
+  }
+
+  /**
+   * Resuelve la comisión B2B vigente del comprador y la congela en el Deal
+   * (§13). No captura errores de dominio (BUYER_ORGANIZATION_TYPE_NOT_SUPPORTED,
+   * TRANSACTION_FEE_NOT_CONFIGURED): deben propagarse al comprador antes de
+   * pagar (§18/§26).
+   */
+  private async resolveAndFreezeCommission(
+    track: RequestedTrack,
+    organizationId: string,
+    licensePrice: number,
+  ): Promise<ResolvedCommission> {
+    const resolved = await this.commissionService.resolveCommission({
+      organizationId,
+      dealAmount: licensePrice,
+    });
+    this.commissionService.freezeCommission(track, resolved);
+    return resolved;
   }
 
   // ─── Checkout de cuota de anticipo (Licencia de Primer Uso generada en línea) ──

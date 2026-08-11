@@ -6,6 +6,7 @@ import { Notification } from 'src/notifications/entities/notification.entity';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { EmailModule } from 'src/shared/mail/email.module';
 import { LicenseCollectionsModule } from 'src/license-collections/license-collections.module';
+import { CommissionModule } from 'src/commission/commission.module';
 import { Payment } from './entities/payment.entity';
 import { PaymentSource } from './entities/payment-source.entity';
 import { PendingRegistration } from './entities/pending-registration.entity';
@@ -33,6 +34,7 @@ import { paymentProviderFactory } from './payment-provider.factory';
     ]),
     EmailModule.forRootAsync(),
     LicenseCollectionsModule,
+    CommissionModule,
   ],
   controllers: [PaymentsController, PaymentsAdminController],
   providers: [

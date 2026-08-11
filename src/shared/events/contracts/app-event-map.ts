@@ -525,4 +525,28 @@ export interface AppEventMap {
     subjectId: string;
   }
 
+  // 💵 COMISIÓN TRANSACCIONAL DEL MARKETPLACE (comprador B2B)
+
+  'marketplace.transaction_fee.updated': {
+    planId: string;
+    organizationType: string;
+    previousRate: number | null;
+    newRate: number;
+    configId: string;
+    entitlementId: string;
+    actorUserId: string | null;
+  }
+
+  'marketplace.commission.frozen': {
+    requestedTrackId: string;
+    buyerOrganizationId: string;
+    buyerPlanId: string;
+    buyerSubscriptionId: string;
+    rate: number;
+    amount: number;
+    currency: string;
+    licenseAmount: number;
+    occurredAt: Date;
+  }
+
 }

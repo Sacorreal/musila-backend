@@ -24,6 +24,7 @@ import { CreatePaymentSourceDto } from './dto/create-payment-source.dto';
 import { PaymentsService } from './payments.service';
 import { ReceiptService } from './receipt.service';
 import { ProviderEvent } from './domain/payment-provider.types';
+import { resolveOrganizationId } from 'src/authorization/utils/organization-context.util';
 
 @ApiTags('payments')
 @Controller('payments')
@@ -52,7 +53,11 @@ export class PaymentsController {
   @ApiResponse({ status: 404, description: 'Solicitud no encontrada' })
   async createLicenseCheckout(@Body() dto: CreateLicenseCheckoutDto, @Req() req: Request) {
     const user = req['user'] as JwtPayload;
-    return this.paymentsService.createLicenseCheckout(dto, user.id);
+    // §22/§23: la organización activa (header x-organization-id) es parte del
+    // contexto de autorización. Si el comprador actúa como organización, se
+    // resuelve la comisión B2B; el backend valida su tipo real en BD.
+    const organizationId = resolveOrganizationId(req);
+    return this.paymentsService.createLicenseCheckout(dto, user.id, organizationId);
   }
 
   @Post('license-installment-checkout')

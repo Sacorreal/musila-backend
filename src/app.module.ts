@@ -50,6 +50,7 @@ import { RegistrationFileModule } from './registration-file/registration-file.mo
 import { OrganizationsModule } from './organizations/organizations.module';
 import { AuthorizationModule } from './authorization/authorization.module';
 import { EntitlementsModule } from './entitlements/entitlements.module';
+import { CommissionModule } from './commission/commission.module';
 
 @Module({
   imports: [
@@ -104,6 +105,7 @@ import { EntitlementsModule } from './entitlements/entitlements.module';
     OrganizationsModule,
     EntitlementsModule,
     AuthorizationModule,
+    CommissionModule,
   ],
   controllers: [AppController],
   providers: [

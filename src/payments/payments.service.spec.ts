@@ -18,6 +18,7 @@ import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.en
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { OtpVerificationService } from 'src/shared/otp-verification/otp-verification.service';
 import { LicenseCollectionsService } from 'src/license-collections/license-collections.service';
+import { CommissionService } from 'src/commission/commission.service';
 
 const makeMockRepo = (overrides: Record<string, jest.Mock> = {}) => ({
   save: jest.fn().mockResolvedValue({}),
@@ -100,6 +101,14 @@ describe('PaymentsService', () => {
             findByPaymentReference: jest.fn().mockResolvedValue(null),
             setPaymentReference: jest.fn().mockResolvedValue(undefined),
             markCollectionPaid: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: CommissionService,
+          useValue: {
+            resolveCommission: jest.fn(),
+            calculateCommission: jest.fn(),
+            freezeCommission: jest.fn(),
           },
         },
       ],

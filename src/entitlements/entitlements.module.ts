@@ -1,6 +1,8 @@
 import { Global, Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Capability } from 'src/authorization/entities/capability.entity';
+import { TransactionFeeConfig } from 'src/commission/entities/transaction-fee-config.entity';
+import { Organization } from 'src/organizations/entities/organization.entity';
 import { StaffAuditModule } from 'src/staff-audit/staff-audit.module';
 import { EntitlementsController } from './entitlements.controller';
 import { EntitlementConsumeInterceptor } from './interceptors/entitlement-consume.interceptor';
@@ -34,6 +36,8 @@ import { UserPlanSubscriptionSyncService } from './user-plan-subscription-sync.s
       Subscription,
       Usage,
       Capability,
+      Organization,
+      TransactionFeeConfig,
     ]),
     forwardRef(() => StaffAuditModule),
   ],
