@@ -26,6 +26,8 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { PaymentsService } from 'src/payments/payments.service';
 import { AffiliatesService } from 'src/affiliates/affiliates.service';
+import { OrganizationInviteService } from 'src/organizations/organization-invite.service';
+import { RegisterOrgAdminDto } from 'src/organizations/dto/register-org-admin.dto';
 
 const EMAIL_VERIFICATION_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 
@@ -41,6 +43,7 @@ export class AuthService {
     private readonly paymentsService: PaymentsService,
     private readonly affiliatesService: AffiliatesService,
     private readonly auditLogService: AuditLogService,
+    private readonly organizationInviteService: OrganizationInviteService,
   ) {}
 
   /**
@@ -195,6 +198,47 @@ export class AuthService {
     const newGuest = await this.guestsService.registerFromInvite(guest);
     const token = await this.createToken(newGuest);
     return { token };
+  }
+
+  /**
+   * Registro del Organization Admin a partir de una invitación por email:
+   * valida el token, crea el usuario oficial (ya verificado, pues el email
+   * fue validado por el token) y lo activa como miembro con rol
+   * ORGANIZATION_ADMIN. Devuelve el JWT para iniciar sesión automáticamente.
+   */
+  async registerOrgAdminFromInvite(dto: RegisterOrgAdminDto) {
+    if (dto.password !== dto.repeatPassword)
+      throw new BadRequestException('Las contraseñas no coinciden');
+
+    const invite = await this.organizationInviteService.validate(dto.token);
+    if (invite.email.toLowerCase() !== dto.email.toLowerCase()) {
+      throw new BadRequestException('El email no coincide con la invitación');
+    }
+
+    const emailExists = await this.usersService.findUserByEmailService(dto.email);
+    if (emailExists) throw new ConflictException('Ya existe un usuario con este email');
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const newUser = await this.usersService.createUserService({
+      name: dto.name,
+      lastName: dto.lastName,
+      email: dto.email,
+      password: hashedPassword,
+      countryCode: dto.countryCode,
+      phone: dto.phone,
+      typeCitizenID: dto.typeCitizenID,
+      citizenID: dto.citizenID,
+      // El email fue validado por el token de invitación: la cuenta nace verificada.
+      isVerified: true,
+    });
+
+    const { organizationId } = await this.organizationInviteService.consumeForUser(
+      dto.token,
+      newUser.id,
+    );
+
+    const token = await this.createToken(newUser);
+    return { token, organizationId };
   }
 
   /**

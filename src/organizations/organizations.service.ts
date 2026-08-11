@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MembershipRole } from 'src/authorization/entities/membership-role.entity';
 import { MembershipType } from 'src/authorization/entities/membership-type.enum';
@@ -9,7 +10,8 @@ import { SubjectType } from 'src/entitlements/entities/subject-type.enum';
 import { Subscription } from 'src/entitlements/entities/subscription.entity';
 import { SubscriptionStatus } from 'src/entitlements/entities/subscription-status.enum';
 import { EventBusService } from 'src/shared/events/event-bus.service';
-import { DataSource, Repository } from 'typeorm';
+import { User } from 'src/users/entities/user.entity';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 import { MembershipStatus } from './entities/membership-status.enum';
 import { Organization } from './entities/organization.entity';
 import { OrganizationMembership } from './entities/organization-membership.entity';
@@ -17,6 +19,7 @@ import { OrganizationType } from './entities/organization-type.enum';
 import { Tenant } from './entities/tenant.entity';
 import { TenantType } from './entities/tenant-type.enum';
 import { Trackspace } from './entities/trackspace.entity';
+import { OrganizationInviteService } from './organization-invite.service';
 
 export interface CreateOrganizationParams {
   name: string;
@@ -24,9 +27,16 @@ export interface CreateOrganizationParams {
   type: OrganizationType;
   /** Plan B2B a contratar al crear (opcional). */
   planKey?: string;
-  /** Usuario existente que queda como Organization Admin inicial (opcional). */
-  adminUserId?: string;
+  /** Email del Organization Admin inicial (obligatorio). */
+  adminEmail: string;
+  /** Nombre del Organization Admin, para personalizar el correo (opcional). */
+  adminName?: string;
 }
+
+/** Resultado de resolver al Organization Admin al crear la organización. */
+type AdminOutcome =
+  | { type: 'existing'; userId: string; userName?: string }
+  | { type: 'invited'; token: string };
 
 export interface UpdateTrackspaceParams {
   name?: string;
@@ -42,6 +52,8 @@ export class OrganizationsService {
     private readonly trackspaceRepository: Repository<Trackspace>,
     private readonly dataSource: DataSource,
     private readonly eventBus: EventBusService,
+    private readonly configService: ConfigService,
+    private readonly organizationInviteService: OrganizationInviteService,
   ) {}
 
   async findById(organizationId: string): Promise<Organization> {
@@ -61,7 +73,10 @@ export class OrganizationsService {
 
   /**
    * Crea tenant + organización + trackspace default en una sola transacción
-   * y, opcionalmente, la subscription B2B inicial y el Organization Admin.
+   * y, opcionalmente, la subscription B2B inicial. El Organization Admin
+   * inicial se resuelve por email: si ya tiene cuenta se le asigna la
+   * membership ACTIVE + rol; si no, se genera una invitación por email para
+   * que complete su registro (§2/§4).
    */
   async createOrganization(
     params: CreateOrganizationParams,
@@ -72,7 +87,7 @@ export class OrganizationsService {
       throw new BadRequestException(`Ya existe una organización con el slug '${params.slug}'`);
     }
 
-    const organization = await this.dataSource.transaction(async (manager) => {
+    const { organization, adminOutcome } = await this.dataSource.transaction(async (manager) => {
       const tenant = await manager.save(
         manager.create(Tenant, {
           type: TenantType.ORGANIZATION,
@@ -114,44 +129,106 @@ export class OrganizationsService {
         );
       }
 
-      if (params.adminUserId) {
-        const adminRole = await manager.findOne(Role, {
-          where: { key: 'ORGANIZATION_ADMIN', source: RoleSource.SYSTEM },
-        });
-        if (!adminRole) {
-          throw new BadRequestException(
-            'No existe el rol SYSTEM ORGANIZATION_ADMIN; ejecuta los seeds de autorización',
-          );
-        }
+      const adminOutcome = await this.resolveInitialAdmin(manager, created.id, params, invitedBy);
 
-        const membership = await manager.save(
-          manager.create(OrganizationMembership, {
-            organizationId: created.id,
-            userId: params.adminUserId,
-            status: MembershipStatus.ACTIVE,
-            invitedBy,
-            joinedAt: new Date(),
-          }),
-        );
+      return { organization: created, adminOutcome };
+    });
 
-        await manager.save(
-          manager.create(MembershipRole, {
-            membershipType: MembershipType.ORGANIZATION,
-            membershipId: membership.id,
-            roleId: adminRole.id,
-            assignedBy: invitedBy,
-          }),
+    this.emitAdminOutcomeEvents(organization, params, adminOutcome);
+
+    return organization;
+  }
+
+  /**
+   * Dentro de la transacción de creación: si el email ya pertenece a un
+   * usuario, crea su membership ACTIVE + rol ORGANIZATION_ADMIN; si no,
+   * genera una invitación por email.
+   */
+  private async resolveInitialAdmin(
+    manager: EntityManager,
+    organizationId: string,
+    params: CreateOrganizationParams,
+    invitedBy?: string,
+  ): Promise<AdminOutcome> {
+    const existingUser = await manager.findOne(User, { where: { email: params.adminEmail } });
+
+    if (existingUser) {
+      const adminRole = await manager.findOne(Role, {
+        where: { key: 'ORGANIZATION_ADMIN', source: RoleSource.SYSTEM },
+      });
+      if (!adminRole) {
+        throw new BadRequestException(
+          'No existe el rol SYSTEM ORGANIZATION_ADMIN; ejecuta los seeds de autorización',
         );
       }
 
-      return created;
-    });
+      const membership = await manager.save(
+        manager.create(OrganizationMembership, {
+          organizationId,
+          userId: existingUser.id,
+          status: MembershipStatus.ACTIVE,
+          invitedBy,
+          joinedAt: new Date(),
+        }),
+      );
 
-    if (params.adminUserId) {
-      this.eventBus.emit('authorization.membership.updated', { userId: params.adminUserId });
+      await manager.save(
+        manager.create(MembershipRole, {
+          membershipType: MembershipType.ORGANIZATION,
+          membershipId: membership.id,
+          roleId: adminRole.id,
+          assignedBy: invitedBy,
+        }),
+      );
+
+      return { type: 'existing', userId: existingUser.id, userName: existingUser.name };
     }
 
-    return organization;
+    const invite = await this.organizationInviteService.createAdminInvite({
+      organizationId,
+      email: params.adminEmail,
+      invitedBy,
+      manager,
+    });
+
+    return { type: 'invited', token: invite.token };
+  }
+
+  /** Efectos post-commit: notificaciones por email y refresco de capacidades. */
+  private emitAdminOutcomeEvents(
+    organization: Organization,
+    params: CreateOrganizationParams,
+    adminOutcome: AdminOutcome,
+  ): void {
+    const baseUrl = this.webAppBaseUrl();
+
+    if (adminOutcome.type === 'existing') {
+      this.eventBus.emit('authorization.membership.updated', { userId: adminOutcome.userId });
+      this.eventBus.emit('organization.admin.assigned', {
+        email: params.adminEmail,
+        name: adminOutcome.userName ?? params.adminName ?? '',
+        organizationName: organization.name,
+        workspaceUrl: `${baseUrl}/org/${organization.id}`,
+      });
+      return;
+    }
+
+    this.eventBus.emit('organization.admin.invited', {
+      email: params.adminEmail,
+      token: adminOutcome.token,
+      organizationName: organization.name,
+      inviteUrl: `${baseUrl}/org-invite/${adminOutcome.token}`,
+      adminName: params.adminName,
+    });
+  }
+
+  private webAppBaseUrl(): string {
+    return (
+      this.configService.get<string>('WEB_APP_DEVELOPMENT') ||
+      this.configService.get<string>('WEB_APP_PRODUCTION') ||
+      this.configService.get<string>('WEB_APP_LOCAL') ||
+      ''
+    );
   }
 
   async updateOrganization(

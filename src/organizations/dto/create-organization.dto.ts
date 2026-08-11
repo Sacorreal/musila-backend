@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, Matches, MaxLength } from 'class-validator';
+import { IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 import { OrganizationType } from '../entities/organization-type.enum';
 
 export class CreateOrganizationDto {
@@ -26,8 +26,20 @@ export class CreateOrganizationDto {
   @IsString()
   planKey?: string;
 
-  @ApiPropertyOptional({ description: 'Usuario existente que queda como Organization Admin' })
+  @ApiProperty({
+    example: 'admin@sonymusic.com',
+    description:
+      'Email del Organization Admin inicial. Si ya tiene cuenta se le asigna la membership; si no, recibe una invitación por email para registrarse.',
+  })
+  @IsEmail()
+  adminEmail: string;
+
+  @ApiPropertyOptional({
+    example: 'Ana Ruiz',
+    description: 'Nombre del Organization Admin, para personalizar el correo de invitación',
+  })
   @IsOptional()
-  @IsUUID()
-  adminUserId?: string;
+  @IsString()
+  @MaxLength(150)
+  adminName?: string;
 }

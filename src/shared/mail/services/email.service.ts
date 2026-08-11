@@ -290,4 +290,26 @@ export class EmailService {
       variables: data,
     });
   }
+
+  async sendOrganizationAdminInviteEmail(
+    to: string | string[],
+    data: EmailTemplateMap['organization-admin-invite'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'organization-admin-invite',
+      variables: data,
+    });
+  }
+
+  async sendOrganizationAdminAssignedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['organization-admin-assigned'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'organization-admin-assigned',
+      variables: data,
+    });
+  }
 }

@@ -7,6 +7,7 @@ import { LoginAuthDto } from './dto/login-auth.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 
 import {RegisterGuestDto } from '../guests/dto/register-guest.dto'
+import { RegisterOrgAdminDto } from '../organizations/dto/register-org-admin.dto';
 import { RequestResetPasswordDto } from './dto/request-reset-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -75,6 +76,21 @@ export class AuthController {
     @Body() guest: RegisterGuestDto
   ){
     return this.authService.registerGuestService(guest)
+  }
+
+  @Post('register/org-admin')
+  @Throttle({ long: { limit: 5, ttl: 600_000 } })
+  @ApiOperation({
+    summary: 'Registrar al Organization Admin desde una invitación',
+    description:
+      'Crea la cuenta del Organization Admin a partir del token de invitación recibido por email y lo activa como miembro con rol ORGANIZATION_ADMIN. Devuelve un JWT.',
+  })
+  @ApiResponse({ status: 201, description: 'Cuenta creada y membership activada' })
+  @ApiResponse({ status: 400, description: 'Token inválido, email no coincide o contraseñas distintas' })
+  @ApiResponse({ status: 409, description: 'El correo electrónico ya está registrado' })
+  @ApiResponse({ status: 410, description: 'La invitación ha expirado' })
+  async registerOrgAdminController(@Body() dto: RegisterOrgAdminDto) {
+    return this.authService.registerOrgAdminFromInvite(dto);
   }
 
   @Post('forgot-password')

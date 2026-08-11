@@ -525,6 +525,23 @@ export interface AppEventMap {
     subjectId: string;
   }
 
+  // 🏢 ORGANIZACIONES B2B (invitación del Organization Admin inicial)
+
+  'organization.admin.invited': {
+    email: string;
+    token: string;
+    organizationName: string;
+    inviteUrl: string;
+    adminName?: string;
+  };
+
+  'organization.admin.assigned': {
+    email: string;
+    name: string;
+    organizationName: string;
+    workspaceUrl: string;
+  };
+
   // 💵 COMISIÓN TRANSACCIONAL DEL MARKETPLACE (comprador B2B)
 
   'marketplace.transaction_fee.updated': {

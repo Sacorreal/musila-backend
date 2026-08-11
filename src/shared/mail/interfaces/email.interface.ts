@@ -200,4 +200,16 @@ export interface EmailTemplateMap {
     shareUrl: string;
     instructionsText: string;
   };
+
+  'organization-admin-invite': {
+    adminName: string;
+    organizationName: string;
+    inviteUrl: string;
+  };
+
+  'organization-admin-assigned': {
+    adminName: string;
+    organizationName: string;
+    workspaceUrl: string;
+  };
 }
