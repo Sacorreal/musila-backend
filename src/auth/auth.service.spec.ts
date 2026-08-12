@@ -6,6 +6,8 @@ import { EventBusService } from 'src/shared/events/event-bus.service';
 import { PaymentsService } from 'src/payments/payments.service';
 import { AffiliatesService } from 'src/affiliates/affiliates.service';
 import { AuditLogService } from 'src/users/audit-log.service';
+import { OrganizationInviteService } from 'src/organizations/organization-invite.service';
+import { WorkspaceInviteService } from 'src/organizations/workspace-invite.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConflictException, GoneException, UnauthorizedException, BadRequestException } from '@nestjs/common';
 import bcrypt from 'bcrypt'
@@ -45,6 +47,14 @@ describe('AuthService', () => {
         { provide: PaymentsService, useValue: { linkUserToPayment: jest.fn() } },
         { provide: AffiliatesService, useValue: { attributeReferral: jest.fn() } },
         { provide: AuditLogService, useValue: { log: jest.fn() } },
+        {
+          provide: OrganizationInviteService,
+          useValue: { validate: jest.fn(), consumeForUser: jest.fn() },
+        },
+        {
+          provide: WorkspaceInviteService,
+          useValue: { validatePublic: jest.fn(), consumeForNewUser: jest.fn() },
+        },
       ],
     }).compile();
 

@@ -53,7 +53,13 @@ describe('RoleService', () => {
         { provide: CapabilityService, useValue: capabilityService },
         { provide: AuthorizationService, useValue: authorizationService },
         { provide: EventBusService, useValue: eventBus },
-        { provide: DataSource, useValue: { transaction: jest.fn() } },
+        {
+          provide: DataSource,
+          useValue: {
+            // Ejecuta el callback como una transacción real, con un manager mock.
+            transaction: jest.fn((cb) => cb({ delete: jest.fn(), save: jest.fn() })),
+          },
+        },
       ],
     }).compile();
 

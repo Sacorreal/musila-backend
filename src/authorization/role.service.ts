@@ -315,7 +315,7 @@ export class RoleService {
     roleIds: string[],
     assignedBy: string,
   ): Promise<void> {
-    const roles = await manager.find(Role, {
+    const roles = await this.roleRepository.find({
       where: { id: In(roleIds) },
       relations: { roleCapabilities: { capability: true } },
     });
