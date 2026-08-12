@@ -94,18 +94,18 @@ export class WalletDistributionService {
     });
     if (!split?.authors?.length) return null;
 
-    // La publisher coautora no participa del reparto monetario (solo cobra
-    // comisión por venta de licencia, que es independiente de su % de split). Se
-    // reparte el neto entre los coautores persona, renormalizando sus % de split
-    // a 100 para que no se pierda la fracción que el split asignó a la publisher.
-    const humanAuthors = split.authors.filter((author) => author.user);
-    if (!humanAuthors.length) return null;
-    const humanTotal = humanAuthors.reduce((acc, author) => acc + Number(author.percentage), 0);
-    if (humanTotal <= 0) return null;
+    // Los coautores del split son personas que suman 100%. El Publisher's Share de
+    // la publisher es metadata informativa del expediente (para notificar a
+    // entidades externas) y NO participa del reparto monetario. Se renormaliza de
+    // forma defensiva ante cualquier drift de redondeo.
+    const authors = split.authors.filter((author) => author.user);
+    if (!authors.length) return null;
+    const total = authors.reduce((acc, author) => acc + Number(author.percentage), 0);
+    if (total <= 0) return null;
 
-    const entries = humanAuthors.map((author) => ({
+    const entries = authors.map((author) => ({
       userId: author.user!.id,
-      percentage: Math.round((Number(author.percentage) / humanTotal) * 10000) / 100,
+      percentage: Math.round((Number(author.percentage) / total) * 10000) / 100,
     }));
     // Ajusta el último coautor para que la suma sea exactamente 100 (evita fugas por redondeo).
     const drift = 100 - entries.reduce((acc, entry) => acc + entry.percentage, 0);

@@ -55,7 +55,7 @@ import { EntitlementsModule } from './entitlements/entitlements.module';
 import { CommissionModule } from './commission/commission.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { PublisherCommissionModule } from './publisher-commission/publisher-commission.module';
-import { PublisherCoauthorModule } from './publisher-coauthor/publisher-coauthor.module';
+import { PublisherShareModule } from './publisher-share/publisher-share.module';
 
 @Module({
   imports: [
@@ -115,7 +115,7 @@ import { PublisherCoauthorModule } from './publisher-coauthor/publisher-coauthor
     CommissionModule,
     PromotionsModule,
     PublisherCommissionModule,
-    PublisherCoauthorModule,
+    PublisherShareModule,
   ],
   controllers: [AppController],
   providers: [

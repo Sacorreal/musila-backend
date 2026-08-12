@@ -5,52 +5,50 @@ import { Organization } from 'src/organizations/entities/organization.entity';
 import { OrganizationType } from 'src/organizations/entities/organization-type.enum';
 import { RosterMembership } from 'src/organizations/entities/roster-membership.entity';
 import { MembershipStatus } from 'src/organizations/entities/membership-status.enum';
-import { CoauthorRole } from 'src/splits/entities/coauthor-role.enum';
-import { PublisherRosterCoauthorDefault } from './entities/publisher-roster-coauthor-default.entity';
+import { PublisherShare } from './entities/publisher-share.entity';
 import {
-  PublisherCoauthorPolicyView,
-  ResolvedPublisherCoauthor,
-  RosterCoauthorDefaultView,
-} from './publisher-coauthor.types';
+  PublisherSharePolicyView,
+  ResolvedPublisherShare,
+  RosterPublisherShareView,
+} from './publisher-share.types';
 
-export interface RosterCoauthorDefaultInput {
+export interface PublisherShareInput {
   userId: string;
   enabled: boolean;
-  role: CoauthorRole;
   percentage: number;
 }
 
 /**
- * Gestiona la configuración por la que una publisher queda como coautora por
- * defecto de un miembro de su roster (rol + porcentaje fijos). `resolveForUser`
- * es la fuente de verdad que consume `SplitService` para inyectar a la publisher
- * de forma obligatoria en cada split.
+ * Gestiona el Publisher's Share: el porcentaje que una publisher declara de forma
+ * global por cada miembro de su roster. `resolveForUser` es la fuente de verdad
+ * que consume `SplitService` para inyectarlo como metadata informativa del
+ * expediente en cada canción que el autor publica.
  */
 @Injectable()
-export class PublisherCoauthorService {
+export class PublisherShareService {
   constructor(
-    @InjectRepository(PublisherRosterCoauthorDefault)
-    private readonly defaultsRepo: Repository<PublisherRosterCoauthorDefault>,
+    @InjectRepository(PublisherShare)
+    private readonly sharesRepo: Repository<PublisherShare>,
     @InjectRepository(RosterMembership)
     private readonly rosterRepo: Repository<RosterMembership>,
     @InjectRepository(Organization)
     private readonly orgRepo: Repository<Organization>,
   ) {}
 
-  /** Roster ACTIVE con su configuración de coautoría por defecto. */
-  async getPolicy(organizationId: string): Promise<PublisherCoauthorPolicyView> {
+  /** Roster ACTIVE con su Publisher's Share configurado. */
+  async getPolicy(organizationId: string): Promise<PublisherSharePolicyView> {
     await this.assertPublisher(organizationId);
     return {
       organizationId,
-      roster: await this.listRosterWithDefaults(organizationId),
+      roster: await this.listRosterWithShares(organizationId),
     };
   }
 
-  /** Bulk upsert de la coautoría por defecto por miembro del roster. */
-  async upsertRosterDefaults(
+  /** Bulk upsert del Publisher's Share por miembro del roster. */
+  async upsertShares(
     organizationId: string,
-    items: RosterCoauthorDefaultInput[],
-  ): Promise<PublisherCoauthorPolicyView> {
+    items: PublisherShareInput[],
+  ): Promise<PublisherSharePolicyView> {
     await this.assertPublisher(organizationId);
 
     const activeUserIds = await this.activeRosterUserIds(organizationId);
@@ -60,37 +58,36 @@ export class PublisherCoauthorService {
       }
       if (item.enabled && item.percentage <= 0) {
         throw new BadRequestException(
-          `Para activar la coautoría de ${item.userId} el porcentaje debe ser mayor a 0`,
+          `Para activar el Publisher's Share de ${item.userId} el porcentaje debe ser mayor a 0`,
         );
       }
     }
 
     for (const item of items) {
-      let row = await this.defaultsRepo.findOne({
+      let row = await this.sharesRepo.findOne({
         where: { organizationId, userId: item.userId },
       });
       if (!row) {
-        row = this.defaultsRepo.create({ organizationId, userId: item.userId });
+        row = this.sharesRepo.create({ organizationId, userId: item.userId });
       }
       row.enabled = item.enabled;
-      row.role = item.role;
       row.percentage = item.percentage;
-      await this.defaultsRepo.save(row);
+      await this.sharesRepo.save(row);
     }
 
     return this.getPolicy(organizationId);
   }
 
-  /** Miembros ACTIVE del roster con su configuración (por defecto deshabilitada). */
-  async listRosterWithDefaults(organizationId: string): Promise<RosterCoauthorDefaultView[]> {
+  /** Miembros ACTIVE del roster con su Publisher's Share (por defecto deshabilitado). */
+  async listRosterWithShares(organizationId: string): Promise<RosterPublisherShareView[]> {
     const members = await this.rosterRepo.find({
       where: { organizationId, status: MembershipStatus.ACTIVE },
       relations: { user: true },
     });
     if (!members.length) return [];
 
-    const defaults = await this.defaultsRepo.find({ where: { organizationId } });
-    const byUser = new Map(defaults.map((d) => [d.userId, d]));
+    const shares = await this.sharesRepo.find({ where: { organizationId } });
+    const byUser = new Map(shares.map((s) => [s.userId, s]));
 
     return members.map((m) => {
       const config = byUser.get(m.userId);
@@ -100,19 +97,18 @@ export class PublisherCoauthorService {
         email: m.user.email,
         avatarUrl: m.user.avatarUrl,
         enabled: config?.enabled ?? false,
-        role: config?.role ?? CoauthorRole.COMPOSITOR,
         percentage: config ? Number(config.percentage) : 0,
       };
     });
   }
 
   /**
-   * Resuelve las coautorías por defecto que deben inyectarse en el split que crea
-   * `creatorUserId`: por cada organización PUBLISHER donde es miembro ACTIVE y
-   * tiene la coautoría activada con porcentaje > 0. Se usa en la creación/edición
-   * del split (inyección obligatoria) y para mostrar el objetivo en la UI.
+   * Resuelve el Publisher's Share que aplica a `creatorUserId`: por cada
+   * organización PUBLISHER donde es miembro ACTIVE y tiene el share activado con
+   * porcentaje > 0. Se usa como metadata informativa del expediente del track y
+   * para mostrarlo en la UI del split.
    */
-  async resolveForUser(creatorUserId: string): Promise<ResolvedPublisherCoauthor[]> {
+  async resolveForUser(creatorUserId: string): Promise<ResolvedPublisherShare[]> {
     const memberships = await this.rosterRepo.find({
       where: {
         userId: creatorUserId,
@@ -124,12 +120,12 @@ export class PublisherCoauthorService {
     if (!memberships.length) return [];
 
     const organizationIds = memberships.map((m) => m.organizationId);
-    const defaults = await this.defaultsRepo.find({
+    const shares = await this.sharesRepo.find({
       where: { organizationId: In(organizationIds), userId: creatorUserId, enabled: true },
     });
-    const byOrg = new Map(defaults.map((d) => [d.organizationId, d]));
+    const byOrg = new Map(shares.map((s) => [s.organizationId, s]));
 
-    const resolved: ResolvedPublisherCoauthor[] = [];
+    const resolved: ResolvedPublisherShare[] = [];
     for (const membership of memberships) {
       const config = byOrg.get(membership.organizationId);
       if (!config) continue;
@@ -138,7 +134,6 @@ export class PublisherCoauthorService {
       resolved.push({
         organizationId: membership.organizationId,
         organizationName: membership.organization.name,
-        role: config.role,
         percentage,
       });
     }
@@ -157,7 +152,7 @@ export class PublisherCoauthorService {
     const org = await this.orgRepo.findOne({ where: { id: organizationId } });
     if (!org) throw new NotFoundException('Organización no encontrada');
     if (org.type !== OrganizationType.PUBLISHER) {
-      throw new BadRequestException('La coautoría por defecto solo aplica a organizaciones tipo PUBLISHER');
+      throw new BadRequestException("El Publisher's Share solo aplica a organizaciones tipo PUBLISHER");
     }
   }
 }

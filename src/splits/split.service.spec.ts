@@ -17,7 +17,7 @@ describe('SplitService', () => {
   let otpVerificationService: { assertAndConsumeVerification: jest.Mock };
   let legalProofService: { generateProof: jest.Mock };
   let authorizationService: { check: jest.Mock };
-  let publisherCoauthorService: { resolveForUser: jest.Mock };
+  let publisherShareService: { resolveForUser: jest.Mock };
 
   const admin: JwtPayload = { id: 'author-1', email: 'author1@musila.com', name: 'Autor Uno', planType: UserPlanType.PLAN_AUTOR };
   const coauthorUser = { id: 'author-2', email: 'author2@musila.com', name: 'Autor', lastName: 'Dos' };
@@ -45,7 +45,7 @@ describe('SplitService', () => {
     otpVerificationService = { assertAndConsumeVerification: jest.fn().mockResolvedValue(undefined) };
     legalProofService = { generateProof: jest.fn().mockResolvedValue({ legalProofId: 'proof-1' }) };
     authorizationService = { check: jest.fn().mockResolvedValue({ allowed: false }) };
-    publisherCoauthorService = { resolveForUser: jest.fn().mockResolvedValue([]) };
+    publisherShareService = { resolveForUser: jest.fn().mockResolvedValue([]) };
 
     service = new SplitService(
       splitRepo,
@@ -57,7 +57,7 @@ describe('SplitService', () => {
       otpVerificationService as any,
       legalProofService as any,
       authorizationService as any,
-      publisherCoauthorService as any,
+      publisherShareService as any,
     );
   });
 
@@ -119,20 +119,8 @@ describe('SplitService', () => {
     });
   });
 
-  describe('inyección obligatoria de coautoría de publisher', () => {
-    it('exige que los coautores humanos sumen 100 − %publisher', async () => {
-      splitRepo.findOne.mockResolvedValue(null);
-      publisherCoauthorService.resolveForUser.mockResolvedValue([
-        { organizationId: 'org-1', organizationName: 'Sony', role: CoauthorRole.ARREGLISTA, percentage: 20 },
-      ]);
-
-      // Los humanos suman 100 (debería fallar: el objetivo es 80).
-      await expect(
-        service.createSplit('track-1', { authors: [{ userId: 'author-2', percentage: 100, role: CoauthorRole.AUTOR }] }, admin),
-      ).rejects.toThrow(BadRequestException);
-    });
-
-    it('inyecta a la publisher como coautora aprobada y sin firma', async () => {
+  describe("Publisher's Share (metadata informativa)", () => {
+    const withCreatedSplit = () =>
       splitRepo.findOne
         .mockResolvedValueOnce(null)
         .mockResolvedValueOnce({
@@ -140,38 +128,50 @@ describe('SplitService', () => {
           track,
           createdBy: admin,
           status: SplitStatus.PENDING_APPROVAL,
-          authors: [],
+          authors: [{ id: 'sa-1', user: coauthorUser, percentage: 100, role: CoauthorRole.AUTOR, status: SplitAuthorStatus.PENDING }],
         });
-      publisherCoauthorService.resolveForUser.mockResolvedValue([
-        { organizationId: 'org-1', organizationName: 'Sony', role: CoauthorRole.ARREGLISTA, percentage: 20 },
+
+    it("no crea split_author para la publisher: su Publisher's Share es metadata aparte", async () => {
+      withCreatedSplit();
+      publisherShareService.resolveForUser.mockResolvedValue([
+        { organizationId: 'org-1', organizationName: 'Sony', percentage: 20 },
       ]);
 
-      await service.createSplit(
+      const result = await service.createSplit(
         'track-1',
-        { authors: [{ userId: 'author-2', percentage: 80, role: CoauthorRole.AUTOR }] },
+        { authors: [{ userId: 'author-2', percentage: 100, role: CoauthorRole.AUTOR }] },
         admin,
       );
 
       const createdSplit = splitRepo.create.mock.calls[0][0];
-      const orgAuthor = createdSplit.authors.find((a: any) => a.organization);
-      expect(orgAuthor).toMatchObject({
-        organization: { id: 'org-1' },
-        user: null,
-        percentage: 20,
-        role: CoauthorRole.ARREGLISTA,
-        status: SplitAuthorStatus.APPROVED,
-      });
+      expect(createdSplit.authors.every((a: any) => a.user)).toBe(true);
+      expect(createdSplit.authors.some((a: any) => a.organization)).toBe(false);
+      // El Publisher's Share viaja como transient en la respuesta, no como coautor.
+      expect(result.publisherShares).toEqual([
+        { organizationId: 'org-1', organizationName: 'Sony', percentage: 20 },
+      ]);
     });
 
-    it('rechaza si la coautoría por defecto suma 100% o más', async () => {
+    it("los coautores humanos deben sumar 100 con o sin Publisher's Share", async () => {
       splitRepo.findOne.mockResolvedValue(null);
-      publisherCoauthorService.resolveForUser.mockResolvedValue([
-        { organizationId: 'org-1', organizationName: 'Sony', role: CoauthorRole.ARREGLISTA, percentage: 100 },
+      publisherShareService.resolveForUser.mockResolvedValue([
+        { organizationId: 'org-1', organizationName: 'Sony', percentage: 20 },
       ]);
 
       await expect(
-        service.createSplit('track-1', { authors: [{ userId: 'author-2', percentage: 0, role: CoauthorRole.AUTOR }] }, admin),
+        service.createSplit('track-1', { authors: [{ userId: 'author-2', percentage: 80, role: CoauthorRole.AUTOR }] }, admin),
       ).rejects.toThrow(BadRequestException);
+    });
+
+    it("el Publisher's Share no recorta el % de los humanos aunque sea alto", async () => {
+      withCreatedSplit();
+      publisherShareService.resolveForUser.mockResolvedValue([
+        { organizationId: 'org-1', organizationName: 'Sony', percentage: 100 },
+      ]);
+
+      await expect(
+        service.createSplit('track-1', { authors: [{ userId: 'author-2', percentage: 100, role: CoauthorRole.AUTOR }] }, admin),
+      ).resolves.toBeDefined();
     });
   });
 

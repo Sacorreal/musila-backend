@@ -1,6 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from 'src/users/entities/user.entity';
-import { Organization } from 'src/organizations/entities/organization.entity';
 import {
   Column,
   CreateDateColumn,
@@ -16,10 +15,9 @@ import { CoauthorRole } from './coauthor-role.enum';
 import { SplitAuthorStatus } from './split-author-status.enum';
 
 /**
- * Coautor de un split. El coautor es un `User` (persona que firma su
- * participación vía OTP) o una `Organization` (una publisher que la plataforma
- * inyecta automáticamente por contrato y que NO firma): exactamente uno de los
- * dos está presente (CHECK en DB).
+ * Coautor de un split: siempre una persona (`User`) que firma su participación
+ * vía OTP. El Publisher's Share de la publisher NO es un coautor: vive como
+ * metadata informativa aparte (tabla `publisher_shares`) y no aparece aquí.
  */
 @Entity({ name: 'split_author' })
 @Unique('UQ_split_user', ['split', 'user'])
@@ -34,14 +32,9 @@ export class SplitAuthor {
   })
   split: Split;
 
-  @ManyToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
-  user: User | null;
-
-  @ApiProperty({ type: () => Organization, nullable: true, description: 'Publisher coautora (sin firma).' })
-  @ManyToOne(() => Organization, { nullable: true, onDelete: 'CASCADE' })
-  @JoinColumn({ name: 'organization_id' })
-  organization: Organization | null;
+  user: User;
 
   @ApiProperty({ example: 50 })
   @Column('numeric', { precision: 5, scale: 2 })

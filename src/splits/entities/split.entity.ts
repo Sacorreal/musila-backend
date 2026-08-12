@@ -13,6 +13,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { ResolvedPublisherShare } from 'src/publisher-share/publisher-share.types';
 import { SplitAuthor } from './split-author.entity';
 import { SplitStatus } from './split-status.enum';
 
@@ -46,6 +47,12 @@ export class Split {
     cascade: true,
   })
   authors: SplitAuthor[];
+
+  /**
+   * Transient (no es columna): Publisher's Share informativo resuelto para el
+   * creador del split. Se adjunta en las respuestas de lectura; no se persiste.
+   */
+  publisherShares?: ResolvedPublisherShare[];
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

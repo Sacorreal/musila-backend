@@ -3,35 +3,35 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
 import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
-import { PublisherCoauthorService } from './publisher-coauthor.service';
-import { UpsertRosterCoauthorDefaultsDto } from './dto/upsert-roster-coauthor-defaults.dto';
+import { PublisherShareService } from './publisher-share.service';
+import { UpsertPublisherSharesDto } from './dto/upsert-publisher-shares.dto';
 
 /**
- * Configuración de la coautoría por defecto de una publisher sobre su roster. El
+ * Configuración del Publisher's Share de una publisher sobre su roster. El
  * `organizationId` de la ruta lo valida el `AuthorizationGuard` contra la
  * membership ACTIVE del usuario (tenant-aware).
  */
-@ApiTags('Coautoría por defecto de Publisher')
+@ApiTags("Publisher's Share")
 @ApiBearerAuth()
 @UseGuards(JWTAuthGuard, AuthorizationGuard)
-@Controller('organizations/:organizationId/coauthor-defaults')
-export class PublisherCoauthorController {
-  constructor(private readonly service: PublisherCoauthorService) {}
+@Controller('organizations/:organizationId/publisher-shares')
+export class PublisherShareController {
+  constructor(private readonly service: PublisherShareService) {}
 
   @Get()
   @RequireCapability(['organization.settings.manage', 'organization.members.view'], 'OR')
-  @ApiOperation({ summary: 'Obtener la coautoría por defecto (roster con rol y porcentaje)' })
+  @ApiOperation({ summary: "Obtener el Publisher's Share (roster con porcentaje)" })
   getPolicy(@Param('organizationId', ParseUUIDPipe) organizationId: string) {
     return this.service.getPolicy(organizationId);
   }
 
   @Put('roster')
   @RequireCapability('organization.settings.manage')
-  @ApiOperation({ summary: 'Actualizar la coautoría por defecto del roster' })
+  @ApiOperation({ summary: "Actualizar el Publisher's Share del roster" })
   upsertRoster(
     @Param('organizationId', ParseUUIDPipe) organizationId: string,
-    @Body() dto: UpsertRosterCoauthorDefaultsDto,
+    @Body() dto: UpsertPublisherSharesDto,
   ) {
-    return this.service.upsertRosterDefaults(organizationId, dto.items);
+    return this.service.upsertShares(organizationId, dto.items);
   }
 }

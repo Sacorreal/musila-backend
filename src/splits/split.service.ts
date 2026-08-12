@@ -11,11 +11,10 @@ import { In, Repository } from 'typeorm';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { AuthorizationService } from 'src/authorization/authorization.service';
 import { User } from 'src/users/entities/user.entity';
-import { Organization } from 'src/organizations/entities/organization.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { IntellectualProperty } from 'src/intellectual-property/entities/intellectual-property.entity';
-import { PublisherCoauthorService } from 'src/publisher-coauthor/publisher-coauthor.service';
-import { ResolvedPublisherCoauthor } from 'src/publisher-coauthor/publisher-coauthor.types';
+import { PublisherShareService } from 'src/publisher-share/publisher-share.service';
+import { ResolvedPublisherShare } from 'src/publisher-share/publisher-share.types';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { OtpVerificationService } from 'src/shared/otp-verification/otp-verification.service';
 import { OtpPurpose } from 'src/shared/otp-verification/otp-purpose.enum';
@@ -52,7 +51,7 @@ export class SplitService {
     private readonly otpVerificationService: OtpVerificationService,
     private readonly legalProofService: LegalProofService,
     private readonly authorizationService: AuthorizationService,
-    private readonly publisherCoauthorService: PublisherCoauthorService,
+    private readonly publisherShareService: PublisherShareService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -75,29 +74,25 @@ export class SplitService {
       throw new ConflictException('Este track ya tiene un split registrado');
     }
 
-    const publisherCoauthors = await this.resolvePublisherCoauthors(user.id);
-    this.assertHumanPercentages(dto.authors, this.humanTarget(publisherCoauthors));
+    this.assertHumanPercentages(dto.authors);
     const authorsById = await this.resolveAuthorsOrFail(dto.authors);
 
     const split = this.splitRepository.create({
       track,
       createdBy: { id: user.id } as User,
       status: SplitStatus.PENDING_APPROVAL,
-      authors: [
-        ...dto.authors.map((input) =>
-          this.splitAuthorRepository.create({
-            user: authorsById.get(input.userId),
-            percentage: input.percentage,
-            role: input.role,
-            status: SplitAuthorStatus.PENDING,
-          }),
-        ),
-        ...this.buildPublisherAuthors(publisherCoauthors),
-      ],
+      authors: dto.authors.map((input) =>
+        this.splitAuthorRepository.create({
+          user: authorsById.get(input.userId),
+          percentage: input.percentage,
+          role: input.role,
+          status: SplitAuthorStatus.PENDING,
+        }),
+      ),
     });
 
     const saved = await this.splitRepository.save(split);
-    const result = await this.findSplitWithRelationsOrFail(saved.id);
+    const result = await this.withPublisherShares(await this.findSplitWithRelationsOrFail(saved.id));
 
     this.emitSplitCreated(result, track, user, authorsById);
 
@@ -110,7 +105,7 @@ export class SplitService {
 
     const split = await this.splitRepository.findOne({
       where: { track: { id: trackId } },
-      relations: ['track', 'createdBy', 'authors', 'authors.user', 'authors.organization'],
+      relations: ['track', 'createdBy', 'authors', 'authors.user'],
     });
     if (!split) {
       throw new NotFoundException('No hay un split registrado para este track');
@@ -118,7 +113,7 @@ export class SplitService {
 
     await this.assertCanView(track, split, user);
 
-    return split;
+    return this.withPublisherShares(split);
   }
 
   /**
@@ -133,33 +128,26 @@ export class SplitService {
       throw new BadRequestException('Solo se puede editar un split que fue rechazado por un coautor');
     }
 
-    const publisherCoauthors = await this.resolvePublisherCoauthors(user.id);
-    this.assertHumanPercentages(dto.authors, this.humanTarget(publisherCoauthors));
+    this.assertHumanPercentages(dto.authors);
     const authorsById = await this.resolveAuthorsOrFail(dto.authors);
 
     await this.splitAuthorRepository.remove(split.authors);
 
-    split.authors = [
-      ...dto.authors.map((input) =>
-        this.splitAuthorRepository.create({
-          split,
-          user: authorsById.get(input.userId),
-          percentage: input.percentage,
-          role: input.role,
-          status: SplitAuthorStatus.PENDING,
-        }),
-      ),
-      ...this.buildPublisherAuthors(publisherCoauthors).map((author) => {
-        author.split = split;
-        return author;
+    split.authors = dto.authors.map((input) =>
+      this.splitAuthorRepository.create({
+        split,
+        user: authorsById.get(input.userId),
+        percentage: input.percentage,
+        role: input.role,
+        status: SplitAuthorStatus.PENDING,
       }),
-    ];
+    );
     split.status = SplitStatus.PENDING_APPROVAL;
 
     await this.splitAuthorRepository.save(split.authors);
     await this.splitRepository.save(split);
 
-    const result = await this.findSplitWithRelationsOrFail(splitId);
+    const result = await this.withPublisherShares(await this.findSplitWithRelationsOrFail(splitId));
     this.emitSplitCreated(result, split.track, user, authorsById);
 
     return result;
@@ -188,7 +176,7 @@ export class SplitService {
       await this.completeSplit(split);
     }
 
-    return this.findSplitWithRelationsOrFail(splitId);
+    return this.withPublisherShares(await this.findSplitWithRelationsOrFail(splitId));
   }
 
   /** Rechaza la participación del coautor autenticado, con motivo obligatorio. */
@@ -215,7 +203,7 @@ export class SplitService {
       createdByEmail: split.createdBy.email,
     });
 
-    return this.findSplitWithRelationsOrFail(splitId);
+    return this.withPublisherShares(await this.findSplitWithRelationsOrFail(splitId));
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -234,7 +222,7 @@ export class SplitService {
   private async findSplitWithRelationsOrFail(id: string): Promise<Split> {
     const split = await this.splitRepository.findOne({
       where: { id },
-      relations: ['track', 'track.authors', 'createdBy', 'authors', 'authors.user', 'authors.organization'],
+      relations: ['track', 'track.authors', 'createdBy', 'authors', 'authors.user'],
     });
     if (!split) throw new NotFoundException('El split no existe');
     return split;
@@ -281,58 +269,42 @@ export class SplitService {
   }
 
   /**
-   * Coautorías de publisher que se inyectan de forma obligatoria en el split que
-   * crea `creatorUserId`. Falla si su porcentaje total no deja margen (≥ 100).
+   * Publisher's Share informativo del creador del split: metadata para el
+   * expediente del track (notificación a entidades externas). Es independiente
+   * del 100% de los coautores humanos y no interviene en ningún cálculo.
    */
-  private async resolvePublisherCoauthors(creatorUserId: string): Promise<ResolvedPublisherCoauthor[]> {
-    const coauthors = await this.publisherCoauthorService.resolveForUser(creatorUserId);
-    if (this.round(this.sumPercentages(coauthors)) >= PERCENTAGE_TOTAL) {
-      throw new BadRequestException(
-        'La coautoría por defecto de tu(s) publisher(s) suma 100% o más; no queda porcentaje para los coautores',
-      );
-    }
-    return coauthors;
+  private resolvePublisherShares(creatorUserId: string): Promise<ResolvedPublisherShare[]> {
+    return this.publisherShareService.resolveForUser(creatorUserId);
   }
 
-  /** Porcentaje que deben sumar los coautores humanos: 100 menos el de las publishers. */
-  private humanTarget(publisherCoauthors: ResolvedPublisherCoauthor[]): number {
-    return this.round(PERCENTAGE_TOTAL - this.sumPercentages(publisherCoauthors));
+  /** Adjunta el Publisher's Share (transient) a la respuesta del split, resuelto para su creador. */
+  private async withPublisherShares(split: Split): Promise<Split> {
+    split.publisherShares = await this.resolvePublisherShares(split.createdBy.id);
+    return split;
   }
 
-  private buildPublisherAuthors(publisherCoauthors: ResolvedPublisherCoauthor[]): SplitAuthor[] {
-    return publisherCoauthors.map((coauthor) =>
-      this.splitAuthorRepository.create({
-        user: null,
-        organization: { id: coauthor.organizationId } as Organization,
-        percentage: coauthor.percentage,
-        role: coauthor.role,
-        status: SplitAuthorStatus.APPROVED,
-      }),
-    );
+  /** Los coautores humanos siempre reparten el 100%; el % de la publisher coautora es informativo y no consume porcentaje. */
+  private assertHumanPercentages(authors: SplitAuthorInputDto[]): void {
+    if (this.round(this.sumPercentages(authors)) === PERCENTAGE_TOTAL) return;
+    throw new BadRequestException('La suma de los porcentajes de los coautores debe ser exactamente 100');
   }
 
-  private assertHumanPercentages(authors: SplitAuthorInputDto[], target: number): void {
-    const sum = this.round(this.sumPercentages(authors));
-    if (sum === target) return;
-    throw new BadRequestException(
-      target === PERCENTAGE_TOTAL
-        ? 'La suma de los porcentajes de los coautores debe ser exactamente 100'
-        : `Tu publisher participa como coautora; la suma de los porcentajes de los coautores debe ser exactamente ${target} (100 menos el porcentaje de la publisher)`,
-    );
-  }
-
-  /**
-   * Snapshot de coautores para la propiedad intelectual y la evidencia legal.
-   * Un coautor es una persona (`userId`, con firma) o una publisher
-   * (`organizationId`, sin firma).
-   */
+  /** Snapshot de coautores persona (con su firma) para la propiedad intelectual y la evidencia legal. */
   private buildAuthorsSnapshot(split: Split): Record<string, unknown>[] {
     return split.authors.map((author) => ({
-      ...(author.user
-        ? { userId: author.user.id, signedAt: author.signedAt }
-        : { organizationId: author.organization?.id }),
+      userId: author.user.id,
+      signedAt: author.signedAt,
       percentage: Number(author.percentage),
       role: author.role,
+    }));
+  }
+
+  /** Snapshot del Publisher's Share (metadata informativa) para el expediente del track. */
+  private buildPublisherSharesSnapshot(shares: ResolvedPublisherShare[]): Record<string, unknown>[] {
+    return shares.map((share) => ({
+      organizationId: share.organizationId,
+      organizationName: share.organizationName,
+      percentage: share.percentage,
     }));
   }
 
@@ -385,6 +357,8 @@ export class SplitService {
   }
 
   private async completeSplit(split: Split): Promise<void> {
+    const publisherShares = await this.resolvePublisherShares(split.createdBy.id);
+
     const intellectualProperty = this.intellectualPropertyRepository.create({
       type: 'splitSheet',
       key: 'Split de coautoría',
@@ -393,6 +367,7 @@ export class SplitService {
         splitId: split.id,
         completedAt: new Date().toISOString(),
         authors: this.buildAuthorsSnapshot(split),
+        publisherShares: this.buildPublisherSharesSnapshot(publisherShares),
       },
     });
     const savedIp = await this.intellectualPropertyRepository.save(intellectualProperty);
@@ -401,7 +376,7 @@ export class SplitService {
     split.intellectualProperty = savedIp;
     await this.splitRepository.save(split);
 
-    await this.generateSplitLegalProof(split);
+    await this.generateSplitLegalProof(split, publisherShares);
 
     this.eventBus.emit('split.completed', {
       splitId: split.id,
@@ -413,14 +388,15 @@ export class SplitService {
     });
   }
 
-  /** Evidencia legal del split completado: hash + timestamp de un snapshot de autores/porcentajes/firmas. */
-  private async generateSplitLegalProof(split: Split): Promise<void> {
+  /** Evidencia legal del split completado: hash + timestamp de un snapshot de autores/porcentajes/firmas + Publisher's Share. */
+  private async generateSplitLegalProof(split: Split, publisherShares: ResolvedPublisherShare[]): Promise<void> {
     const snapshot = {
       event: 'split.completed',
       splitId: split.id,
       trackId: split.track.id,
       completedAt: new Date().toISOString(),
       authors: this.buildAuthorsSnapshot(split),
+      publisherShares: this.buildPublisherSharesSnapshot(publisherShares),
     };
     const buffer = Buffer.from(JSON.stringify(snapshot));
     const fileName = `split-${split.id}.json`;
