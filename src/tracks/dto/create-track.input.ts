@@ -28,6 +28,27 @@ export class CreateTrackInput {
   @IsNotEmpty({ message: 'El título es obligatorio' })
   title: string;
 
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['Rapsodia Bohemia', 'BoRhap'],
+    description: 'Títulos alternativos de la obra (opcional). Metadato informativo con uno o varios nombres alternativos.',
+  })
+  @IsOptional()
+  @IsArray({ message: 'Los títulos alternativos deben ser un arreglo de textos' })
+  @IsString({ each: true, message: 'Cada título alternativo debe ser un texto válido' })
+  @Transform(({ value }: { value: unknown }): string[] => {
+    const toArray = Array.isArray(value)
+      ? value
+      : typeof value === 'string'
+        ? value.split(',')
+        : [];
+    return toArray
+      .filter((v): v is string => typeof v === 'string')
+      .map((v) => v.trim())
+      .filter(Boolean);
+  })
+  alternativeTitles?: string[];
+
   @ApiProperty({
     example: '550e8400-e29b-41d4-a716-446655440000',
     description: 'Identificador único (UUID v4) del género musical asociado al track.'

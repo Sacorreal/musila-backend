@@ -59,6 +59,14 @@ export class TrackResponseDto {
   title: string;
 
   @ApiProperty({
+    type: [String],
+    nullable: true,
+    example: ['Rapsodia Bohemia', 'BoRhap'],
+    description: 'Títulos alternativos de la obra',
+  })
+  alternativeTitles?: string[];
+
+  @ApiProperty({
     example: 'Rock',
     description: 'Nombre del género musical (no el ID)',
   })
@@ -144,6 +152,7 @@ export class TrackResponseDto {
     const dto = new TrackResponseDto();
     dto.id = track.id;
     dto.title = track.title;
+    dto.alternativeTitles = track.alternativeTitles ?? [];
     dto.genre = track.genre?.genre ?? null;
     dto.ritmo = track.ritmo;
     dto.coverUrl = track.coverUrl;

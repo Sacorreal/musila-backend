@@ -28,6 +28,9 @@ export class Track {
   @Column('varchar', { nullable: false })
   title: string;
 
+  @Column('jsonb', { name: 'alternative_titles', nullable: true })
+  alternativeTitles?: string[];
+
   @ManyToOne(() => MusicalGenre, (musicalGenre) => musicalGenre.tracks, {
     onDelete: 'CASCADE',
     nullable: false,
