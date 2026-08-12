@@ -41,6 +41,8 @@ import { LicenseCollectionsModule } from './license-collections/license-collecti
 import { LicenseContractsModule } from './license-contracts/license-contracts.module';
 import { CertificatesModule } from './certificates/certificates.module';
 import { WalletModule } from './wallet/wallet.module';
+import { AuthorDashboardModule } from './author-dashboard/author-dashboard.module';
+import { PublisherDashboardModule } from './publisher-dashboard/publisher-dashboard.module';
 import { FollowsModule } from './follows/follows.module';
 import { SharingModule } from './sharing/sharing.module';
 import { StaffAuthorizationModule } from './staff-authorization/staff-authorization.module';
@@ -99,6 +101,8 @@ import { PublisherCoauthorModule } from './publisher-coauthor/publisher-coauthor
     LicenseContractsModule,
     CertificatesModule,
     WalletModule,
+    AuthorDashboardModule,
+    PublisherDashboardModule,
     FollowsModule,
     SharingModule,
     StaffAuthorizationModule,

@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Post,
@@ -30,6 +31,7 @@ import { UsersService } from 'src/users/users.service';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { TracksService } from './tracks.service';
+import { TrackPlaysService } from './track-plays.service';
 
 import { PaginatedTracksResponseDto, TrackResponseDto } from './dto/track-response.dto'
 import { EmailVerifiedGuard } from 'src/users/guards/email-verified.guard';
@@ -47,6 +49,7 @@ export class TracksController {
     private readonly tracksService: TracksService,
     private readonly usersService: UsersService,
     private readonly authorizationService: AuthorizationService,
+    private readonly trackPlaysService: TrackPlaysService,
   ) {}
 
   @Post()
@@ -148,7 +151,27 @@ export class TracksController {
   ): Promise<TrackResponseDto> {
     return await this.tracksService.findOneTrackService(id);
   }
-  
+
+  @Post(':id/play')
+  @HttpCode(204)
+  @ApiOperation({
+    summary: 'Registrar una reproducción del track',
+    description:
+      'Registra un evento de reproducción efectiva del track. Alimenta las métricas de reproducciones y usuarios únicos del dashboard del autor.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del track reproducido (UUID)',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({ status: 204, description: 'Reproducción registrada' })
+  async registerTrackPlayController(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<void> {
+    await this.trackPlaysService.register(id, user.id);
+  }
+
 
   @Put(':id')
   @ApiOperation({
