@@ -481,7 +481,18 @@ export class PaymentsService {
         return;
       }
 
-      this.logger.warn(`[Webhook Wompi] no se encontró pending ni licencia para ref=${parsed.reference}`);
+      // La referencia no corresponde a suscripción/licencia/colección: puede ser
+      // una pauta publicitaria. Se delega vía evento para no acoplar este módulo
+      // al de promociones (evita dependencia circular).
+      this.eventBus.emit('payment.webhook.unmatched', {
+        reference: parsed.reference,
+        status: String(parsed.status),
+        transactionId: parsed.transactionId,
+        amountInCents: parsed.amountInCents ?? undefined,
+      });
+      this.logger.log(
+        `[Webhook Wompi] ref=${parsed.reference} sin pending/licencia; emitido payment.webhook.unmatched`,
+      );
       return;
     }
 

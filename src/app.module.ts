@@ -51,6 +51,7 @@ import { OrganizationsModule } from './organizations/organizations.module';
 import { AuthorizationModule } from './authorization/authorization.module';
 import { EntitlementsModule } from './entitlements/entitlements.module';
 import { CommissionModule } from './commission/commission.module';
+import { PromotionsModule } from './promotions/promotions.module';
 
 @Module({
   imports: [
@@ -106,6 +107,7 @@ import { CommissionModule } from './commission/commission.module';
     EntitlementsModule,
     AuthorizationModule,
     CommissionModule,
+    PromotionsModule,
   ],
   controllers: [AppController],
   providers: [

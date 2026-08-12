@@ -20,6 +20,7 @@ import { WompiProvider } from './providers/wompi/wompi.provider';
 import { WompiSignatureService } from './providers/wompi/wompi-signature.service';
 import { StripeProvider } from './providers/stripe/stripe.provider';
 import { paymentProviderFactory } from './payment-provider.factory';
+import { PAYMENT_PROVIDER } from './domain/payment-provider.interface';
 
 @Module({
   imports: [
@@ -48,6 +49,6 @@ import { paymentProviderFactory } from './payment-provider.factory';
     // Proveedor de pago activo, seleccionado vía PAYMENT_PROVIDER (env var).
     paymentProviderFactory,
   ],
-  exports: [PaymentsService],
+  exports: [PaymentsService, PAYMENT_PROVIDER],
 })
 export class PaymentsModule {}

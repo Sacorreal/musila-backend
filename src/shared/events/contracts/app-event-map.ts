@@ -591,4 +591,53 @@ export interface AppEventMap {
     occurredAt: Date;
   }
 
+  // 📢 PAUTAS (PROMOTIONS)
+
+  /**
+   * Emitido por PaymentsService cuando una referencia de webhook no corresponde
+   * a una suscripción/licencia/colección. Lo consume el dominio de pautas para
+   * casar el pago con una pauta pendiente (desacopla PaymentsModule de
+   * PromotionsModule y evita dependencia circular).
+   */
+  'payment.webhook.unmatched': {
+    reference: string;
+    status: string;
+    transactionId?: string;
+    amountInCents?: number;
+  }
+
+  /** Pago de la pauta confirmado → en revisión. Notifica al admin y al compositor. */
+  'promotion.submitted': PromotionEventPayload;
+  /** El admin aprobó la pauta → programada. Notifica al compositor/solicitante. */
+  'promotion.approved': PromotionEventPayload;
+  /** El admin rechazó la pauta (con motivo). Notifica al solicitante. */
+  'promotion.rejected': PromotionEventPayload;
+  /** La pauta se publicó (cron). Notifica al compositor/solicitante. */
+  'promotion.activated': PromotionEventPayload;
+  /** Solicitud en revisión con SLA vencido → escala al admin. */
+  'promotion.sla.pending': PromotionEventPayload;
+
+  /** El superadmin cambió el precio de un tipo de pauta. */
+  'promotion.pricing.updated': {
+    type: string;
+    previousAmount: number | null;
+    newAmount: number;
+    configId: string;
+    actorUserId: string | null;
+  }
+
+}
+
+/** Payload común de los eventos de ciclo de vida de una pauta. */
+export interface PromotionEventPayload {
+  promotionId: string;
+  type: string;
+  targetId: string;
+  organizationId: string;
+  requesterId: string;
+  status: string;
+  resourceTitle: string;
+  rejectionReason: string | null;
+  startsAt: Date | null;
+  expiresAt: Date | null;
 }
