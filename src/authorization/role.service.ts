@@ -7,7 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Organization } from 'src/organizations/entities/organization.entity';
 import { EventBusService } from 'src/shared/events/event-bus.service';
-import { DataSource, In, Repository } from 'typeorm';
+import { DataSource, EntityManager, In, Repository } from 'typeorm';
 import { AuthorizationService } from './authorization.service';
 import { CapabilityService } from './capability.service';
 import { CapabilityScope } from './entities/capability-scope.enum';
@@ -285,7 +285,37 @@ export class RoleService {
     assignedBy: string,
     affectedUserId: string,
   ): Promise<MembershipRole[]> {
-    const roles = await this.roleRepository.find({
+    await this.dataSource.transaction((manager) =>
+      this.validateAndReplaceMembershipRoles(
+        manager,
+        organization,
+        membershipType,
+        membershipId,
+        roleIds,
+        assignedBy,
+      ),
+    );
+
+    this.eventBus.emit('authorization.membership.updated', { userId: affectedUserId });
+    return this.getMembershipRoles(membershipType, membershipId);
+  }
+
+  /**
+   * Valida los roles (existencia, visibilidad, tipo compatible y ausencia de
+   * escalamiento de privilegios) y reemplaza el set de la membership usando el
+   * `EntityManager` recibido. No abre transacción propia ni emite eventos: el
+   * llamador coordina la atomicidad (p. ej. crear membership + roles al aprobar
+   * una solicitud de acceso) y la invalidación de caché.
+   */
+  async validateAndReplaceMembershipRoles(
+    manager: EntityManager,
+    organization: Organization,
+    membershipType: MembershipType,
+    membershipId: string,
+    roleIds: string[],
+    assignedBy: string,
+  ): Promise<void> {
+    const roles = await manager.find(Role, {
       where: { id: In(roleIds) },
       relations: { roleCapabilities: { capability: true } },
     });
@@ -314,17 +344,12 @@ export class RoleService {
     );
     await this.assertCanGrant(assignedBy, organization.id, grantedKeys);
 
-    await this.dataSource.transaction(async (manager) => {
-      await manager.delete(MembershipRole, { membershipType, membershipId });
-      await manager.save(
-        roleIds.map((roleId) =>
-          manager.create(MembershipRole, { membershipType, membershipId, roleId, assignedBy }),
-        ),
-      );
-    });
-
-    this.eventBus.emit('authorization.membership.updated', { userId: affectedUserId });
-    return this.getMembershipRoles(membershipType, membershipId);
+    await manager.delete(MembershipRole, { membershipType, membershipId });
+    await manager.save(
+      roleIds.map((roleId) =>
+        manager.create(MembershipRole, { membershipType, membershipId, roleId, assignedBy }),
+      ),
+    );
   }
 
   /**

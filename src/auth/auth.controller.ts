@@ -8,6 +8,7 @@ import { RegisterAuthDto } from './dto/register-auth.dto';
 
 import {RegisterGuestDto } from '../guests/dto/register-guest.dto'
 import { RegisterOrgAdminDto } from '../organizations/dto/register-org-admin.dto';
+import { RegisterWorkspaceGuestDto } from '../organizations/dto/register-workspace-guest.dto';
 import { RequestResetPasswordDto } from './dto/request-reset-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -91,6 +92,21 @@ export class AuthController {
   @ApiResponse({ status: 410, description: 'La invitación ha expirado' })
   async registerOrgAdminController(@Body() dto: RegisterOrgAdminDto) {
     return this.authService.registerOrgAdminFromInvite(dto);
+  }
+
+  @Post('register/workspace-guest')
+  @Throttle({ long: { limit: 5, ttl: 600_000 } })
+  @ApiOperation({
+    summary: 'Registrar a un invitado desde un enlace de workspace',
+    description:
+      'Crea la cuenta del invitado a partir del token del enlace reutilizable y genera una solicitud de acceso PENDING para que el administrador la apruebe. Devuelve un JWT; el usuario queda a la espera de aprobación.',
+  })
+  @ApiResponse({ status: 201, description: 'Cuenta creada y solicitud de acceso generada' })
+  @ApiResponse({ status: 400, description: 'Enlace revocado o contraseñas distintas' })
+  @ApiResponse({ status: 409, description: 'El correo electrónico ya está registrado' })
+  @ApiResponse({ status: 410, description: 'El enlace ha expirado o agotó sus usos' })
+  async registerWorkspaceGuestController(@Body() dto: RegisterWorkspaceGuestDto) {
+    return this.authService.registerWorkspaceGuestFromLink(dto);
   }
 
   @Post('forgot-password')

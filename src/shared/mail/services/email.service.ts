@@ -312,4 +312,15 @@ export class EmailService {
       variables: data,
     });
   }
+
+  async sendOrganizationAccessApprovedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['organization-access-approved'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'organization-access-approved',
+      variables: data,
+    });
+  }
 }

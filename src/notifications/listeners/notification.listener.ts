@@ -421,4 +421,32 @@ export class NotificationListener {
       this.logger.error('Error procesando notificacion de certificate.generation.failed', error);
     }
   }
+
+  @EventListener({
+    event: 'organization.access_request.approved',
+    channel: 'in-app',
+  })
+  async handleAccessRequestApproved(payload: AppEventMap['organization.access_request.approved']) {
+    try {
+      const functionNames = payload.capabilities.map((capability) => capability.name);
+      const preview = functionNames.slice(0, 3).join(', ');
+      const rest = functionNames.length - 3;
+      const abilities = functionNames.length
+        ? ` Ya puedes: ${preview}${rest > 0 ? ` y ${rest} función(es) más` : ''}.`
+        : '';
+
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.userId } as any,
+        type: 'organization.access_request.approved',
+        title: `Acceso aprobado en ${payload.organizationName}`,
+        message: `Tu acceso fue aprobado con el rol "${payload.roleName}".${abilities}`,
+        link: `/org/${payload.organizationId}`,
+        data: payload,
+      });
+
+      this.notificationsGateway.emitToUser(payload.userId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de organization.access_request.approved', error);
+    }
+  }
 }

@@ -212,4 +212,13 @@ export interface EmailTemplateMap {
     organizationName: string;
     workspaceUrl: string;
   };
+
+  'organization-access-approved': {
+    recipientName: string;
+    organizationName: string;
+    roleName: string;
+    /** Lista legible de funciones habilitadas (una por línea). */
+    abilitiesText: string;
+    workspaceUrl: string;
+  };
 }

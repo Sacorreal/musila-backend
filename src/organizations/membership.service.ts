@@ -1,12 +1,18 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Capability } from 'src/authorization/entities/capability.entity';
+import { MembershipRole } from 'src/authorization/entities/membership-role.entity';
 import { MembershipType } from 'src/authorization/entities/membership-type.enum';
+import { RoleCapability } from 'src/authorization/entities/role-capability.entity';
 import { EventBusService } from 'src/shared/events/event-bus.service';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { MembershipStatus } from './entities/membership-status.enum';
 import { OrganizationMembership } from './entities/organization-membership.entity';
 import { RosterMembership } from './entities/roster-membership.entity';
 import { TenantType } from './entities/tenant-type.enum';
+
+/** Capability que identifica a un miembro con rol de administrador del workspace. */
+const WORKSPACE_ADMIN_CAPABILITY = 'organization.members.manage';
 
 export interface ResolvedMembership {
   type: MembershipType;
@@ -30,6 +36,7 @@ export class MembershipService {
     @InjectRepository(RosterMembership)
     private readonly rosterMembershipRepository: Repository<RosterMembership>,
     private readonly eventBus: EventBusService,
+    private readonly dataSource: DataSource,
   ) {}
 
   /**
@@ -151,11 +158,71 @@ export class MembershipService {
     status: MembershipStatus.ACTIVE | MembershipStatus.SUSPENDED | MembershipStatus.REMOVED,
   ): Promise<AnyMembership> {
     const membership = await this.getById(type, membershipId);
+
+    const isDeactivating =
+      status === MembershipStatus.SUSPENDED || status === MembershipStatus.REMOVED;
+    if (type === MembershipType.ORGANIZATION && isDeactivating) {
+      await this.assertNotLastAdmin(membership.organizationId, membershipId);
+    }
+
     membership.status = status;
 
     const saved = await this.repositoryFor(type).save(membership);
     this.emitMembershipUpdated(membership.userId);
     return saved;
+  }
+
+  /**
+   * Impide suspender o retirar al único administrador del workspace (§ Flow 5):
+   * si la membership tiene rol admin y no queda ningún otro miembro ACTIVE con
+   * un rol que otorgue `organization.members.manage`, bloquea la operación.
+   */
+  private async assertNotLastAdmin(
+    organizationId: string,
+    membershipId: string,
+  ): Promise<void> {
+    const isAdmin = (await this.countActiveAdmins(organizationId, { onlyMembershipId: membershipId })) > 0;
+    if (!isAdmin) return;
+
+    const otherAdmins = await this.countActiveAdmins(organizationId, {
+      excludeMembershipId: membershipId,
+    });
+    if (otherAdmins === 0) {
+      throw new BadRequestException(
+        'No puedes suspender ni revocar al único administrador del workspace',
+      );
+    }
+  }
+
+  /** Cuenta memberships ORGANIZATION ACTIVE con capability de administración. */
+  private async countActiveAdmins(
+    organizationId: string,
+    filter: { excludeMembershipId?: string; onlyMembershipId?: string } = {},
+  ): Promise<number> {
+    const qb = this.dataSource
+      .createQueryBuilder(OrganizationMembership, 'om')
+      .innerJoin(
+        MembershipRole,
+        'mr',
+        'mr.membership_id = om.id AND mr.membership_type = :type',
+        { type: MembershipType.ORGANIZATION },
+      )
+      .innerJoin(RoleCapability, 'rc', 'rc.role_id = mr.role_id')
+      .innerJoin(Capability, 'c', 'c.id = rc.capability_id')
+      .where('om.organization_id = :organizationId', { organizationId })
+      .andWhere('om.status = :status', { status: MembershipStatus.ACTIVE })
+      .andWhere('c.key = :adminKey', { adminKey: WORKSPACE_ADMIN_CAPABILITY })
+      .select('COUNT(DISTINCT om.id)', 'count');
+
+    if (filter.excludeMembershipId) {
+      qb.andWhere('om.id != :excludeId', { excludeId: filter.excludeMembershipId });
+    }
+    if (filter.onlyMembershipId) {
+      qb.andWhere('om.id = :onlyId', { onlyId: filter.onlyMembershipId });
+    }
+
+    const result = await qb.getRawOne<{ count: string }>();
+    return Number(result?.count ?? 0);
   }
 
   /** Resuelve una membership por id sin conocer su tipo (staff u roster). */

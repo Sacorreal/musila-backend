@@ -28,6 +28,8 @@ import { PaymentsService } from 'src/payments/payments.service';
 import { AffiliatesService } from 'src/affiliates/affiliates.service';
 import { OrganizationInviteService } from 'src/organizations/organization-invite.service';
 import { RegisterOrgAdminDto } from 'src/organizations/dto/register-org-admin.dto';
+import { WorkspaceInviteService } from 'src/organizations/workspace-invite.service';
+import { RegisterWorkspaceGuestDto } from 'src/organizations/dto/register-workspace-guest.dto';
 
 const EMAIL_VERIFICATION_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 
@@ -44,6 +46,7 @@ export class AuthService {
     private readonly affiliatesService: AffiliatesService,
     private readonly auditLogService: AuditLogService,
     private readonly organizationInviteService: OrganizationInviteService,
+    private readonly workspaceInviteService: WorkspaceInviteService,
   ) {}
 
   /**
@@ -239,6 +242,40 @@ export class AuthService {
 
     const token = await this.createToken(newUser);
     return { token, organizationId };
+  }
+
+  /**
+   * Registro de un invitado a partir de un enlace de workspace reutilizable:
+   * valida el enlace, crea la cuenta (ya verificada, pues el email fue validado
+   * implícitamente por el uso del enlace) y genera una solicitud de acceso
+   * PENDING para que el administrador la apruebe. Devuelve el JWT para iniciar
+   * sesión automáticamente; el usuario queda a la espera de aprobación.
+   */
+  async registerWorkspaceGuestFromLink(dto: RegisterWorkspaceGuestDto) {
+    if (dto.password !== dto.repeatPassword)
+      throw new BadRequestException('Las contraseñas no coinciden');
+
+    const invite = await this.workspaceInviteService.validatePublic(dto.token);
+
+    const emailExists = await this.usersService.findUserByEmailService(dto.email);
+    if (emailExists) throw new ConflictException('Ya existe un usuario con este email');
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const newUser = await this.usersService.createUserService({
+      name: dto.name,
+      lastName: dto.lastName,
+      email: dto.email,
+      password: hashedPassword,
+      typeCitizenID: dto.typeCitizenID,
+      citizenID: dto.citizenID,
+      // El email fue validado por el uso del enlace: la cuenta nace verificada.
+      isVerified: true,
+    });
+
+    await this.workspaceInviteService.consumeForNewUser(dto.token, newUser.id);
+
+    const token = await this.createToken(newUser);
+    return { token, organizationId: invite.organizationId, status: 'PENDING' as const };
   }
 
   /**

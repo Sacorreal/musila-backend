@@ -542,6 +542,31 @@ export interface AppEventMap {
     workspaceUrl: string;
   };
 
+  // 🏢 SOLICITUDES DE ACCESO AL WORKSPACE (enlace de invitación reutilizable)
+
+  'organization.access_request.created': {
+    organizationId: string;
+    requesterUserId: string;
+    accessRequestId: string;
+  };
+
+  'organization.access_request.approved': {
+    userId: string;
+    email: string;
+    recipientName: string;
+    organizationId: string;
+    organizationName: string;
+    membershipType: string;
+    roleId: string;
+    roleName: string;
+    capabilities: { name: string; description: string }[];
+  };
+
+  'organization.access_request.rejected': {
+    userId: string;
+    organizationId: string;
+  };
+
   // 💵 COMISIÓN TRANSACCIONAL DEL MARKETPLACE (comprador B2B)
 
   'marketplace.transaction_fee.updated': {
