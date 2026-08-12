@@ -52,6 +52,8 @@ import { AuthorizationModule } from './authorization/authorization.module';
 import { EntitlementsModule } from './entitlements/entitlements.module';
 import { CommissionModule } from './commission/commission.module';
 import { PromotionsModule } from './promotions/promotions.module';
+import { PublisherCommissionModule } from './publisher-commission/publisher-commission.module';
+import { PublisherCoauthorModule } from './publisher-coauthor/publisher-coauthor.module';
 
 @Module({
   imports: [
@@ -108,6 +110,8 @@ import { PromotionsModule } from './promotions/promotions.module';
     AuthorizationModule,
     CommissionModule,
     PromotionsModule,
+    PublisherCommissionModule,
+    PublisherCoauthorModule,
   ],
   controllers: [AppController],
   providers: [

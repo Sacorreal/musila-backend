@@ -19,6 +19,7 @@ import { LegalProofService } from 'src/shared/legal-proof/legal-proof.service';
 import { LegalEntityType } from 'src/shared/legal-proof/entities/legal-entity-type.enum';
 import { StorageService } from 'src/shared/storage/storage.service';
 import { LicenseCollectionsService } from 'src/license-collections/license-collections.service';
+import { PublisherCommissionFreezeService } from 'src/wallet/services/publisher-commission-freeze.service';
 import { LICENSE_COMMISSION_RATE } from 'src/shared/billing/license-commission.constants';
 
 import { LicenseContract } from './entities/license-contract.entity';
@@ -88,6 +89,7 @@ export class LicenseContractsService {
     private readonly legalProofService: LegalProofService,
     private readonly storageService: StorageService,
     private readonly licenseCollectionsService: LicenseCollectionsService,
+    private readonly publisherCommissionFreezeService: PublisherCommissionFreezeService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -162,7 +164,9 @@ export class LicenseContractsService {
         if (this.roundCurrency(distributionSum) !== 100) {
           throw new BadRequestException('La distribución del anticipo debe sumar exactamente 100%');
         }
-        const splitUserIds = new Set(split.authors.map((author) => author.user.id));
+        const splitUserIds = new Set(
+          split.authors.filter((author) => author.user).map((author) => author.user!.id),
+        );
         const distributionUserIds = new Set(dto.advanceDistribution.map((entry) => entry.userId));
         const allAreAuthors = dto.advanceDistribution.every((entry) => splitUserIds.has(entry.userId));
         if (!allAreAuthors || distributionUserIds.size !== dto.advanceDistribution.length) {
@@ -622,13 +626,16 @@ export class LicenseContractsService {
 
   private resolveAuthorEntries(split: Split | null, track: Track, ownerId: string): AuthorEntry[] {
     if (split && split.status === SplitStatus.COMPLETED && split.authors.length > 0) {
-      return split.authors.map((author) => ({
-        user: author.user,
-        role: author.user.id === ownerId ? LicenseSignatoryRole.AUTOR_PRINCIPAL : LicenseSignatoryRole.COAUTOR,
-        roleLabel: COAUTHOR_ROLE_LABELS[author.role] ?? author.role,
-        percentage: Number(author.percentage),
-        splitAuthorId: author.id,
-      }));
+      // Solo coautores persona firman el contrato; la publisher coautora no firma.
+      return split.authors
+        .filter((author) => author.user)
+        .map((author) => ({
+          user: author.user!,
+          role: author.user!.id === ownerId ? LicenseSignatoryRole.AUTOR_PRINCIPAL : LicenseSignatoryRole.COAUTOR,
+          roleLabel: COAUTHOR_ROLE_LABELS[author.role] ?? author.role,
+          percentage: Number(author.percentage),
+          splitAuthorId: author.id,
+        }));
     }
 
     const soleAuthor = track.authors?.find((author) => author.id === ownerId) ?? track.authors?.[0];
@@ -759,6 +766,16 @@ export class LicenseContractsService {
     if (Number(contract.advanceAmount) > 0) {
       contract.paymentStatus = LicenseContractPaymentStatus.PENDIENTE;
       await this.contractRepo.save(contract);
+
+      // Congela (Opción A) la tarifa de comisión de publisher usando la
+      // distribución del anticipo del contrato, antes de generar las cuotas.
+      await this.publisherCommissionFreezeService.freeze(contract.requestedTrack, {
+        licenseContractId: contract.id,
+      });
+      await this.requestedTrackRepo.update(contract.requestedTrack.id, {
+        publisherCommissionSnapshot: contract.requestedTrack.publisherCommissionSnapshot,
+        publisherCommissionFrozenAt: contract.requestedTrack.publisherCommissionFrozenAt,
+      });
 
       const installments = (contract.advanceInstallments ?? []).map((installment) => ({
         amount: installment.amount,

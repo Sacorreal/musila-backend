@@ -24,6 +24,7 @@ describe('LicenseContractsService', () => {
   let legalProofService: { generateProof: jest.Mock };
   let storageService: { uploadBuffer: jest.Mock };
   let licenseCollectionsService: { createInstallments: jest.Mock };
+  let publisherCommissionFreezeService: { freeze: jest.Mock };
 
   const owner = { id: 'owner-1', name: 'Owner', lastName: 'Uno', email: 'owner@musila.com', citizenID: null, ipiNumber: null, proSociety: null, publisher: null };
   const requester = { id: 'req-1', name: 'Req', lastName: 'Uno', email: 'req@musila.com', citizenID: null };
@@ -79,6 +80,7 @@ describe('LicenseContractsService', () => {
     };
     storageService = { uploadBuffer: jest.fn().mockResolvedValue({ key: 'key-1', publicUrl: 'https://cdn/key-1' }) };
     licenseCollectionsService = { createInstallments: jest.fn().mockResolvedValue([]) };
+    publisherCommissionFreezeService = { freeze: jest.fn().mockResolvedValue(undefined) };
 
     service = new LicenseContractsService(
       contractRepo,
@@ -92,6 +94,7 @@ describe('LicenseContractsService', () => {
       legalProofService as any,
       storageService as any,
       licenseCollectionsService as any,
+      publisherCommissionFreezeService as any,
     );
   });
 

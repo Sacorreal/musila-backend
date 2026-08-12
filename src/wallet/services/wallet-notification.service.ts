@@ -31,18 +31,33 @@ export class WalletNotificationService {
     private readonly emailService: EmailService,
   ) {}
 
+  /**
+   * Etiqueta del beneficiario del retiro para las notificaciones: el usuario
+   * (autor) o la organización (publisher retirando comisiones).
+   */
+  private resolveBeneficiaryLabel(withdrawal: WalletWithdrawal): { name: string; email: string } {
+    if (withdrawal.user) {
+      return { name: `${withdrawal.user.name} ${withdrawal.user.lastName}`, email: withdrawal.user.email };
+    }
+    if (withdrawal.beneficiaryOrganization) {
+      return { name: withdrawal.beneficiaryOrganization.name, email: '' };
+    }
+    return { name: 'Beneficiario', email: '' };
+  }
+
   /** Notifica a todos los admins que hay una nueva solicitud de retiro pendiente. */
   async notifyAdminsRequested(withdrawal: WalletWithdrawal): Promise<void> {
     await this.attempt(withdrawal, async () => {
       const admins = await this.userRepo.find({ where: { planType: In(ADMIN_PLAN_TYPES) } });
       const amountLabel = CURRENCY_FORMATTER.format(withdrawal.amount);
+      const beneficiary = this.resolveBeneficiaryLabel(withdrawal);
 
       for (const admin of admins) {
         const notification = await this.notificationsService.createNotification({
           recipient: { id: admin.id } as any,
           type: 'wallet.withdrawal.requested',
           title: 'Nueva solicitud de retiro',
-          message: `${withdrawal.user.name} ${withdrawal.user.lastName} solicitó un retiro de ${amountLabel}.`,
+          message: `${beneficiary.name} solicitó un retiro de ${amountLabel}.`,
           link: '/admin/wallet',
           data: { withdrawalId: withdrawal.id },
         });
@@ -50,8 +65,8 @@ export class WalletNotificationService {
 
         await this.emailService.sendWalletWithdrawalRequestedAdminEmail(admin.email, {
           adminName: admin.name,
-          userName: `${withdrawal.user.name} ${withdrawal.user.lastName}`,
-          userEmail: withdrawal.user.email,
+          userName: beneficiary.name,
+          userEmail: beneficiary.email,
           amount: amountLabel,
           withdrawalUrl: '/admin/wallet',
         });
@@ -61,20 +76,27 @@ export class WalletNotificationService {
 
   /** Notifica al usuario dueño que su retiro fue pagado. */
   async notifyUserPaid(withdrawal: WalletWithdrawal): Promise<void> {
+    // Retiros de organización (publisher): el beneficiario ve el estado en su
+    // wallet; se marca como notificado para no reintentar en vano.
+    const user = withdrawal.user;
+    if (!user) {
+      await this.attempt(withdrawal, async () => {});
+      return;
+    }
     await this.attempt(withdrawal, async () => {
       const amountLabel = CURRENCY_FORMATTER.format(withdrawal.amount);
       const notification = await this.notificationsService.createNotification({
-        recipient: { id: withdrawal.user.id } as any,
+        recipient: { id: user.id } as any,
         type: 'wallet.withdrawal.paid',
         title: 'Tu retiro fue pagado',
         message: `Tu retiro de ${amountLabel} fue marcado como pagado.`,
         link: '/music/wallet',
         data: { withdrawalId: withdrawal.id },
       });
-      this.notificationsGateway.emitToUser(withdrawal.user.id, 'notification.received', notification);
+      this.notificationsGateway.emitToUser(user.id, 'notification.received', notification);
 
-      await this.emailService.sendWalletWithdrawalPaidEmail(withdrawal.user.email, {
-        userName: `${withdrawal.user.name} ${withdrawal.user.lastName}`,
+      await this.emailService.sendWalletWithdrawalPaidEmail(user.email, {
+        userName: `${user.name} ${user.lastName}`,
         amount: amountLabel,
         paidAt: (withdrawal.paidAt ?? new Date()).toLocaleString('es-CO'),
         accountUrl: '/music/wallet',
@@ -84,20 +106,25 @@ export class WalletNotificationService {
 
   /** Notifica al usuario dueño que su retiro fue rechazado. */
   async notifyUserRejected(withdrawal: WalletWithdrawal): Promise<void> {
+    const user = withdrawal.user;
+    if (!user) {
+      await this.attempt(withdrawal, async () => {});
+      return;
+    }
     await this.attempt(withdrawal, async () => {
       const amountLabel = CURRENCY_FORMATTER.format(withdrawal.amount);
       const notification = await this.notificationsService.createNotification({
-        recipient: { id: withdrawal.user.id } as any,
+        recipient: { id: user.id } as any,
         type: 'wallet.withdrawal.rejected',
         title: 'Tu retiro fue rechazado',
         message: `Tu retiro de ${amountLabel} fue rechazado: ${withdrawal.rejectionReason}`,
         link: '/music/wallet',
         data: { withdrawalId: withdrawal.id },
       });
-      this.notificationsGateway.emitToUser(withdrawal.user.id, 'notification.received', notification);
+      this.notificationsGateway.emitToUser(user.id, 'notification.received', notification);
 
-      await this.emailService.sendWalletWithdrawalRejectedEmail(withdrawal.user.email, {
-        userName: `${withdrawal.user.name} ${withdrawal.user.lastName}`,
+      await this.emailService.sendWalletWithdrawalRejectedEmail(user.email, {
+        userName: `${user.name} ${user.lastName}`,
         amount: amountLabel,
         reason: withdrawal.rejectionReason ?? '',
         accountUrl: '/music/wallet',
@@ -108,12 +135,13 @@ export class WalletNotificationService {
   /** Alerta a los admins que no se pudo notificar a un usuario tras agotar los reintentos. */
   async notifyAdminsNotificationExhausted(withdrawal: WalletWithdrawal): Promise<void> {
     const admins = await this.userRepo.find({ where: { planType: In(ADMIN_PLAN_TYPES) } });
+    const beneficiary = this.resolveBeneficiaryLabel(withdrawal);
     for (const admin of admins) {
       const notification = await this.notificationsService.createNotification({
         recipient: { id: admin.id } as any,
         type: 'wallet.withdrawal.notification.exhausted',
         title: 'No se pudo notificar a un usuario sobre su retiro',
-        message: `No se pudo notificar a ${withdrawal.user.name} ${withdrawal.user.lastName} sobre su retiro ${withdrawal.id}. Contáctalo manualmente.`,
+        message: `No se pudo notificar a ${beneficiary.name} sobre su retiro ${withdrawal.id}. Contáctalo manualmente.`,
         link: '/admin/wallet',
         data: { withdrawalId: withdrawal.id },
       });
@@ -128,7 +156,7 @@ export class WalletNotificationService {
         { status: WalletWithdrawalStatus.PAID, notifiedAt: IsNull() },
         { status: WalletWithdrawalStatus.REJECTED, notifiedAt: IsNull() },
       ],
-      relations: ['user'],
+      relations: ['user', 'beneficiaryOrganization'],
     });
 
     for (const withdrawal of pending) {

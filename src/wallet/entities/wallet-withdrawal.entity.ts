@@ -9,17 +9,28 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User, UserBankAccount } from 'src/users/entities/user.entity';
+import { Organization } from 'src/organizations/entities/organization.entity';
 import { WalletWithdrawalStatus } from './wallet-withdrawal-status.enum';
 
+/**
+ * Solicitud de retiro de fondos. El titular es un `User` (autor) o una
+ * `Organization` (publisher retirando comisiones); exactamente uno de los dos
+ * está presente (CHECK en DB). El flujo de estados y aprobación admin es común.
+ */
 @Entity({ name: 'wallet_withdrawals' })
 @Index('IDX_wallet_withdrawal_user_status', ['user', 'status'])
 export class WalletWithdrawal {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
-  user: User;
+  user: User | null;
+
+  @ManyToOne(() => Organization, { nullable: true, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'beneficiary_organization_id' })
+  @Index()
+  beneficiaryOrganization: Organization | null;
 
   @Column({ type: 'numeric', precision: 12, scale: 2 })
   amount: number;

@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { OrganizationType } from './organization-type.enum';
 import { Tenant } from './tenant.entity';
+import { UserBankAccount } from 'src/users/entities/user.entity';
 
 /**
  * Cliente B2B (label, publisher, etc.). El tipo determina el universo de
@@ -46,6 +47,14 @@ export class Organization {
   @ApiProperty({ example: true })
   @Column('boolean', { name: 'is_active', default: true })
   isActive: boolean;
+
+  /**
+   * Cuenta bancaria de la organización a la que se giran los retiros de su
+   * wallet (ej. comisiones de publisher). Reutiliza la misma forma que la
+   * cuenta bancaria de usuario; solo se persiste, nunca datos sensibles extra.
+   */
+  @Column('jsonb', { name: 'bank_account', nullable: true })
+  bankAccount?: UserBankAccount;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;

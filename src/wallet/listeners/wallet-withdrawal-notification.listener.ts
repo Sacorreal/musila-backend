@@ -47,6 +47,9 @@ export class WalletWithdrawalNotificationListener {
   }
 
   private findWithUser(withdrawalId: string) {
-    return this.withdrawalRepo.findOne({ where: { id: withdrawalId }, relations: ['user'] });
+    return this.withdrawalRepo.findOne({
+      where: { id: withdrawalId },
+      relations: ['user', 'beneficiaryOrganization'],
+    });
   }
 }

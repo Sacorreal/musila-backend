@@ -19,6 +19,7 @@ import { EventBusService } from 'src/shared/events/event-bus.service';
 import { OtpVerificationService } from 'src/shared/otp-verification/otp-verification.service';
 import { LicenseCollectionsService } from 'src/license-collections/license-collections.service';
 import { CommissionService } from 'src/commission/commission.service';
+import { PublisherCommissionFreezeService } from 'src/wallet/services/publisher-commission-freeze.service';
 
 const makeMockRepo = (overrides: Record<string, jest.Mock> = {}) => ({
   save: jest.fn().mockResolvedValue({}),
@@ -110,6 +111,10 @@ describe('PaymentsService', () => {
             calculateCommission: jest.fn(),
             freezeCommission: jest.fn(),
           },
+        },
+        {
+          provide: PublisherCommissionFreezeService,
+          useValue: { freeze: jest.fn().mockResolvedValue(undefined) },
         },
       ],
     }).compile();

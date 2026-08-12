@@ -284,16 +284,20 @@ export class RegistrationFileService {
 
     await this.participantRepository.delete({ registrationFile: { id: registrationFile.id } });
 
-    registrationFile.participants = split.authors.map((splitAuthor) =>
+    // Solo coautores persona: la publisher coautora se captura en la sección de
+    // edición del expediente, no como participante-persona.
+    registrationFile.participants = split.authors
+      .filter((splitAuthor) => splitAuthor.user)
+      .map((splitAuthor) =>
       this.participantRepository.create({
         registrationFile,
         splitAuthor,
-        fullName: [splitAuthor.user.name, splitAuthor.user.lastName].filter(Boolean).join(' '),
-        documentType: splitAuthor.user.typeCitizenID ?? null,
-        documentNumber: splitAuthor.user.citizenID ?? null,
+        fullName: [splitAuthor.user!.name, splitAuthor.user!.lastName].filter(Boolean).join(' '),
+        documentType: splitAuthor.user!.typeCitizenID ?? null,
+        documentNumber: splitAuthor.user!.citizenID ?? null,
         nationality: null,
-        managementSociety: splitAuthor.user.proSociety ?? null,
-        ipiCode: splitAuthor.user.ipiNumber ?? null,
+        managementSociety: splitAuthor.user!.proSociety ?? null,
+        ipiCode: splitAuthor.user!.ipiNumber ?? null,
         saycoCode: null,
         saycoIpName: null,
         role: mapCoauthorRoleToParticipantRole(splitAuthor.role),

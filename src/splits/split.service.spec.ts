@@ -16,6 +16,8 @@ describe('SplitService', () => {
   let eventBus: { emit: jest.Mock };
   let otpVerificationService: { assertAndConsumeVerification: jest.Mock };
   let legalProofService: { generateProof: jest.Mock };
+  let authorizationService: { check: jest.Mock };
+  let publisherCoauthorService: { resolveForUser: jest.Mock };
 
   const admin: JwtPayload = { id: 'author-1', email: 'author1@musila.com', name: 'Autor Uno', planType: UserPlanType.PLAN_AUTOR };
   const coauthorUser = { id: 'author-2', email: 'author2@musila.com', name: 'Autor', lastName: 'Dos' };
@@ -42,6 +44,8 @@ describe('SplitService', () => {
     eventBus = { emit: jest.fn() };
     otpVerificationService = { assertAndConsumeVerification: jest.fn().mockResolvedValue(undefined) };
     legalProofService = { generateProof: jest.fn().mockResolvedValue({ legalProofId: 'proof-1' }) };
+    authorizationService = { check: jest.fn().mockResolvedValue({ allowed: false }) };
+    publisherCoauthorService = { resolveForUser: jest.fn().mockResolvedValue([]) };
 
     service = new SplitService(
       splitRepo,
@@ -52,6 +56,8 @@ describe('SplitService', () => {
       eventBus as any,
       otpVerificationService as any,
       legalProofService as any,
+      authorizationService as any,
+      publisherCoauthorService as any,
     );
   });
 
@@ -110,6 +116,62 @@ describe('SplitService', () => {
 
       expect(result.id).toBe('split-1');
       expect(eventBus.emit).toHaveBeenCalledWith('split.created', expect.objectContaining({ trackId: 'track-1' }));
+    });
+  });
+
+  describe('inyección obligatoria de coautoría de publisher', () => {
+    it('exige que los coautores humanos sumen 100 − %publisher', async () => {
+      splitRepo.findOne.mockResolvedValue(null);
+      publisherCoauthorService.resolveForUser.mockResolvedValue([
+        { organizationId: 'org-1', organizationName: 'Sony', role: CoauthorRole.ARREGLISTA, percentage: 20 },
+      ]);
+
+      // Los humanos suman 100 (debería fallar: el objetivo es 80).
+      await expect(
+        service.createSplit('track-1', { authors: [{ userId: 'author-2', percentage: 100, role: CoauthorRole.AUTOR }] }, admin),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('inyecta a la publisher como coautora aprobada y sin firma', async () => {
+      splitRepo.findOne
+        .mockResolvedValueOnce(null)
+        .mockResolvedValueOnce({
+          id: 'split-1',
+          track,
+          createdBy: admin,
+          status: SplitStatus.PENDING_APPROVAL,
+          authors: [],
+        });
+      publisherCoauthorService.resolveForUser.mockResolvedValue([
+        { organizationId: 'org-1', organizationName: 'Sony', role: CoauthorRole.ARREGLISTA, percentage: 20 },
+      ]);
+
+      await service.createSplit(
+        'track-1',
+        { authors: [{ userId: 'author-2', percentage: 80, role: CoauthorRole.AUTOR }] },
+        admin,
+      );
+
+      const createdSplit = splitRepo.create.mock.calls[0][0];
+      const orgAuthor = createdSplit.authors.find((a: any) => a.organization);
+      expect(orgAuthor).toMatchObject({
+        organization: { id: 'org-1' },
+        user: null,
+        percentage: 20,
+        role: CoauthorRole.ARREGLISTA,
+        status: SplitAuthorStatus.APPROVED,
+      });
+    });
+
+    it('rechaza si la coautoría por defecto suma 100% o más', async () => {
+      splitRepo.findOne.mockResolvedValue(null);
+      publisherCoauthorService.resolveForUser.mockResolvedValue([
+        { organizationId: 'org-1', organizationName: 'Sony', role: CoauthorRole.ARREGLISTA, percentage: 100 },
+      ]);
+
+      await expect(
+        service.createSplit('track-1', { authors: [{ userId: 'author-2', percentage: 0, role: CoauthorRole.AUTOR }] }, admin),
+      ).rejects.toThrow(BadRequestException);
     });
   });
 

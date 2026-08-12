@@ -80,6 +80,25 @@ describe('WalletDistributionService', () => {
     ]);
   });
 
+  it('excluye a la publisher coautora del reparto y renormaliza a los humanos a 100', async () => {
+    splitRepo.findOne.mockResolvedValue({
+      status: SplitStatus.COMPLETED,
+      authors: [
+        { user: { id: 'author-1' }, organization: null, percentage: 40 },
+        { user: { id: 'author-2' }, organization: null, percentage: 40 },
+        { user: null, organization: { id: 'pub-1' }, percentage: 20 },
+      ],
+    });
+
+    const result = await service.resolveDistribution('req-1');
+
+    expect(result.source).toBe(WalletDistributionSource.SPLIT);
+    expect(result.entries).toEqual([
+      { userId: 'author-1', percentage: 50 },
+      { userId: 'author-2', percentage: 50 },
+    ]);
+  });
+
   it('cae al reparto igualitario entre autores del track si no hay contrato ni split', async () => {
     const result = await service.resolveDistribution('req-1');
 

@@ -94,10 +94,24 @@ export class WalletDistributionService {
     });
     if (!split?.authors?.length) return null;
 
-    return split.authors.map((author) => ({
-      userId: author.user.id,
-      percentage: Number(author.percentage),
+    // La publisher coautora no participa del reparto monetario (solo cobra
+    // comisión por venta de licencia, que es independiente de su % de split). Se
+    // reparte el neto entre los coautores persona, renormalizando sus % de split
+    // a 100 para que no se pierda la fracción que el split asignó a la publisher.
+    const humanAuthors = split.authors.filter((author) => author.user);
+    if (!humanAuthors.length) return null;
+    const humanTotal = humanAuthors.reduce((acc, author) => acc + Number(author.percentage), 0);
+    if (humanTotal <= 0) return null;
+
+    const entries = humanAuthors.map((author) => ({
+      userId: author.user!.id,
+      percentage: Math.round((Number(author.percentage) / humanTotal) * 10000) / 100,
     }));
+    // Ajusta el último coautor para que la suma sea exactamente 100 (evita fugas por redondeo).
+    const drift = 100 - entries.reduce((acc, entry) => acc + entry.percentage, 0);
+    entries[entries.length - 1].percentage =
+      Math.round((entries[entries.length - 1].percentage + drift) * 100) / 100;
+    return entries;
   }
 
   private resolveEqualFallback(requestedTrack: RequestedTrack): DistributionEntry[] {

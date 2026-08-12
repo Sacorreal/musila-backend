@@ -53,6 +53,7 @@ import {
 } from './domain/payment-provider.types';
 import { LICENSE_COMMISSION_RATE } from 'src/shared/billing/license-commission.constants';
 import { CommissionService } from 'src/commission/commission.service';
+import { PublisherCommissionFreezeService } from 'src/wallet/services/publisher-commission-freeze.service';
 import type { ResolvedCommission } from 'src/commission/commission.types';
 import { LicenseCollectionsService } from 'src/license-collections/license-collections.service';
 import { LicenseCollection } from 'src/license-collections/entities/license-collection.entity';
@@ -102,6 +103,7 @@ export class PaymentsService {
     private readonly otpVerificationService: OtpVerificationService,
     private readonly licenseCollectionsService: LicenseCollectionsService,
     private readonly commissionService: CommissionService,
+    private readonly publisherCommissionFreezeService: PublisherCommissionFreezeService,
   ) {}
 
   /** Nombre del proveedor de pago activo, para persistir en `Payment.provider`. */
@@ -252,6 +254,9 @@ export class PaymentsService {
 
     track.licensePaymentReference = reference;
     track.licensePaymentStatus = LicensePaymentStatus.PENDING;
+    // Congela (Opción A) la tarifa de comisión de publisher vigente por vendedor.
+    // Inmutable frente a cambios posteriores del % en la configuración de la publisher.
+    await this.publisherCommissionFreezeService.freeze(track);
     await this.requestedTrackRepo.save(track);
 
     if (frozen) {

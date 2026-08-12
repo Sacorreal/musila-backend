@@ -15,6 +15,7 @@ import { LicenseType } from './license-type.enum';
 import { LicensePaymentStatus } from './license-payment-status.enum';
 import { RequestsStatus } from './requests-status.enum';
 import { Chat } from 'src/chat/entities/chat.entity';
+import { PublisherCommissionSnapshotEntry } from 'src/publisher-commission/publisher-commission.types';
 
 
 @Entity({ name: 'requested_track' })
@@ -98,6 +99,18 @@ export class RequestedTrack {
 
   @Column({ type: 'timestamptz', nullable: true, name: 'commission_resolved_at' })
   commissionResolvedAt: Date | null;
+
+  // ─── Snapshot de comisión de publisher congelada (Opción A) ──────────────
+  // Se congela al iniciar el pago de la licencia con el % vigente por vendedor.
+  // Es inmutable: un cambio posterior del % en la configuración de la publisher
+  // no altera estos valores. Guarda solo la tarifa por vendedor; el monto se
+  // calcula por evento en la distribución (soporta anticipos por cuotas).
+
+  @Column({ type: 'jsonb', nullable: true, name: 'publisher_commission_snapshot' })
+  publisherCommissionSnapshot: PublisherCommissionSnapshotEntry[] | null;
+
+  @Column({ type: 'timestamptz', nullable: true, name: 'publisher_commission_frozen_at' })
+  publisherCommissionFrozenAt: Date | null;
 
   @CreateDateColumn({
     name: 'created_at',

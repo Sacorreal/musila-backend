@@ -6,6 +6,7 @@ describe('WalletWithdrawalsService', () => {
   let service: WalletWithdrawalsService;
   let withdrawalRepo: any;
   let userRepo: any;
+  let organizationRepo: any;
   let earningsService: any;
   let eventBus: { emit: jest.Mock };
 
@@ -33,10 +34,20 @@ describe('WalletWithdrawalsService', () => {
       findOne: jest.fn(),
     };
     userRepo = { findOne: jest.fn().mockResolvedValue(user) };
-    earningsService = { getBalance: jest.fn().mockResolvedValue({ availableBalance: 100000, currency: 'COP' }) };
+    organizationRepo = { findOne: jest.fn() };
+    earningsService = {
+      getBalance: jest.fn().mockResolvedValue({ availableBalance: 100000, currency: 'COP' }),
+      getOrganizationBalance: jest.fn().mockResolvedValue({ availableBalance: 100000, currency: 'COP' }),
+    };
     eventBus = { emit: jest.fn() };
 
-    service = new WalletWithdrawalsService(withdrawalRepo, userRepo, earningsService, eventBus as any);
+    service = new WalletWithdrawalsService(
+      withdrawalRepo,
+      userRepo,
+      organizationRepo,
+      earningsService,
+      eventBus as any,
+    );
   });
 
   describe('create', () => {

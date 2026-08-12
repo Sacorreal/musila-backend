@@ -96,6 +96,125 @@ describe('WalletEarningsService', () => {
     });
   });
 
+  describe('comisión de publisher', () => {
+    const trackWithSnapshot = (snapshot: any[], entries: any[], licensePrice = 100000) => ({
+      requestedTrack: {
+        id: 'req-1',
+        owner,
+        track: { id: 'track-1', title: 'Mi Canción' },
+        licensePrice,
+        publisherCommissionSnapshot: snapshot,
+      },
+      entries,
+      source: WalletDistributionSource.EQUAL_FALLBACK,
+    });
+
+    it('acredita la comisión a la organización y descuenta al vendedor', async () => {
+      distributionService.resolveDistribution.mockResolvedValue(
+        trackWithSnapshot(
+          [{ beneficiaryUserId: 'owner-1', publisherOrganizationId: 'pub-1', percentage: 10 }],
+          [{ userId: 'owner-1', percentage: 100 }],
+        ),
+      );
+
+      await service.creditFromLicensePayment('req-1');
+
+      const saved = earningRepo.save.mock.calls.map((c: any[]) => c[0]);
+      expect(saved).toHaveLength(2);
+
+      const seller = saved.find((e) => e.beneficiary?.id === 'owner-1');
+      const publisher = saved.find((e) => e.beneficiaryOrganization?.id === 'pub-1');
+
+      expect(seller.amount).toBe(90000);
+      expect(seller.role).toBe(WalletEarningRole.OWN);
+      expect(publisher.amount).toBe(10000);
+      expect(publisher.role).toBe(WalletEarningRole.PUBLISHER_COMMISSION);
+      expect(publisher.distributionSource).toBe(WalletDistributionSource.PUBLISHER_COMMISSION);
+      expect(publisher.beneficiary).toBeNull();
+    });
+
+    it('prorratea la comisión entre todos los vendedores (base = total de la licencia)', async () => {
+      distributionService.resolveDistribution.mockResolvedValue(
+        trackWithSnapshot(
+          [{ beneficiaryUserId: 'owner-1', publisherOrganizationId: 'pub-1', percentage: 10 }],
+          [
+            { userId: 'owner-1', percentage: 60 },
+            { userId: 'co-1', percentage: 40 },
+          ],
+        ),
+      );
+
+      await service.creditFromLicensePayment('req-1');
+
+      const saved = earningRepo.save.mock.calls.map((c: any[]) => c[0]);
+      const ownerEarning = saved.find((e) => e.beneficiary?.id === 'owner-1');
+      const coauthor = saved.find((e) => e.beneficiary?.id === 'co-1');
+      const publisher = saved.find((e) => e.beneficiaryOrganization?.id === 'pub-1');
+
+      expect(ownerEarning.amount).toBe(54000); // 60% de 90000 (neto)
+      expect(coauthor.amount).toBe(36000); // 40% de 90000
+      expect(publisher.amount).toBe(10000); // 10% de 100000
+    });
+
+    it('ignora entradas del snapshot cuyo beneficiario no está en el reparto', async () => {
+      distributionService.resolveDistribution.mockResolvedValue(
+        trackWithSnapshot(
+          [{ beneficiaryUserId: 'ausente', publisherOrganizationId: 'pub-1', percentage: 50 }],
+          [{ userId: 'owner-1', percentage: 100 }],
+        ),
+      );
+
+      await service.creditFromLicensePayment('req-1');
+
+      const saved = earningRepo.save.mock.calls.map((c: any[]) => c[0]);
+      expect(saved).toHaveLength(1);
+      expect(saved[0].amount).toBe(100000);
+    });
+
+    it('topa la comisión total al bruto cuando los porcentajes exceden el 100%', async () => {
+      distributionService.resolveDistribution.mockResolvedValue(
+        trackWithSnapshot(
+          [
+            { beneficiaryUserId: 'owner-1', publisherOrganizationId: 'pub-1', percentage: 70 },
+            { beneficiaryUserId: 'co-1', publisherOrganizationId: 'pub-2', percentage: 60 },
+          ],
+          [
+            { userId: 'owner-1', percentage: 50 },
+            { userId: 'co-1', percentage: 50 },
+          ],
+        ),
+      );
+
+      await service.creditFromLicensePayment('req-1');
+
+      const saved = earningRepo.save.mock.calls.map((c: any[]) => c[0]);
+      const publisherTotal = saved
+        .filter((e) => e.role === WalletEarningRole.PUBLISHER_COMMISSION)
+        .reduce((acc, e) => acc + e.amount, 0);
+      expect(publisherTotal).toBeLessThanOrEqual(100000);
+    });
+  });
+
+  describe('getOrganizationBalance', () => {
+    it('suma las comisiones de la organización y descuenta sus retiros', async () => {
+      earningRepo.find.mockResolvedValue([
+        { role: WalletEarningRole.PUBLISHER_COMMISSION, amount: 15000 },
+        { role: WalletEarningRole.PUBLISHER_COMMISSION, amount: 5000 },
+      ]);
+      withdrawalRepo.find.mockResolvedValue([
+        { status: WalletWithdrawalStatus.PAID, amount: 4000 },
+        { status: WalletWithdrawalStatus.IN_PROCESS, amount: 1000 },
+      ]);
+
+      const balance = await service.getOrganizationBalance('pub-1');
+
+      expect(balance.totalEarned).toBe(20000);
+      expect(balance.totalWithdrawnPaid).toBe(4000);
+      expect(balance.totalReserved).toBe(1000);
+      expect(balance.availableBalance).toBe(15000);
+    });
+  });
+
   describe('getBalance', () => {
     it('calcula el saldo disponible descontando retiros pendientes/en proceso/pagados', async () => {
       earningRepo.find.mockResolvedValue([

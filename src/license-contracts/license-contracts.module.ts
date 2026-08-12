@@ -7,6 +7,7 @@ import { Split } from 'src/splits/entities/split.entity';
 import { User } from 'src/users/entities/user.entity';
 import { AppNotificationsModule } from 'src/notifications/notifications.module';
 import { LicenseCollectionsModule } from 'src/license-collections/license-collections.module';
+import { WalletModule } from 'src/wallet/wallet.module';
 
 import { LicenseContract } from './entities/license-contract.entity';
 import { LicenseContractSignatory } from './entities/license-contract-signatory.entity';
@@ -22,6 +23,7 @@ import { LicenseContractPaymentListener } from './listeners/license-contract-pay
     TypeOrmModule.forFeature([LicenseContract, LicenseContractSignatory, RequestedTrack, Track, Split, User]),
     AppNotificationsModule,
     LicenseCollectionsModule,
+    WalletModule,
   ],
   controllers: [LicenseContractsController],
   providers: [
