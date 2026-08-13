@@ -6,6 +6,7 @@ import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.en
 import { RequestsStatus } from 'src/requested-tracks/entities/requests-status.enum';
 import { LicenseType } from 'src/requested-tracks/entities/license-type.enum';
 import { Track } from 'src/tracks/entities/track.entity';
+import { RegistrationFile } from 'src/registration-file/entities/registration-file.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Split } from 'src/splits/entities/split.entity';
 import { SplitStatus } from 'src/splits/entities/split-status.enum';
@@ -68,6 +69,15 @@ interface AuthorEntry {
   splitAuthorId: string | null;
 }
 
+/** Datos de la grabación que se vuelcan al expediente al cumplirse la licencia. */
+interface RecordingDetails {
+  isrc: string;
+  upc?: string | null;
+  mainArtistName?: string | null;
+  albumOrEpName?: string | null;
+  releaseDate?: string | null;
+}
+
 @Injectable()
 export class LicenseContractsService {
   private readonly logger = new Logger(LicenseContractsService.name);
@@ -81,6 +91,8 @@ export class LicenseContractsService {
     private readonly requestedTrackRepo: Repository<RequestedTrack>,
     @InjectRepository(Track)
     private readonly trackRepo: Repository<Track>,
+    @InjectRepository(RegistrationFile)
+    private readonly registrationFileRepo: Repository<RegistrationFile>,
     @InjectRepository(Split)
     private readonly splitRepo: Repository<Split>,
     private readonly eventBus: EventBusService,
@@ -430,19 +442,20 @@ export class LicenseContractsService {
     }
 
     const track = contract.requestedTrack.track;
-    const externalsIds = track.externalsIds ?? [];
-    const alreadyHasIsrc = externalsIds.some((entry) => entry.type === 'ISRC');
-    const updatedExternalsIds = alreadyHasIsrc
-      ? externalsIds
-      : [...externalsIds, { type: 'ISRC', value: dto.isrc }];
+    const updatedExternalsIds = this.upsertExternalIds(track.externalsIds ?? [], {
+      ISRC: dto.isrc,
+      UPC: dto.upc,
+    });
 
     await this.trackRepo.update(track.id, { externalsIds: updatedExternalsIds, isAvailable: false });
+
+    await this.syncRecordingToRegistrationFile(track.id, dto);
 
     contract.status = LicenseContractStatus.FULFILLED;
     contract.fulfilledAt = new Date();
     await this.contractRepo.save(contract);
 
-    await this.registerIsrcLegalProof(contract, dto.isrc, userId);
+    await this.registerIsrcLegalProof(contract, dto, userId);
 
     const otherParty = isOwner ? contract.requestedTrack.requester : contract.requestedTrack.owner;
 
@@ -524,7 +537,7 @@ export class LicenseContractsService {
       contract.status = LicenseContractStatus.FULFILLED;
       contract.fulfilledAt = new Date();
       await this.contractRepo.save(contract);
-      await this.registerIsrcLegalProof(contract, isrcEntry.value);
+      await this.registerIsrcLegalProof(contract, { isrc: isrcEntry.value });
       return;
     }
 
@@ -534,14 +547,18 @@ export class LicenseContractsService {
   /** Evidencia legal del ISRC confirmado (manual o detectado automáticamente): hash + timestamp de un snapshot del hecho. */
   private async registerIsrcLegalProof(
     contract: LicenseContract,
-    isrc: string,
+    recording: RecordingDetails,
     confirmedByUserId?: string,
   ): Promise<void> {
     const snapshot = {
       event: 'license.contract.fulfilled',
       contractId: contract.id,
       trackId: contract.requestedTrack.track.id,
-      isrc,
+      isrc: recording.isrc,
+      upc: recording.upc ?? null,
+      mainArtistName: recording.mainArtistName ?? null,
+      albumOrEpName: recording.albumOrEpName ?? null,
+      releaseDate: recording.releaseDate ?? null,
       confirmedByUserId: confirmedByUserId ?? null,
       fulfilledAt: contract.fulfilledAt,
     };
@@ -561,6 +578,46 @@ export class LicenseContractsService {
     } catch (error) {
       this.logger.error(`No se pudo generar evidencia legal para el ISRC del contrato ${contract.id}`, error as Error);
     }
+  }
+
+  /** Inserta/actualiza identificadores externos (ISRC, UPC, …) evitando duplicados por tipo. */
+  private upsertExternalIds(
+    current: { type: string; value: string }[],
+    entries: Record<string, string | undefined | null>,
+  ): { type: string; value: string }[] {
+    const result = [...current];
+    for (const [type, value] of Object.entries(entries)) {
+      if (!value) continue;
+      const existing = result.find((entry) => entry.type === type);
+      if (existing) existing.value = value;
+      else result.push({ type, value });
+    }
+    return result;
+  }
+
+  /**
+   * Vuelca los datos de la grabación al expediente del track (Dominio 3: Fonograma),
+   * si el track ya tiene un expediente creado. Hace merge para no pisar los campos
+   * que el compositor haya cargado previamente en el módulo de expedientes.
+   */
+  private async syncRecordingToRegistrationFile(trackId: string, recording: RecordingDetails): Promise<void> {
+    const registrationFile = await this.registrationFileRepo.findOne({ where: { track: { id: trackId } } });
+    if (!registrationFile) return;
+
+    const existing = registrationFile.phonogramData;
+    registrationFile.phonogramData = {
+      hasRecording: true,
+      recordingType: existing?.recordingType ?? null,
+      isrc: recording.isrc,
+      upc: recording.upc ?? existing?.upc ?? null,
+      mainArtistName: recording.mainArtistName ?? existing?.mainArtistName ?? null,
+      albumOrEpName: recording.albumOrEpName ?? existing?.albumOrEpName ?? null,
+      releaseDate: recording.releaseDate ?? existing?.releaseDate ?? null,
+      phonogramProducer: existing?.phonogramProducer ?? null,
+      phonogramOwner: existing?.phonogramOwner ?? null,
+      recordingDate: existing?.recordingDate ?? null,
+    };
+    await this.registrationFileRepo.save(registrationFile);
   }
 
   private async markExpired(contract: LicenseContract): Promise<void> {

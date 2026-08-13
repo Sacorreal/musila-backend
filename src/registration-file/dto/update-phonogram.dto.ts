@@ -20,6 +20,26 @@ export class UpdatePhonogramDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
+  upc?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  mainArtistName?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
+  albumOrEpName?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsDateString()
+  releaseDate?: string;
+
+  @ApiProperty({ required: false })
+  @IsOptional()
+  @IsString()
   phonogramProducer?: string;
 
   @ApiProperty({ required: false })

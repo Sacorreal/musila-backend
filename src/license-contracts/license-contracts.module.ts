@@ -3,6 +3,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { Track } from 'src/tracks/entities/track.entity';
+import { RegistrationFile } from 'src/registration-file/entities/registration-file.entity';
 import { Split } from 'src/splits/entities/split.entity';
 import { User } from 'src/users/entities/user.entity';
 import { AppNotificationsModule } from 'src/notifications/notifications.module';
@@ -20,7 +21,15 @@ import { LicenseContractPaymentListener } from './listeners/license-contract-pay
 @Module({
   imports: [
     ScheduleModule.forRoot(),
-    TypeOrmModule.forFeature([LicenseContract, LicenseContractSignatory, RequestedTrack, Track, Split, User]),
+    TypeOrmModule.forFeature([
+      LicenseContract,
+      LicenseContractSignatory,
+      RequestedTrack,
+      Track,
+      RegistrationFile,
+      Split,
+      User,
+    ]),
     AppNotificationsModule,
     LicenseCollectionsModule,
     WalletModule,

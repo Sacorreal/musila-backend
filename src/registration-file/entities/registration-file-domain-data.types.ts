@@ -6,6 +6,10 @@ export interface PhonogramData {
   hasRecording: boolean;
   recordingType: RecordingType | null;
   isrc: string | null;
+  upc: string | null;
+  mainArtistName: string | null;
+  albumOrEpName: string | null;
+  releaseDate: string | null;
   phonogramProducer: string | null;
   phonogramOwner: string | null;
   recordingDate: string | null;

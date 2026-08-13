@@ -17,6 +17,7 @@ describe('LicenseContractsService', () => {
   let signatoryRepo: any;
   let requestedTrackRepo: any;
   let trackRepo: any;
+  let registrationFileRepo: any;
   let splitRepo: any;
   let eventBus: { emit: jest.Mock };
   let otpVerificationService: { assertAndConsumeVerification: jest.Mock };
@@ -48,6 +49,15 @@ describe('LicenseContractsService', () => {
 
   const futureDate = () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
+  const recordingDto = (overrides: Record<string, unknown> = {}) => ({
+    isrc: 'US-ABC-27-00001',
+    upc: '0885150000000',
+    mainArtistName: 'Karol G',
+    albumOrEpName: 'Mañana Será Bonito',
+    releaseDate: '2026-08-12',
+    ...overrides,
+  });
+
   const baseTermsDto = () => ({
     validityDate: futureDate(),
     territoryMode: LicenseTerritoryMode.GLOBAL,
@@ -71,6 +81,7 @@ describe('LicenseContractsService', () => {
     };
     requestedTrackRepo = { findOne: jest.fn().mockResolvedValue(requestedTrack), update: jest.fn().mockResolvedValue(undefined) };
     trackRepo = { update: jest.fn().mockResolvedValue(undefined) };
+    registrationFileRepo = { findOne: jest.fn().mockResolvedValue(null), save: jest.fn((data: any) => Promise.resolve(data)) };
     splitRepo = { findOne: jest.fn().mockResolvedValue(null) };
     eventBus = { emit: jest.fn() };
     otpVerificationService = { assertAndConsumeVerification: jest.fn().mockResolvedValue(undefined) };
@@ -87,6 +98,7 @@ describe('LicenseContractsService', () => {
       signatoryRepo,
       requestedTrackRepo,
       trackRepo,
+      registrationFileRepo,
       splitRepo,
       eventBus as any,
       otpVerificationService as any,
@@ -330,7 +342,7 @@ describe('LicenseContractsService', () => {
       });
 
       await expect(
-        service.confirmRecording('contract-1', 'intruso', { isrc: 'US-ABC-27-00001' }),
+        service.confirmRecording('contract-1', 'intruso', recordingDto() as any),
       ).rejects.toThrow(ForbiddenException);
     });
 
@@ -345,11 +357,17 @@ describe('LicenseContractsService', () => {
         })
         .mockResolvedValueOnce({ id: 'contract-1', status: LicenseContractStatus.FULFILLED, requestedTrack, signatories: [] });
 
-      await service.confirmRecording('contract-1', requester.id, { isrc: 'US-ABC-27-00001' });
+      await service.confirmRecording('contract-1', requester.id, recordingDto() as any);
 
       expect(trackRepo.update).toHaveBeenCalledWith(
         'track-1',
-        expect.objectContaining({ isAvailable: false }),
+        expect.objectContaining({
+          isAvailable: false,
+          externalsIds: expect.arrayContaining([
+            { type: 'ISRC', value: 'US-ABC-27-00001' },
+            { type: 'UPC', value: '0885150000000' },
+          ]),
+        }),
       );
       expect(contractRepo.save).toHaveBeenCalledWith(expect.objectContaining({ status: LicenseContractStatus.FULFILLED }));
       expect(eventBus.emit).toHaveBeenCalledWith(
@@ -362,6 +380,34 @@ describe('LicenseContractsService', () => {
             entityType: 'isrc_registration',
             entityId: 'track-1',
             requestedByUserId: requester.id,
+          }),
+        }),
+      );
+    });
+
+    it('vuelca los datos de la grabación al expediente del track cuando existe', async () => {
+      contractRepo.findOne
+        .mockResolvedValueOnce({
+          id: 'contract-1',
+          status: LicenseContractStatus.EXPIRED,
+          requestedTrack,
+          validityDate: new Date(Date.now() - 1000),
+          signatories: [],
+        })
+        .mockResolvedValueOnce({ id: 'contract-1', status: LicenseContractStatus.FULFILLED, requestedTrack, signatories: [] });
+      registrationFileRepo.findOne.mockResolvedValue({ id: 'exp-1', phonogramData: null });
+
+      await service.confirmRecording('contract-1', requester.id, recordingDto() as any);
+
+      expect(registrationFileRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({
+          phonogramData: expect.objectContaining({
+            hasRecording: true,
+            isrc: 'US-ABC-27-00001',
+            upc: '0885150000000',
+            mainArtistName: 'Karol G',
+            albumOrEpName: 'Mañana Será Bonito',
+            releaseDate: '2026-08-12',
           }),
         }),
       );
@@ -380,7 +426,7 @@ describe('LicenseContractsService', () => {
       legalProofService.generateProof.mockRejectedValue(new Error('timestamp provider down'));
 
       await expect(
-        service.confirmRecording('contract-1', requester.id, { isrc: 'US-ABC-27-00001' }),
+        service.confirmRecording('contract-1', requester.id, recordingDto() as any),
       ).resolves.toBeDefined();
 
       expect(contractRepo.save).toHaveBeenCalledWith(expect.objectContaining({ status: LicenseContractStatus.FULFILLED }));

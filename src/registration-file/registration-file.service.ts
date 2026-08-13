@@ -313,10 +313,15 @@ export class RegistrationFileService {
   async updatePhonogram(id: string, dto: UpdatePhonogramDto, user: JwtPayload): Promise<RegistrationFile> {
     const registrationFile = await this.findOne(id, user);
 
+    const existing = registrationFile.phonogramData;
     registrationFile.phonogramData = {
       hasRecording: dto.hasRecording,
       recordingType: dto.recordingType ?? null,
       isrc: dto.isrc ?? null,
+      upc: dto.upc ?? existing?.upc ?? null,
+      mainArtistName: dto.mainArtistName ?? existing?.mainArtistName ?? null,
+      albumOrEpName: dto.albumOrEpName ?? existing?.albumOrEpName ?? null,
+      releaseDate: dto.releaseDate ?? existing?.releaseDate ?? null,
       phonogramProducer: dto.phonogramProducer ?? null,
       phonogramOwner: dto.phonogramOwner ?? null,
       recordingDate: dto.recordingDate ?? null,
