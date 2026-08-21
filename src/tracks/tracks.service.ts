@@ -20,6 +20,7 @@ import { FindAllTracksOptions } from './interface/tracks-options.interface';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { CertificatesService } from 'src/certificates/certificates.service';
+import { SplitService } from 'src/splits/split.service';
 
 const tracksRelations: string[] = [
   'genre',
@@ -45,6 +46,7 @@ export class TracksService {
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
     private readonly eventBus: EventBusService,
     private readonly certificatesService: CertificatesService,
+    private readonly splitService: SplitService,
 
   ) { }
 
@@ -194,6 +196,9 @@ export class TracksService {
       coverUrl: coverUrl ?? null,
       sheetMusicKey: sheetMusicKey ?? null,
       sheetMusicUrl: sheetMusicUrl ?? null,
+      // El split de coautoría solo puede existir una vez creado el track, así
+      // que todo track nace no disponible hasta que su split quede firmado.
+      isAvailable: false,
     } as any);
 
     const saved = await this.saveAndReturnWithRelations(newTrack as unknown as Track);
@@ -303,6 +308,15 @@ export class TracksService {
       if (splitSheets.length > 0) {
         throw new BadRequestException(
           'El Split Sheet ya no se sube manualmente: se genera automáticamente desde el módulo de Split una vez que todos los coautores aprueban.',
+        );
+      }
+    }
+
+    if (rest.isAvailable === true && !existingTrack.isAvailable) {
+      const isSplitCompleted = await this.splitService.isSplitCompletedForTrack(id);
+      if (!isSplitCompleted) {
+        throw new BadRequestException(
+          'No puedes publicar el track sin haber firmado el split de coautoría',
         );
       }
     }

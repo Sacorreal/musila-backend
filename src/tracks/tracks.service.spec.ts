@@ -10,6 +10,7 @@ import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { TrackResponseDto } from './dto/track-response.dto';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { CertificatesService } from 'src/certificates/certificates.service';
+import { SplitService } from 'src/splits/split.service';
 
 describe('TracksService - findAllTracksService', () => {
   let service: TracksService;
@@ -34,6 +35,7 @@ describe('TracksService - findAllTracksService', () => {
         { provide: getRepositoryToken(User), useValue: {} },
         { provide: EventBusService, useValue: { emit: jest.fn() } },
         { provide: CertificatesService, useValue: { getStatusesForTracks: jest.fn().mockResolvedValue(new Map()) } },
+        { provide: SplitService, useValue: { isSplitCompletedForTrack: jest.fn().mockResolvedValue(false) } },
       ],
     }).compile();
 
@@ -137,6 +139,7 @@ describe('TracksService - createTrackService', () => {
         { provide: getRepositoryToken(User), useValue: mockUsersRepository },
         { provide: EventBusService, useValue: { emit: jest.fn() } },
         { provide: CertificatesService, useValue: { getStatusesForTracks: jest.fn().mockResolvedValue(new Map()) } },
+        { provide: SplitService, useValue: { isSplitCompletedForTrack: jest.fn().mockResolvedValue(false) } },
       ],
     }).compile();
 

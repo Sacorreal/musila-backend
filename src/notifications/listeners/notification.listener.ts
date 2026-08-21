@@ -231,16 +231,18 @@ export class NotificationListener {
   })
   async handleSplitCompleted(payload: AppEventMap['split.completed']) {
     try {
-      const notification = await this.notificationsService.createNotification({
-        recipient: { id: payload.createdByUserId } as any,
-        type: 'split.completed',
-        title: 'Split de coautoría completado',
-        message: `Todos los coautores aprobaron el split de "${payload.trackTitle}".`,
-        link: `/music/tracks/${payload.trackId}`,
-        data: payload,
-      });
+      for (const author of payload.authors) {
+        const notification = await this.notificationsService.createNotification({
+          recipient: { id: author.userId } as any,
+          type: 'split.completed',
+          title: '¡Tu canción ya está publicada!',
+          message: `Todos los coautores firmaron el split de "${payload.trackTitle}" y la canción quedó publicada.`,
+          link: `/music/tracks/${payload.trackId}`,
+          data: payload,
+        });
 
-      this.notificationsGateway.emitToUser(payload.createdByUserId, 'notification.received', notification);
+        this.notificationsGateway.emitToUser(author.userId, 'notification.received', notification);
+      }
     } catch (error) {
       this.logger.error('Error procesando notificacion de split.completed', error);
     }

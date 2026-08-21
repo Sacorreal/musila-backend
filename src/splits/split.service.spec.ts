@@ -35,7 +35,10 @@ describe('SplitService', () => {
       save: jest.fn((data) => Promise.resolve(data)),
       remove: jest.fn().mockResolvedValue(undefined),
     };
-    trackRepo = { findOne: jest.fn().mockResolvedValue(track) };
+    trackRepo = {
+      findOne: jest.fn().mockResolvedValue(track),
+      save: jest.fn((data) => Promise.resolve(data)),
+    };
     userRepo = { find: jest.fn().mockResolvedValue([coauthorUser]) };
     ipRepo = {
       create: jest.fn((data) => data),
@@ -215,7 +218,18 @@ describe('SplitService', () => {
           context: expect.objectContaining({ entityType: 'co_authorship', entityId: 'split-1' }),
         }),
       );
-      expect(eventBus.emit).toHaveBeenCalledWith('split.completed', expect.objectContaining({ splitId: 'split-1' }));
+      // La firma de todos los coautores publica el track automáticamente.
+      expect(trackRepo.save).toHaveBeenCalledWith(expect.objectContaining({ id: 'track-1', isAvailable: true }));
+      expect(eventBus.emit).toHaveBeenCalledWith(
+        'split.completed',
+        expect.objectContaining({
+          splitId: 'split-1',
+          authors: expect.arrayContaining([
+            expect.objectContaining({ userId: admin.id }),
+            expect.objectContaining({ userId: coauthorUser.id }),
+          ]),
+        }),
+      );
     });
 
     it('completa el split igual aunque falle la generación de evidencia legal', async () => {

@@ -12,6 +12,7 @@ import { TracksService } from './tracks.service';
 import { TrackPlaysService } from './track-plays.service';
 import { UsersModule } from 'src/users/users.module';
 import { CertificatesModule } from 'src/certificates/certificates.module';
+import { SplitModule } from 'src/splits/split.module';
 import { TrackLegalProofListener } from './listeners/track-legal-proof.listener';
 
 @Module({
@@ -20,6 +21,7 @@ import { TrackLegalProofListener } from './listeners/track-legal-proof.listener'
     UsersModule,
     ConfigModule,
     CertificatesModule,
+    SplitModule,
   ],
   controllers: [TracksController],
   providers: [TracksService, TrackPlaysService, TrackLegalProofListener],

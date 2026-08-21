@@ -38,26 +38,28 @@ export class SplitListener {
   async handleSplitCompleted(payload: AppEventMap['split.completed']) {
     const splitDetailUrl = `${WEB_APP_URL}/music/tracks/${payload.trackId}`;
 
-    try {
-      await retryWithBackoff(
-        () =>
-          this.emailService.sendSplitCompletedEmail(payload.createdByEmail, {
-            adminName: payload.createdByName,
-            trackTitle: payload.trackTitle,
-            splitDetailUrl,
-          }),
-        {
-          retries: 3,
-          baseDelayMs: 1000,
-          onRetry: (attempt, error) =>
-            this.logger.warn(`Reintento ${attempt} enviando email de split completado a ${payload.createdByEmail}: ${error}`),
-        },
-      );
-    } catch (error) {
-      this.logger.error(
-        `Se agotaron los reintentos enviando email de split completado a ${payload.createdByEmail}`,
-        error,
-      );
+    for (const author of payload.authors) {
+      try {
+        await retryWithBackoff(
+          () =>
+            this.emailService.sendSplitCompletedEmail(author.email, {
+              adminName: author.name,
+              trackTitle: payload.trackTitle,
+              splitDetailUrl,
+            }),
+          {
+            retries: 3,
+            baseDelayMs: 1000,
+            onRetry: (attempt, error) =>
+              this.logger.warn(`Reintento ${attempt} enviando email de split completado a ${author.email}: ${error}`),
+          },
+        );
+      } catch (error) {
+        this.logger.error(
+          `Se agotaron los reintentos enviando email de split completado a ${author.email}`,
+          error,
+        );
+      }
     }
   }
 

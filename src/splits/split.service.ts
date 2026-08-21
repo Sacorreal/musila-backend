@@ -99,6 +99,12 @@ export class SplitService {
     return result;
   }
 
+  /** Indica si el track tiene un split firmado por todos sus coautores (1 o N). Usado como gate de publicación. */
+  async isSplitCompletedForTrack(trackId: string): Promise<boolean> {
+    const split = await this.splitRepository.findOne({ where: { track: { id: trackId } } });
+    return split?.status === SplitStatus.COMPLETED;
+  }
+
   /** Obtiene el split de un track junto con el estado de aprobación de cada coautor. */
   async getSplitByTrack(trackId: string, user: JwtPayload): Promise<Split> {
     const track = await this.findTrackOrFail(trackId);
@@ -376,6 +382,11 @@ export class SplitService {
     split.intellectualProperty = savedIp;
     await this.splitRepository.save(split);
 
+    // La firma de todos los coautores es, por definición, la aprobación para publicar:
+    // el track pasa a disponible automáticamente en cuanto el split queda completo.
+    split.track.isAvailable = true;
+    await this.trackRepository.save(split.track);
+
     await this.generateSplitLegalProof(split, publisherShares);
 
     this.eventBus.emit('split.completed', {
@@ -385,6 +396,13 @@ export class SplitService {
       createdByUserId: split.createdBy.id,
       createdByName: split.createdBy.name,
       createdByEmail: split.createdBy.email,
+      authors: split.authors
+        .filter((author) => author.user)
+        .map((author) => ({
+          userId: author.user!.id,
+          name: `${author.user!.name} ${author.user!.lastName}`.trim(),
+          email: author.user!.email,
+        })),
     });
   }
 

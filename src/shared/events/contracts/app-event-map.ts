@@ -233,6 +233,12 @@ export interface AppEventMap {
     createdByUserId: string;
     createdByName: string;
     createdByEmail: string;
+    /** Todos los coautores firmantes: el track quedó publicado, se notifica a cada uno. */
+    authors: {
+      userId: string;
+      name: string;
+      email: string;
+    }[];
   }
 
   // 💰 GESTIÓN DE COBROS (anticipos de licencia de primer uso)
