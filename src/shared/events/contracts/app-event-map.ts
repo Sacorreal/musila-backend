@@ -512,6 +512,14 @@ export interface AppEventMap {
     publisherName: string;
   }
 
+  // 🎼 SOCIEDADES DE GESTIÓN COLECTIVA (afiliaciones autor ↔ CMO)
+
+  'society-affiliation.created': SocietyAffiliationEventPayload;
+  'society-affiliation.updated': SocietyAffiliationEventPayload;
+  'society-affiliation.ended': SocietyAffiliationEventPayload;
+  'society-affiliation.verified': SocietyAffiliationEventPayload;
+  'society-affiliation.rejected': SocietyAffiliationEventPayload;
+
   // 🔐 AUTHORIZATION ENGINE (capabilities, roles, memberships, subscriptions)
 
   'authorization.role.updated': {
@@ -632,6 +640,18 @@ export interface AppEventMap {
     actorUserId: string | null;
   }
 
+}
+
+/** Payload común de los eventos de auditoría de `SocietyAffiliation` (§13 del requerimiento). */
+export interface SocietyAffiliationEventPayload {
+  societyAffiliationId: string;
+  actorId: string;
+  authorId: string;
+  organizationId: string | null;
+  societyId: string;
+  rightsType: string;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
 }
 
 /** Payload común de los eventos de ciclo de vida de una pauta. */

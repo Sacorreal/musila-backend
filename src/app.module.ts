@@ -56,6 +56,8 @@ import { CommissionModule } from './commission/commission.module';
 import { PromotionsModule } from './promotions/promotions.module';
 import { PublisherCommissionModule } from './publisher-commission/publisher-commission.module';
 import { PublisherShareModule } from './publisher-share/publisher-share.module';
+import { CollectiveManagementSocietyModule } from './collective-management-society/collective-management-society.module';
+import { SocietyAffiliationModule } from './society-affiliation/society-affiliation.module';
 
 @Module({
   imports: [
@@ -116,6 +118,8 @@ import { PublisherShareModule } from './publisher-share/publisher-share.module';
     PromotionsModule,
     PublisherCommissionModule,
     PublisherShareModule,
+    CollectiveManagementSocietyModule,
+    SocietyAffiliationModule,
   ],
   controllers: [AppController],
   providers: [

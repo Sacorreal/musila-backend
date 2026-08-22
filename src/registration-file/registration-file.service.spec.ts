@@ -8,6 +8,8 @@ import { StorageService } from 'src/shared/storage/storage.service';
 import { Track } from 'src/tracks/entities/track.entity';
 import { PublishingContract } from 'src/publishing-contracts/entities/publishing-contract.entity';
 import { Split } from 'src/splits/entities/split.entity';
+import { AuthorizationService } from 'src/authorization/authorization.service';
+import { WorkSocietyAffiliationSnapshotService } from './services/work-society-affiliation-snapshot.service';
 
 import { RegistrationFileService } from './registration-file.service';
 import { RegistrationFile } from './entities/registration-file.entity';
@@ -62,6 +64,15 @@ describe('RegistrationFileService.findAllForUser', () => {
         { provide: RegistrationNumberService, useValue: {} },
         { provide: EventBusService, useValue: { emit: jest.fn() } },
         { provide: StorageService, useValue: {} },
+        {
+          provide: AuthorizationService,
+          useValue: {
+            getEffectiveCapabilityKeys: jest.fn(({ userId }: { userId: string }) =>
+              Promise.resolve(userId === adminUser.id ? ['platform.content.tracks.view'] : []),
+            ),
+          },
+        },
+        { provide: WorkSocietyAffiliationSnapshotService, useValue: {} },
       ],
     }).compile();
 

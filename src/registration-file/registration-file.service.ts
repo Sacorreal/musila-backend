@@ -14,6 +14,7 @@ import { RegistrationFile } from './entities/registration-file.entity';
 import { RegistrationFileStatus } from './entities/registration-file-status.enum';
 import { RegistrationFileParticipant } from './entities/registration-file-participant.entity';
 import { RegistrationNumberService } from './registration-number.service';
+import { WorkSocietyAffiliationSnapshotService } from './services/work-society-affiliation-snapshot.service';
 import { CreateRegistrationFileDto } from './dto/create-registration-file.dto';
 import { ListRegistrationFilesDto } from './dto/list-registration-files.dto';
 import { UpdateGeneralInfoDto } from './dto/update-general-info.dto';
@@ -70,6 +71,7 @@ export class RegistrationFileService {
     private readonly eventBus: EventBusService,
     private readonly storageService: StorageService,
     private readonly authorizationService: AuthorizationService,
+    private readonly workSocietyAffiliationSnapshotService: WorkSocietyAffiliationSnapshotService,
   ) {}
 
   /**
@@ -260,6 +262,7 @@ export class RegistrationFileService {
     );
 
     await this.participantRepository.save(registrationFile.participants);
+    await this.workSocietyAffiliationSnapshotService.syncForParticipants(registrationFile.id, registrationFile.participants);
     return this.findWithRelationsOrFail(id);
   }
 
@@ -307,6 +310,7 @@ export class RegistrationFileService {
     );
 
     await this.participantRepository.save(registrationFile.participants);
+    await this.workSocietyAffiliationSnapshotService.syncForParticipants(registrationFile.id, registrationFile.participants);
     return this.findWithRelationsOrFail(id);
   }
 
