@@ -13,7 +13,9 @@ import { PlansGuard } from './../src/users/guards/plans.guard';
 import { UserPlanType } from './../src/users/entities/user-plan-type.enum';
 
 /**
- * E2E de la capa HTTP de Wallet: flujo "crear retiro -> admin lo paga".
+ * E2E de la capa HTTP de Wallet: consulta de saldo y el admin pagando un
+ * retiro generado por el cron semanal (`WalletAutoPayoutCron`). Los retiros
+ * ya no se solicitan manualmente, por lo que no existe `POST /wallet/withdrawals`.
  * Los servicios se mockean (sin BD real) para aislar routing, guards y
  * validación de DTOs; la lógica de negocio ya está cubierta por los
  * unit tests de WalletDistributionService/WalletEarningsService/WalletWithdrawalsService.
@@ -22,7 +24,6 @@ describe('Wallet (e2e)', () => {
   let app: INestApplication;
 
   const getBalance = jest.fn();
-  const createWithdrawal = jest.fn();
   const findAllAdmin = jest.fn();
   const markPaid = jest.fn();
 
@@ -45,7 +46,6 @@ describe('Wallet (e2e)', () => {
         {
           provide: WalletWithdrawalsService,
           useValue: {
-            create: createWithdrawal,
             findForUser: jest.fn(),
             findOneForUser: jest.fn(),
             findAllAdmin,
@@ -74,7 +74,6 @@ describe('Wallet (e2e)', () => {
 
   beforeEach(() => {
     getBalance.mockReset();
-    createWithdrawal.mockReset();
     findAllAdmin.mockReset();
     markPaid.mockReset();
   });
@@ -100,27 +99,11 @@ describe('Wallet (e2e)', () => {
     expect(getBalance).toHaveBeenCalledWith('user-1');
   });
 
-  it('POST /wallet/withdrawals rechaza un monto no numérico (validación de DTO)', async () => {
-    await request(app.getHttpServer())
-      .post('/wallet/withdrawals')
-      .send({ amount: 'no-es-un-numero' })
-      .expect(400);
-
-    expect(createWithdrawal).not.toHaveBeenCalled();
-  });
-
-  it('POST /wallet/withdrawals crea la solicitud para el usuario autenticado', async () => {
-    createWithdrawal.mockResolvedValue({ id: 'wd-1', status: WalletWithdrawalStatus.PENDING, amount: 50000 });
-
+  it('POST /wallet/withdrawals ya no existe (los retiros se generan solo por el cron semanal)', async () => {
     await request(app.getHttpServer())
       .post('/wallet/withdrawals')
       .send({ amount: 50000 })
-      .expect(201)
-      .expect((res: any) => {
-        expect(res.body.status).toBe(WalletWithdrawalStatus.PENDING);
-      });
-
-    expect(createWithdrawal).toHaveBeenCalledWith('user-1', { amount: 50000 });
+      .expect(404);
   });
 
   it('PATCH /wallet/admin/withdrawals/:id/pay marca la solicitud como pagada', async () => {

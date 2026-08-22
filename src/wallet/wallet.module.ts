@@ -23,6 +23,7 @@ import { OrganizationBankAccountService } from './services/organization-bank-acc
 import { WalletEarningListener } from './listeners/wallet-earning.listener';
 import { WalletWithdrawalNotificationListener } from './listeners/wallet-withdrawal-notification.listener';
 import { WalletNotificationRetryCron } from './jobs/wallet-notification-retry.cron';
+import { WalletAutoPayoutCron } from './jobs/wallet-auto-payout.cron';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { WalletNotificationRetryCron } from './jobs/wallet-notification-retry.cr
     WalletEarningListener,
     WalletWithdrawalNotificationListener,
     WalletNotificationRetryCron,
+    WalletAutoPayoutCron,
   ],
   exports: [WalletEarningsService, WalletWithdrawalsService, PublisherCommissionFreezeService],
 })

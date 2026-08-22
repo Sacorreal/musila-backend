@@ -50,23 +50,35 @@ describe('WalletWithdrawalsService', () => {
     );
   });
 
-  describe('create', () => {
-    it('rechaza si el usuario no tiene datos bancarios completos', async () => {
+  describe('createScheduled', () => {
+    it('omite al usuario (sin lanzar) si no tiene datos bancarios completos', async () => {
       userRepo.findOne.mockResolvedValue({ ...user, bankAccount: null });
 
-      await expect(service.create('user-1', { amount: 1000 })).rejects.toThrow(BadRequestException);
+      const result = await service.createScheduled('user-1');
+
+      expect(result).toBeNull();
+      expect(withdrawalRepo.save).not.toHaveBeenCalled();
     });
 
-    it('rechaza si el monto supera el saldo disponible', async () => {
-      await expect(service.create('user-1', { amount: 200000 })).rejects.toThrow(BadRequestException);
+    it('omite al usuario (sin lanzar) si no tiene saldo disponible', async () => {
+      earningsService.getBalance.mockResolvedValue({ availableBalance: 0, currency: 'COP' });
+
+      const result = await service.createScheduled('user-1');
+
+      expect(result).toBeNull();
+      expect(withdrawalRepo.save).not.toHaveBeenCalled();
     });
 
-    it('crea la solicitud, guarda el snapshot bancario y emite el evento', async () => {
-      const result = await service.create('user-1', { amount: 50000 });
+    it('crea la solicitud por el saldo disponible completo, con origin=scheduled, y emite el evento', async () => {
+      const result = await service.createScheduled('user-1');
 
-      expect(result.status).toBe(WalletWithdrawalStatus.PENDING);
+      expect(result?.status).toBe(WalletWithdrawalStatus.PENDING);
       expect(withdrawalRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ amount: 50000, bankAccountSnapshot: completeBankAccount }),
+        expect.objectContaining({
+          amount: 100000,
+          bankAccountSnapshot: completeBankAccount,
+          origin: 'scheduled',
+        }),
       );
       expect(eventBus.emit).toHaveBeenCalledWith('wallet.withdrawal.requested', expect.objectContaining({ userId: 'user-1' }));
     });
@@ -128,6 +140,27 @@ describe('WalletWithdrawalsService', () => {
         'wallet.withdrawal.rejected',
         expect.objectContaining({ reason: 'Cuenta inválida' }),
       );
+    });
+  });
+
+  describe('payBatch', () => {
+    it('paga las solicitudes válidas y reporta por separado las que fallan, sin detener el lote', async () => {
+      withdrawalRepo.findOne.mockImplementation(({ where: { id } }: any) => {
+        if (id === 'wd-1') return Promise.resolve({ id: 'wd-1', status: WalletWithdrawalStatus.PENDING, user, amount: 50000 });
+        if (id === 'wd-2') return Promise.resolve({ id: 'wd-2', status: WalletWithdrawalStatus.PAID, user, amount: 30000 });
+        return Promise.resolve(null);
+      });
+
+      const result = await service.payBatch(['wd-1', 'wd-2', 'wd-3'], 'admin-1');
+
+      expect(result.paid).toHaveLength(1);
+      expect(result.paid[0].id).toBe('wd-1');
+      expect(result.paid[0].status).toBe(WalletWithdrawalStatus.PAID);
+      expect(result.failed).toEqual([
+        { id: 'wd-2', reason: expect.stringContaining('estado final') },
+        { id: 'wd-3', reason: 'Solicitud de retiro no encontrada' },
+      ]);
+      expect(eventBus.emit).toHaveBeenCalledWith('wallet.withdrawal.paid', expect.objectContaining({ withdrawalId: 'wd-1' }));
     });
   });
 });

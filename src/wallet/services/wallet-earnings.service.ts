@@ -284,6 +284,26 @@ export class WalletEarningsService {
     };
   }
 
+  /** IDs de usuarios con al menos una ganancia acreditada (candidatos al pago semanal). */
+  async getUserIdsWithEarnings(): Promise<string[]> {
+    const rows: { beneficiary_user_id: string }[] = await this.earningRepo
+      .createQueryBuilder('earning')
+      .select('DISTINCT earning.beneficiary_user_id', 'beneficiary_user_id')
+      .where('earning.beneficiary_user_id IS NOT NULL')
+      .getRawMany();
+    return rows.map((row) => row.beneficiary_user_id);
+  }
+
+  /** IDs de organizaciones (publishers) con al menos una comisión acreditada. */
+  async getOrganizationIdsWithEarnings(): Promise<string[]> {
+    const rows: { beneficiary_organization_id: string }[] = await this.earningRepo
+      .createQueryBuilder('earning')
+      .select('DISTINCT earning.beneficiary_organization_id', 'beneficiary_organization_id')
+      .where('earning.beneficiary_organization_id IS NOT NULL')
+      .getRawMany();
+    return rows.map((row) => row.beneficiary_organization_id);
+  }
+
   async getEarningsHistory(userId: string, pagination: EarningsPaginationDto) {
     const { limit = 10, offset = 0, role } = pagination;
     const [data, total] = await this.earningRepo.findAndCount({

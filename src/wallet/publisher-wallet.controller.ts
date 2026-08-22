@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseUUIDPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, ParseUUIDPipe, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
@@ -9,12 +9,13 @@ import { WalletWithdrawalsService } from './services/wallet-withdrawals.service'
 import { OrganizationBankAccountService } from './services/organization-bank-account.service';
 import { EarningsPaginationDto } from './dto/earnings-pagination.dto';
 import { WithdrawalPaginationDto } from './dto/withdrawal-pagination.dto';
-import { CreateWithdrawalDto } from './dto/create-withdrawal.dto';
 
 /**
  * Wallet a nivel organización (publisher): balance, ganancias por comisión y
  * retiros. El `organizationId` de la ruta lo valida el `AuthorizationGuard`
- * contra la membership ACTIVE del usuario (tenant-aware).
+ * contra la membership ACTIVE del usuario (tenant-aware). Los retiros ya no
+ * se solicitan manualmente: se pagan automáticamente cada lunes
+ * (`WalletAutoPayoutCron`), por lo que no hay endpoint para crearlos.
  */
 @ApiTags('Wallet de Publisher')
 @ApiBearerAuth('JWT-auth')
@@ -62,16 +63,6 @@ export class PublisherWalletController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     return this.withdrawalsService.findOneForOrganization(id, organizationId);
-  }
-
-  @Post('withdrawals')
-  @RequireCapability('organization.settings.manage')
-  @ApiOperation({ summary: 'Solicitar el retiro de fondos de la organización' })
-  createWithdrawal(
-    @Param('organizationId', ParseUUIDPipe) organizationId: string,
-    @Body() dto: CreateWithdrawalDto,
-  ) {
-    return this.withdrawalsService.createForOrganization(organizationId, dto);
   }
 
   @Get('bank-account')

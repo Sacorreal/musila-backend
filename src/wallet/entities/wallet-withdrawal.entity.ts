@@ -11,11 +11,14 @@ import {
 import { User, UserBankAccount } from 'src/users/entities/user.entity';
 import { Organization } from 'src/organizations/entities/organization.entity';
 import { WalletWithdrawalStatus } from './wallet-withdrawal-status.enum';
+import { WalletWithdrawalOrigin } from './wallet-withdrawal-origin.enum';
 
 /**
  * Solicitud de retiro de fondos. El titular es un `User` (autor) o una
  * `Organization` (publisher retirando comisiones); exactamente uno de los dos
  * está presente (CHECK en DB). El flujo de estados y aprobación admin es común.
+ * Desde `origin=scheduled` la solicitud ya no la crea el usuario: la genera el
+ * cron de pago semanal (todos los lunes) por el saldo disponible completo.
  */
 @Entity({ name: 'wallet_withdrawals' })
 @Index('IDX_wallet_withdrawal_user_status', ['user', 'status'])
@@ -48,6 +51,13 @@ export class WalletWithdrawal {
 
   @Column({ type: 'jsonb', name: 'bank_account_snapshot' })
   bankAccountSnapshot: UserBankAccount;
+
+  @Column({
+    type: 'enum',
+    enum: WalletWithdrawalOrigin,
+    default: WalletWithdrawalOrigin.MANUAL,
+  })
+  origin: WalletWithdrawalOrigin;
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'processed_by_admin_id' })

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
@@ -7,8 +7,12 @@ import { WalletEarningsService } from './services/wallet-earnings.service';
 import { WalletWithdrawalsService } from './services/wallet-withdrawals.service';
 import { EarningsPaginationDto } from './dto/earnings-pagination.dto';
 import { WithdrawalPaginationDto } from './dto/withdrawal-pagination.dto';
-import { CreateWithdrawalDto } from './dto/create-withdrawal.dto';
 
+/**
+ * Los retiros ya no se solicitan manualmente: el saldo disponible se paga
+ * automáticamente cada lunes (`WalletAutoPayoutCron`). Este controlador solo
+ * expone consulta de saldo/historial; no hay endpoint para crear retiros.
+ */
 @ApiTags('Wallet')
 @ApiBearerAuth('JWT-auth')
 @UseGuards(JWTAuthGuard)
@@ -41,11 +45,5 @@ export class WalletController {
   @ApiOperation({ summary: 'Detalle de una solicitud de retiro propia' })
   getWithdrawal(@CurrentUser() user: JwtPayload, @Param('id') id: string) {
     return this.withdrawalsService.findOneForUser(id, user.id);
-  }
-
-  @Post('withdrawals')
-  @ApiOperation({ summary: 'Solicitar el retiro de fondos disponibles' })
-  createWithdrawal(@CurrentUser() user: JwtPayload, @Body() dto: CreateWithdrawalDto) {
-    return this.withdrawalsService.create(user.id, dto);
   }
 }

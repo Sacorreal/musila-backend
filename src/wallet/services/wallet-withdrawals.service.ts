@@ -2,6 +2,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -11,7 +12,7 @@ import { Organization } from 'src/organizations/entities/organization.entity';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { WalletWithdrawal } from '../entities/wallet-withdrawal.entity';
 import { WalletWithdrawalStatus } from '../entities/wallet-withdrawal-status.enum';
-import { CreateWithdrawalDto } from '../dto/create-withdrawal.dto';
+import { WalletWithdrawalOrigin } from '../entities/wallet-withdrawal-origin.enum';
 import { WithdrawalPaginationDto } from '../dto/withdrawal-pagination.dto';
 import { WalletEarningsService } from './wallet-earnings.service';
 
@@ -26,6 +27,8 @@ const REQUIRED_BANK_FIELDS = [
 
 @Injectable()
 export class WalletWithdrawalsService {
+  private readonly logger = new Logger(WalletWithdrawalsService.name);
+
   constructor(
     @InjectRepository(WalletWithdrawal)
     private readonly withdrawalRepo: Repository<WalletWithdrawal>,
@@ -37,23 +40,35 @@ export class WalletWithdrawalsService {
     private readonly eventBus: EventBusService,
   ) {}
 
-  async create(userId: string, dto: CreateWithdrawalDto): Promise<WalletWithdrawal> {
+  /**
+   * Genera automáticamente el retiro semanal de un usuario por su saldo
+   * disponible completo. Ya no existe una solicitud manual: la ejecuta el
+   * cron de pago de los lunes (`WalletAutoPayoutCron`). Devuelve `null` (y
+   * registra el motivo) cuando no hay nada que pagar o faltan datos
+   * bancarios, para que el lote continúe con el resto de usuarios.
+   */
+  async createScheduled(userId: string): Promise<WalletWithdrawal | null> {
     const user = await this.userRepo.findOne({ where: { id: userId } });
-    if (!user) throw new NotFoundException('Usuario no encontrado');
+    if (!user) {
+      this.logger.warn(`[wallet-auto-payout] usuario=${userId} no encontrado, se omite`);
+      return null;
+    }
 
-    this.assertBankAccountComplete(user.bankAccount, 'Debes completar tus datos bancarios antes de solicitar un retiro');
+    if (!this.isBankAccountComplete(user.bankAccount)) {
+      this.logger.warn(`[wallet-auto-payout] usuario=${userId} sin datos bancarios completos, se omite`);
+      return null;
+    }
 
     const { availableBalance, currency } = await this.earningsService.getBalance(userId);
-    if (dto.amount > availableBalance) {
-      throw new BadRequestException('El monto solicitado supera tu saldo disponible');
-    }
+    if (availableBalance <= 0) return null;
 
     const withdrawal = await this.withdrawalRepo.save({
       user,
-      amount: dto.amount,
+      amount: availableBalance,
       currency,
       status: WalletWithdrawalStatus.PENDING,
       bankAccountSnapshot: user.bankAccount,
+      origin: WalletWithdrawalOrigin.SCHEDULED,
     });
 
     this.eventBus.emit('wallet.withdrawal.requested', {
@@ -69,27 +84,29 @@ export class WalletWithdrawalsService {
     return withdrawal;
   }
 
-  /** Solicita un retiro desde la wallet de una organización (publisher). */
-  async createForOrganization(organizationId: string, dto: CreateWithdrawalDto): Promise<WalletWithdrawal> {
+  /** Análogo a {@link createScheduled} para la wallet de una organización (publisher). */
+  async createScheduledForOrganization(organizationId: string): Promise<WalletWithdrawal | null> {
     const organization = await this.organizationRepo.findOne({ where: { id: organizationId } });
-    if (!organization) throw new NotFoundException('Organización no encontrada');
+    if (!organization) {
+      this.logger.warn(`[wallet-auto-payout] organización=${organizationId} no encontrada, se omite`);
+      return null;
+    }
 
-    this.assertBankAccountComplete(
-      organization.bankAccount,
-      'La organización debe completar sus datos bancarios antes de solicitar un retiro',
-    );
+    if (!this.isBankAccountComplete(organization.bankAccount)) {
+      this.logger.warn(`[wallet-auto-payout] organización=${organizationId} sin datos bancarios completos, se omite`);
+      return null;
+    }
 
     const { availableBalance, currency } = await this.earningsService.getOrganizationBalance(organizationId);
-    if (dto.amount > availableBalance) {
-      throw new BadRequestException('El monto solicitado supera el saldo disponible de la organización');
-    }
+    if (availableBalance <= 0) return null;
 
     const withdrawal = await this.withdrawalRepo.save({
       beneficiaryOrganization: organization,
-      amount: dto.amount,
+      amount: availableBalance,
       currency,
       status: WalletWithdrawalStatus.PENDING,
       bankAccountSnapshot: organization.bankAccount,
+      origin: WalletWithdrawalOrigin.SCHEDULED,
     });
 
     this.eventBus.emit('wallet.withdrawal.requested', {
@@ -105,12 +122,8 @@ export class WalletWithdrawalsService {
     return withdrawal;
   }
 
-  private assertBankAccountComplete(
-    bankAccount: User['bankAccount'] | undefined,
-    message: string,
-  ): void {
-    const isComplete = !!bankAccount && REQUIRED_BANK_FIELDS.every((field) => !!bankAccount?.[field]);
-    if (!isComplete) throw new BadRequestException(message);
+  private isBankAccountComplete(bankAccount: User['bankAccount'] | undefined): boolean {
+    return !!bankAccount && REQUIRED_BANK_FIELDS.every((field) => !!bankAccount?.[field]);
   }
 
   async findForUser(userId: string, pagination: WithdrawalPaginationDto) {
@@ -198,6 +211,30 @@ export class WalletWithdrawalsService {
     });
 
     return saved;
+  }
+
+  /**
+   * Marca varias solicitudes como pagadas en lote (checkboxes del panel
+   * admin). Cada una se procesa de forma aislada reutilizando {@link markPaid}
+   * (misma validación de transición + evento de notificación); una que falle
+   * (ya pagada/rechazada, no encontrada) no detiene al resto.
+   */
+  async payBatch(
+    ids: string[],
+    adminId: string,
+  ): Promise<{ paid: WalletWithdrawal[]; failed: { id: string; reason: string }[] }> {
+    const paid: WalletWithdrawal[] = [];
+    const failed: { id: string; reason: string }[] = [];
+
+    for (const id of ids) {
+      try {
+        paid.push(await this.markPaid(id, adminId));
+      } catch (error: any) {
+        failed.push({ id, reason: error?.message ?? 'Error desconocido' });
+      }
+    }
+
+    return { paid, failed };
   }
 
   async reject(id: string, adminId: string, reason: string): Promise<WalletWithdrawal> {
