@@ -18,6 +18,7 @@ describe('SplitService', () => {
   let legalProofService: { generateProof: jest.Mock };
   let authorizationService: { check: jest.Mock };
   let publisherShareService: { resolveForUser: jest.Mock };
+  let legalIdentityService: { buildEncryptedSnapshot: jest.Mock; decryptSnapshot: jest.Mock };
 
   const admin: JwtPayload = { id: 'author-1', email: 'author1@musila.com', name: 'Autor Uno', planType: UserPlanType.PLAN_AUTOR };
   const coauthorUser = { id: 'author-2', email: 'author2@musila.com', name: 'Autor', lastName: 'Dos' };
@@ -49,6 +50,10 @@ describe('SplitService', () => {
     legalProofService = { generateProof: jest.fn().mockResolvedValue({ legalProofId: 'proof-1' }) };
     authorizationService = { check: jest.fn().mockResolvedValue({ allowed: false }) };
     publisherShareService = { resolveForUser: jest.fn().mockResolvedValue([]) };
+    legalIdentityService = {
+      buildEncryptedSnapshot: jest.fn().mockResolvedValue('encrypted-snapshot'),
+      decryptSnapshot: jest.fn().mockReturnValue({ primerNombre: 'Sofía' }),
+    };
 
     service = new SplitService(
       splitRepo,
@@ -61,6 +66,7 @@ describe('SplitService', () => {
       legalProofService as any,
       authorizationService as any,
       publisherShareService as any,
+      legalIdentityService as any,
     );
   });
 

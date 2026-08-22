@@ -18,6 +18,7 @@ import { PdfGeneratorService } from 'src/shared/pdf/services/pdf-generator.servi
 import { PdfBodyContentType } from 'src/shared/pdf/enums/pdf-body-content-type.enum';
 import { LegalProofService } from 'src/shared/legal-proof/legal-proof.service';
 import { LegalEntityType } from 'src/shared/legal-proof/entities/legal-entity-type.enum';
+import { LegalIdentityService } from 'src/legal-identity/legal-identity.service';
 import { StorageService } from 'src/shared/storage/storage.service';
 import { LicenseCollectionsService } from 'src/license-collections/license-collections.service';
 import { PublisherCommissionFreezeService } from 'src/wallet/services/publisher-commission-freeze.service';
@@ -102,6 +103,7 @@ export class LicenseContractsService {
     private readonly storageService: StorageService,
     private readonly licenseCollectionsService: LicenseCollectionsService,
     private readonly publisherCommissionFreezeService: PublisherCommissionFreezeService,
+    private readonly legalIdentityService: LegalIdentityService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -360,6 +362,7 @@ export class LicenseContractsService {
     signatory.signedAt = new Date();
     signatory.ipAddress = ipAddress;
     signatory.userAgent = userAgent;
+    signatory.legalIdentitySnapshot = await this.legalIdentityService.buildEncryptedSnapshot(userId);
     await this.signatoryRepo.save(signatory);
 
     const allSigned = contract.signatories.every(
@@ -577,6 +580,54 @@ export class LicenseContractsService {
       });
     } catch (error) {
       this.logger.error(`No se pudo generar evidencia legal para el ISRC del contrato ${contract.id}`, error as Error);
+    }
+  }
+
+  /**
+   * Descifra el snapshot de identidad legal capturado en el momento de la
+   * firma de cada firmante (§7), para vincularlo al mensaje de datos que se
+   * hashea como evidencia legal de la licencia firmada. Si un firmante no
+   * tiene snapshot (no debería ocurrir: `LegalIdentityGuard` lo exige antes
+   * de firmar), se omite en vez de bloquear la evidencia del resto.
+   */
+  private decryptSignatoriesLegalIdentity(contract: LicenseContract): Record<string, unknown>[] {
+    return contract.signatories
+      .filter((signatory) => !!signatory.legalIdentitySnapshot)
+      .map((signatory) => ({
+        userId: signatory.user.id,
+        role: signatory.role,
+        signedAt: signatory.signedAt,
+        legalIdentity: this.legalIdentityService.decryptSnapshot(signatory.legalIdentitySnapshot!),
+      }));
+  }
+
+  /** Evidencia legal de las firmas: hash + timestamp de un snapshot con la identidad legal de cada firmante. */
+  private async registerSignaturesLegalProof(contract: LicenseContract): Promise<void> {
+    const snapshot = {
+      event: 'license.contract.signed',
+      contractId: contract.id,
+      trackId: contract.requestedTrack.track.id,
+      fullySignedAt: contract.fullySignedAt,
+      signatories: this.decryptSignatoriesLegalIdentity(contract),
+    };
+    const buffer = Buffer.from(JSON.stringify(snapshot));
+    const fileName = `license-contract-signatures-${contract.id}.json`;
+
+    try {
+      await this.legalProofService.generateProof({
+        file: { buffer, fileName, mimeType: 'application/json' },
+        metadataPayload: { size: buffer.length, mimeType: 'application/json', fileName },
+        context: {
+          entityType: LegalEntityType.CONTRACT,
+          entityId: contract.id,
+          requestedByUserId: contract.requestedTrack.requester.id,
+        },
+      });
+    } catch (error) {
+      this.logger.error(
+        `No se pudo generar evidencia legal de las firmas del contrato ${contract.id}`,
+        error as Error,
+      );
     }
   }
 
@@ -819,6 +870,8 @@ export class LicenseContractsService {
     contract.contractHash = proof.sha256Hash;
     contract.status = LicenseContractStatus.SIGNED;
     contract.fullySignedAt = new Date();
+
+    await this.registerSignaturesLegalProof(contract);
 
     if (Number(contract.advanceAmount) > 0) {
       contract.paymentStatus = LicenseContractPaymentStatus.PENDIENTE;

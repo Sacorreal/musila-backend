@@ -58,6 +58,10 @@ export class SplitAuthor {
   @Column('timestamptz', { name: 'signed_at', nullable: true })
   signedAt?: Date;
 
+  /** Snapshot cifrado de la identidad legal del firmante en el momento de firmar (Ley 527, §7). */
+  @Column('text', { name: 'legal_identity_snapshot', nullable: true })
+  legalIdentitySnapshot?: string;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

@@ -88,6 +88,15 @@ export class User {
   @Column('boolean', { default: false, name: 'is_verified' })
   isVerified: boolean;
 
+  /**
+   * Identidad legal verificada (Ley 527): gate para firmar splits y reproducir
+   * canciones de terceros. Los datos detallados viven en `LegalIdentity`
+   * (relación 1:1, ver `legal-identity` module); esta bandera vive aquí para
+   * que los guards la consulten con un solo lookup por PK (<200ms).
+   */
+  @Column('boolean', { default: false, name: 'identidad_legal_verificada' })
+  identidadLegalVerificada: boolean;
+
   @Column('text', { nullable: true })
   biography?: string;
 

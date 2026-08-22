@@ -14,6 +14,12 @@ export interface JwtPayload {
    * sin volver a iniciar sesión.
    */
   isVerified?: boolean;
+  /**
+   * Solo informativo para la UI (ej. decidir si mostrar el modal de identidad
+   * legal antes de reproducir un track ajeno). Nunca se usa para autorizar:
+   * `LegalIdentityGuard`/`TrackLegalIdentityGuard` siempre re-consultan la DB.
+   */
+  identidadLegalVerificada?: boolean;
   iat?: number;
   exp?: number;
 }

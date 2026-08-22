@@ -15,11 +15,13 @@ import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.en
 import { Payment } from 'src/payments/entities/payment.entity';
 import { CreatorIdModule } from 'src/creator-id/creator-id.module';
 import { Follow } from 'src/follows/entities/follow.entity';
+import { LegalIdentityModule } from 'src/legal-identity/legal-identity.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, AuditLog, MusicalGenre, Track, RequestedTrack, Payment, Follow]),
     CreatorIdModule,
+    LegalIdentityModule,
   ],
   controllers: [UsersController, MeController],
   providers: [UsersService, AdminService, MeService, PlanService, AuditLogService],

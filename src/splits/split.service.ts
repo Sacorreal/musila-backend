@@ -20,6 +20,7 @@ import { OtpVerificationService } from 'src/shared/otp-verification/otp-verifica
 import { OtpPurpose } from 'src/shared/otp-verification/otp-purpose.enum';
 import { LegalProofService } from 'src/shared/legal-proof/legal-proof.service';
 import { LegalEntityType } from 'src/shared/legal-proof/entities/legal-entity-type.enum';
+import { LegalIdentityService } from 'src/legal-identity/legal-identity.service';
 
 import { Split } from './entities/split.entity';
 import { SplitAuthor } from './entities/split-author.entity';
@@ -52,6 +53,7 @@ export class SplitService {
     private readonly legalProofService: LegalProofService,
     private readonly authorizationService: AuthorizationService,
     private readonly publisherShareService: PublisherShareService,
+    private readonly legalIdentityService: LegalIdentityService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -172,6 +174,7 @@ export class SplitService {
 
     splitAuthor.status = SplitAuthorStatus.APPROVED;
     splitAuthor.signedAt = new Date();
+    splitAuthor.legalIdentitySnapshot = await this.legalIdentityService.buildEncryptedSnapshot(user.id);
     await this.splitAuthorRepository.save(splitAuthor);
 
     const allApproved = split.authors.every(
@@ -406,6 +409,23 @@ export class SplitService {
     });
   }
 
+  /**
+   * Descifra el snapshot de identidad legal capturado en el momento de la
+   * firma de cada coautor (§7), para vincularlo al mensaje de datos que se
+   * hashea como evidencia legal. Si un coautor no tiene snapshot (no debería
+   * ocurrir: `LegalIdentityGuard` lo exige antes de firmar), se omite en vez
+   * de bloquear la generación de la evidencia del resto.
+   */
+  private decryptAuthorsLegalIdentity(split: Split): Record<string, unknown>[] {
+    return split.authors
+      .filter((author) => !!author.legalIdentitySnapshot)
+      .map((author) => ({
+        userId: author.user.id,
+        signedAt: author.signedAt,
+        legalIdentity: this.legalIdentityService.decryptSnapshot(author.legalIdentitySnapshot!),
+      }));
+  }
+
   /** Evidencia legal del split completado: hash + timestamp de un snapshot de autores/porcentajes/firmas + Publisher's Share. */
   private async generateSplitLegalProof(split: Split, publisherShares: ResolvedPublisherShare[]): Promise<void> {
     const snapshot = {
@@ -414,6 +434,7 @@ export class SplitService {
       trackId: split.track.id,
       completedAt: new Date().toISOString(),
       authors: this.buildAuthorsSnapshot(split),
+      authorsLegalIdentity: this.decryptAuthorsLegalIdentity(split),
       publisherShares: this.buildPublisherSharesSnapshot(publisherShares),
     };
     const buffer = Buffer.from(JSON.stringify(snapshot));

@@ -40,6 +40,7 @@ import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard
 import { AuthorizationService } from 'src/authorization/authorization.service';
 import { ConsumeEntitlement } from 'src/entitlements/decorators/consume-entitlement.decorator';
 import { EntitlementConsumeInterceptor } from 'src/entitlements/interceptors/entitlement-consume.interceptor';
+import { TrackLegalIdentityGuard } from './guards/track-legal-identity.guard';
 
 @ApiTags('Tracks')
 @UseGuards(JWTAuthGuard, AuthorizationGuard)
@@ -154,10 +155,11 @@ export class TracksController {
 
   @Post(':id/play')
   @HttpCode(204)
+  @UseGuards(TrackLegalIdentityGuard)
   @ApiOperation({
     summary: 'Registrar una reproducción del track',
     description:
-      'Registra un evento de reproducción efectiva del track. Alimenta las métricas de reproducciones y usuarios únicos del dashboard del autor.',
+      'Registra un evento de reproducción efectiva del track. Alimenta las métricas de reproducciones y usuarios únicos del dashboard del autor. Bloqueado (403) si el track es de otro autor y el usuario no tiene la identidad legal verificada.',
   })
   @ApiParam({
     name: 'id',

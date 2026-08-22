@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@ne
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
+import { LegalIdentityGuard } from 'src/legal-identity/guards/legal-identity.guard';
 
 import { SplitService } from './split.service';
 import { CreateSplitDto } from './dto/create-split.dto';
@@ -58,10 +59,11 @@ export class SplitController {
 
   // ─── POST /splits/:id/approve ────────────────────────────────────────────────
   @Post('splits/:id/approve')
-  @ApiOperation({ summary: 'Aprobar la participación como coautor (requiere OTP verificado)' })
+  @UseGuards(LegalIdentityGuard)
+  @ApiOperation({ summary: 'Aprobar la participación como coautor (requiere OTP verificado e identidad legal verificada)' })
   @ApiParam({ name: 'id', description: 'UUID del split' })
   @ApiResponse({ status: 200, description: 'Participación aprobada' })
-  @ApiResponse({ status: 403, description: 'Se requiere verificación por código OTP antes de esta acción' })
+  @ApiResponse({ status: 403, description: 'Se requiere verificación por código OTP o identidad legal antes de esta acción' })
   async approveSplitAuthor(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
     return this.splitService.approveSplitAuthor(id, user);
   }

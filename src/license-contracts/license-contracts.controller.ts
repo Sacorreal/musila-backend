@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@ne
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
+import { LegalIdentityGuard } from 'src/legal-identity/guards/legal-identity.guard';
 
 import { LicenseContractsService } from './license-contracts.service';
 import { UpsertLicenseContractTermsDto } from './dto/upsert-license-contract-terms.dto';
@@ -62,10 +63,13 @@ export class LicenseContractsController {
 
   // ─── POST /license-contracts/:id/signatories/:signatoryId/sign ──────────────
   @Post('license-contracts/:id/signatories/:signatoryId/sign')
-  @ApiOperation({ summary: 'Firmar electrónicamente como una de las partes (requiere OTP verificado)' })
+  @UseGuards(LegalIdentityGuard)
+  @ApiOperation({
+    summary: 'Firmar electrónicamente como una de las partes (requiere OTP verificado e identidad legal verificada)',
+  })
   @ApiParam({ name: 'id', description: 'UUID del contrato' })
   @ApiParam({ name: 'signatoryId', description: 'UUID del firmante' })
-  @ApiResponse({ status: 403, description: 'Se requiere verificación por código OTP antes de esta acción' })
+  @ApiResponse({ status: 403, description: 'Se requiere verificación por código OTP o identidad legal antes de esta acción' })
   async sign(
     @Param('id') id: string,
     @Param('signatoryId') signatoryId: string,

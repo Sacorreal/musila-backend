@@ -13,7 +13,9 @@ import { TrackPlaysService } from './track-plays.service';
 import { UsersModule } from 'src/users/users.module';
 import { CertificatesModule } from 'src/certificates/certificates.module';
 import { SplitModule } from 'src/splits/split.module';
+import { LegalIdentityModule } from 'src/legal-identity/legal-identity.module';
 import { TrackLegalProofListener } from './listeners/track-legal-proof.listener';
+import { TrackLegalIdentityGuard } from './guards/track-legal-identity.guard';
 
 @Module({
   imports: [
@@ -22,9 +24,10 @@ import { TrackLegalProofListener } from './listeners/track-legal-proof.listener'
     ConfigModule,
     CertificatesModule,
     SplitModule,
+    LegalIdentityModule,
   ],
   controllers: [TracksController],
-  providers: [TracksService, TrackPlaysService, TrackLegalProofListener],
+  providers: [TracksService, TrackPlaysService, TrackLegalProofListener, TrackLegalIdentityGuard],
   exports: [TrackPlaysService],
 })
 export class TracksModule { }

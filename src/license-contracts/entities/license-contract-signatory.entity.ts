@@ -63,6 +63,10 @@ export class LicenseContractSignatory {
   @Column({ type: 'uuid', name: 'split_author_id', nullable: true })
   splitAuthorId: string | null;
 
+  /** Snapshot cifrado de la identidad legal del firmante en el momento de firmar (Ley 527, §7). */
+  @Column({ type: 'text', name: 'legal_identity_snapshot', nullable: true })
+  legalIdentitySnapshot: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

@@ -301,6 +301,8 @@ export class AuthService {
       name: account.name,
       plan: 'plan' in account ? (account).plan : undefined,
       isVerified: account.isVerified,
+      identidadLegalVerificada:
+        'identidadLegalVerificada' in account ? account.identidadLegalVerificada : undefined,
     };
     return this.jwtService.signAsync(payload);
   }

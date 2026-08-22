@@ -26,6 +26,7 @@ describe('LicenseContractsService', () => {
   let storageService: { uploadBuffer: jest.Mock };
   let licenseCollectionsService: { createInstallments: jest.Mock };
   let publisherCommissionFreezeService: { freeze: jest.Mock };
+  let legalIdentityService: { buildEncryptedSnapshot: jest.Mock; decryptSnapshot: jest.Mock };
 
   const owner = { id: 'owner-1', name: 'Owner', lastName: 'Uno', email: 'owner@musila.com', citizenID: null, ipiNumber: null, proSociety: null, publisher: null };
   const requester = { id: 'req-1', name: 'Req', lastName: 'Uno', email: 'req@musila.com', citizenID: null };
@@ -92,6 +93,10 @@ describe('LicenseContractsService', () => {
     storageService = { uploadBuffer: jest.fn().mockResolvedValue({ key: 'key-1', publicUrl: 'https://cdn/key-1' }) };
     licenseCollectionsService = { createInstallments: jest.fn().mockResolvedValue([]) };
     publisherCommissionFreezeService = { freeze: jest.fn().mockResolvedValue(undefined) };
+    legalIdentityService = {
+      buildEncryptedSnapshot: jest.fn().mockResolvedValue('encrypted-snapshot'),
+      decryptSnapshot: jest.fn().mockReturnValue({ primerNombre: 'Sofía' }),
+    };
 
     service = new LicenseContractsService(
       contractRepo,
@@ -107,6 +112,7 @@ describe('LicenseContractsService', () => {
       storageService as any,
       licenseCollectionsService as any,
       publisherCommissionFreezeService as any,
+      legalIdentityService as any,
     );
   });
 
@@ -279,6 +285,17 @@ describe('LicenseContractsService', () => {
         requester.id,
         'license-contract-signing',
         'sig-2',
+      );
+    });
+
+    it('captura el snapshot cifrado de identidad legal del firmante', async () => {
+      contractRepo.findOne.mockResolvedValue(awaitingContract());
+
+      await service.signAsParty('contract-1', 'sig-2', requester.id, '127.0.0.1', 'jest');
+
+      expect(legalIdentityService.buildEncryptedSnapshot).toHaveBeenCalledWith(requester.id);
+      expect(signatoryRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ legalIdentitySnapshot: 'encrypted-snapshot' }),
       );
     });
 

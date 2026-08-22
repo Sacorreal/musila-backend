@@ -5,6 +5,7 @@ import { User } from 'src/users/entities/user.entity';
 import { IntellectualProperty } from 'src/intellectual-property/entities/intellectual-property.entity';
 
 import { PublisherShareModule } from 'src/publisher-share/publisher-share.module';
+import { LegalIdentityModule } from 'src/legal-identity/legal-identity.module';
 
 import { Split } from './entities/split.entity';
 import { SplitAuthor } from './entities/split-author.entity';
@@ -16,6 +17,7 @@ import { SplitListener } from './listeners/split.listener';
   imports: [
     TypeOrmModule.forFeature([Split, SplitAuthor, Track, User, IntellectualProperty]),
     PublisherShareModule,
+    LegalIdentityModule,
   ],
   controllers: [SplitController],
   providers: [SplitService, SplitListener],
