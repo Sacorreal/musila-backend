@@ -21,5 +21,9 @@ export interface PublisherSharePolicyView {
 export interface ResolvedPublisherShare {
   organizationId: string;
   organizationName: string;
+  organizationIpiNumber: string | null;
   percentage: number;
+  contractUrl: string | null;
+  /** Fecha de confirmación vía el flujo de incorporación al roster (Flow 2); `null` si solo se bulk-editó. */
+  confirmedAt: Date | null;
 }

@@ -1,10 +1,11 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { EntityManager, In, Repository } from 'typeorm';
 import { Organization } from 'src/organizations/entities/organization.entity';
 import { OrganizationType } from 'src/organizations/entities/organization-type.enum';
 import { RosterMembership } from 'src/organizations/entities/roster-membership.entity';
 import { MembershipStatus } from 'src/organizations/entities/membership-status.enum';
+import { EventBusService } from 'src/shared/events/event-bus.service';
 import { PublisherShare } from './entities/publisher-share.entity';
 import {
   PublisherSharePolicyView,
@@ -16,6 +17,22 @@ export interface PublisherShareInput {
   userId: string;
   enabled: boolean;
   percentage: number;
+}
+
+/** Input de confirmación de la relación editora-autor (Flow 2), vía la aprobación de una `AccessRequest`. */
+export interface ConfirmForRosterMemberInput {
+  percentage: number;
+  contractKey?: string;
+  contractUrl?: string;
+  confirmedByUserId: string;
+}
+
+interface PublisherShareSnapshot {
+  enabled: boolean;
+  percentage: number;
+  contractKey: string | null;
+  contractUrl: string | null;
+  confirmedAt: Date | null;
 }
 
 /**
@@ -33,6 +50,7 @@ export class PublisherShareService {
     private readonly rosterRepo: Repository<RosterMembership>,
     @InjectRepository(Organization)
     private readonly orgRepo: Repository<Organization>,
+    private readonly eventBus: EventBusService,
   ) {}
 
   /** Roster ACTIVE con su Publisher's Share configurado. */
@@ -134,10 +152,120 @@ export class PublisherShareService {
       resolved.push({
         organizationId: membership.organizationId,
         organizationName: membership.organization.name,
+        organizationIpiNumber: membership.organization.ipiNumber ?? null,
         percentage,
+        contractUrl: config.contractUrl ?? null,
+        confirmedAt: config.confirmedAt ?? null,
       });
     }
     return resolved;
+  }
+
+  /**
+   * Variante batched de `resolveForUser` para catálogos grandes (Editorial
+   * Command Center): resuelve el Publisher's Share de muchos autores en 2
+   * queries en vez de una por autor, evitando N+1 sobre hasta 10.000 obras.
+   */
+  async resolveForUsers(creatorUserIds: string[]): Promise<Map<string, ResolvedPublisherShare[]>> {
+    const uniqueUserIds = [...new Set(creatorUserIds)];
+    if (!uniqueUserIds.length) return new Map();
+
+    const memberships = await this.rosterRepo.find({
+      where: {
+        userId: In(uniqueUserIds),
+        status: MembershipStatus.ACTIVE,
+        organization: { type: OrganizationType.PUBLISHER },
+      },
+      relations: { organization: true },
+    });
+    if (!memberships.length) return new Map();
+
+    const organizationIds = [...new Set(memberships.map((m) => m.organizationId))];
+    const shares = await this.sharesRepo.find({
+      where: { organizationId: In(organizationIds), userId: In(uniqueUserIds), enabled: true },
+    });
+    const byOrgAndUser = new Map(shares.map((s) => [`${s.organizationId}:${s.userId}`, s]));
+
+    const resolved = new Map<string, ResolvedPublisherShare[]>();
+    for (const membership of memberships) {
+      const config = byOrgAndUser.get(`${membership.organizationId}:${membership.userId}`);
+      if (!config) continue;
+      const percentage = Number(config.percentage);
+      if (percentage <= 0) continue;
+
+      const entry: ResolvedPublisherShare = {
+        organizationId: membership.organizationId,
+        organizationName: membership.organization.name,
+        organizationIpiNumber: membership.organization.ipiNumber ?? null,
+        percentage,
+        contractUrl: config.contractUrl ?? null,
+        confirmedAt: config.confirmedAt ?? null,
+      };
+      const existing = resolved.get(membership.userId) ?? [];
+      existing.push(entry);
+      resolved.set(membership.userId, existing);
+    }
+    return resolved;
+  }
+
+  /**
+   * Confirma el Publisher's Share de un miembro del roster al incorporarlo
+   * (Flow 2, disparado desde `AccessRequestService.approve`): crea o
+   * actualiza la fila con `enabled=true`, guarda el contrato adjunto opcional
+   * y sella `confirmedAt`/`confirmedByUserId`. Acepta un `EntityManager`
+   * transaccional opcional para poder correr dentro de la misma transacción
+   * que crea la membership (mismo patrón que
+   * `RoleService.validateAndReplaceMembershipRoles`).
+   */
+  async confirmForRosterMember(
+    organizationId: string,
+    userId: string,
+    input: ConfirmForRosterMemberInput,
+    manager?: EntityManager,
+  ): Promise<PublisherShare> {
+    const repo = manager ? manager.getRepository(PublisherShare) : this.sharesRepo;
+
+    let row = await repo.findOne({ where: { organizationId, userId } });
+    const before: PublisherShareSnapshot | null = row
+      ? {
+          enabled: row.enabled,
+          percentage: Number(row.percentage),
+          contractKey: row.contractKey,
+          contractUrl: row.contractUrl,
+          confirmedAt: row.confirmedAt,
+        }
+      : null;
+
+    if (!row) {
+      row = repo.create({ organizationId, userId });
+    }
+    row.enabled = true;
+    row.percentage = input.percentage;
+    if (input.contractKey) row.contractKey = input.contractKey;
+    if (input.contractUrl) row.contractUrl = input.contractUrl;
+    row.confirmedAt = new Date();
+    row.confirmedByUserId = input.confirmedByUserId;
+
+    const saved = await repo.save(row);
+
+    const after: PublisherShareSnapshot = {
+      enabled: saved.enabled,
+      percentage: Number(saved.percentage),
+      contractKey: saved.contractKey,
+      contractUrl: saved.contractUrl,
+      confirmedAt: saved.confirmedAt,
+    };
+
+    this.eventBus.emit('publisher-share.confirmed', {
+      publisherShareId: saved.id,
+      organizationId,
+      userId,
+      actorId: input.confirmedByUserId,
+      before: before as Record<string, unknown> | null,
+      after: after as unknown as Record<string, unknown>,
+    });
+
+    return saved;
   }
 
   private async activeRosterUserIds(organizationId: string): Promise<Set<string>> {

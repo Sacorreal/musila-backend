@@ -6,9 +6,11 @@ import { RoleService } from 'src/authorization/role.service';
 import { PlanCapability } from 'src/entitlements/entities/plan-capability.entity';
 import { Subscription } from 'src/entitlements/entities/subscription.entity';
 import { EventBusService } from 'src/shared/events/event-bus.service';
+import { PublisherShareService } from 'src/publisher-share/publisher-share.service';
 import { AccessRequestService } from './access-request.service';
 import { AccessRequest } from './entities/access-request.entity';
 import { AccessRequestStatus } from './entities/access-request-status.enum';
+import { OrganizationType } from './entities/organization-type.enum';
 import { OrganizationsService } from './organizations.service';
 
 describe('AccessRequestService', () => {
@@ -19,6 +21,7 @@ describe('AccessRequestService', () => {
   let organizationsService: { findById: jest.Mock };
   let roleService: { getRoleForOrganization: jest.Mock; validateAndReplaceMembershipRoles: jest.Mock };
   let eventBus: { emit: jest.Mock };
+  let publisherShareService: { confirmForRosterMember: jest.Mock };
   let transaction: jest.Mock;
 
   const pendingRequest = (): AccessRequest =>
@@ -52,6 +55,7 @@ describe('AccessRequestService', () => {
       validateAndReplaceMembershipRoles: jest.fn().mockResolvedValue(undefined),
     };
     eventBus = { emit: jest.fn() };
+    publisherShareService = { confirmForRosterMember: jest.fn().mockResolvedValue(undefined) };
     transaction = jest.fn().mockImplementation((cb) =>
       cb({
         getRepository: () => ({
@@ -72,6 +76,7 @@ describe('AccessRequestService', () => {
         { provide: OrganizationsService, useValue: organizationsService },
         { provide: RoleService, useValue: roleService },
         { provide: EventBusService, useValue: eventBus },
+        { provide: PublisherShareService, useValue: publisherShareService },
         { provide: DataSource, useValue: { transaction } },
       ],
     }).compile();
@@ -100,6 +105,44 @@ describe('AccessRequestService', () => {
         capabilities: [{ name: 'Ver roster', description: 'Consulta el roster' }],
       }),
     );
+  });
+
+  it('PUBLISHER + ROSTER: exige editorialRelationship y confirma el Publisher\'s Share dentro de la transacción', async () => {
+    organizationsService.findById.mockResolvedValue({ id: 'org-1', name: 'ACME', type: OrganizationType.PUBLISHER });
+
+    await service.approve(
+      'org-1',
+      'req-1',
+      { membershipType: 'ROSTER' as never, roleId: 'role-1', editorialRelationship: { percentage: 20 } },
+      'admin-1',
+    );
+
+    expect(publisherShareService.confirmForRosterMember).toHaveBeenCalledWith(
+      'org-1',
+      'user-1',
+      { percentage: 20, confirmedByUserId: 'admin-1' },
+      expect.anything(),
+    );
+  });
+
+  it('PUBLISHER + ROSTER sin editorialRelationship: rechaza con 400 antes de tocar la transacción', async () => {
+    organizationsService.findById.mockResolvedValue({ id: 'org-1', name: 'ACME', type: OrganizationType.PUBLISHER });
+
+    await expect(
+      service.approve('org-1', 'req-1', { membershipType: 'ROSTER' as never, roleId: 'role-1' }, 'admin-1'),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('organización no-PUBLISHER: no exige ni confirma editorialRelationship', async () => {
+    await service.approve(
+      'org-1',
+      'req-1',
+      { membershipType: 'ROSTER' as never, roleId: 'role-1' },
+      'admin-1',
+    );
+
+    expect(publisherShareService.confirmForRosterMember).not.toHaveBeenCalled();
   });
 
   it('rechaza aprobar una solicitud ya resuelta', async () => {

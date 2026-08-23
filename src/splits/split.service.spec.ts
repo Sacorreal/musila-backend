@@ -128,6 +128,69 @@ describe('SplitService', () => {
     });
   });
 
+  describe('autoCompleteSingleAuthorSplit', () => {
+    const soleAuthor = { id: 'author-1', name: 'Autor Uno' };
+    const singleAuthorTrack = { id: 'track-1', title: 'Mi Canción', authors: [soleAuthor], isAvailable: false };
+
+    it('no hace nada si el track tiene más de un autor', async () => {
+      trackRepo.findOne.mockResolvedValue({ ...singleAuthorTrack, authors: [soleAuthor, coauthorUser] });
+
+      await service.autoCompleteSingleAuthorSplit('track-1', soleAuthor.id);
+
+      expect(splitRepo.findOne).not.toHaveBeenCalled();
+      expect(splitRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('no hace nada si el track ya tiene un split', async () => {
+      trackRepo.findOne.mockResolvedValue(singleAuthorTrack);
+      splitRepo.findOne.mockResolvedValue({ id: 'existing-split' });
+
+      await service.autoCompleteSingleAuthorSplit('track-1', soleAuthor.id);
+
+      expect(splitRepo.save).not.toHaveBeenCalled();
+    });
+
+    it('crea y completa el split al 100% sin OTP, y audita el éxito', async () => {
+      trackRepo.findOne.mockResolvedValue(singleAuthorTrack);
+      splitRepo.findOne
+        .mockResolvedValueOnce(null) // no existing split
+        .mockResolvedValueOnce({
+          // findSplitWithRelationsOrFail tras el save
+          id: 'split-1',
+          track: singleAuthorTrack,
+          createdBy: soleAuthor,
+          status: SplitStatus.PENDING_APPROVAL,
+          authors: [
+            { id: 'sa-1', user: soleAuthor, percentage: 100, role: CoauthorRole.COMPOSITOR_AUTOR, status: SplitAuthorStatus.APPROVED },
+          ],
+        });
+
+      await service.autoCompleteSingleAuthorSplit('track-1', soleAuthor.id);
+
+      expect(splitAuthorRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ percentage: 100, status: SplitAuthorStatus.APPROVED }),
+      );
+      expect(otpVerificationService.assertAndConsumeVerification).not.toHaveBeenCalled();
+      expect(eventBus.emit).toHaveBeenCalledWith('split.completed', expect.objectContaining({ splitId: 'split-1' }));
+      expect(eventBus.emit).toHaveBeenCalledWith(
+        'staff.audit.captured',
+        expect.objectContaining({ module: 'splits', action: 'split.auto_complete', outcome: 'success' }),
+      );
+    });
+
+    it('audita el fallo y relanza el error si la finalización del split falla', async () => {
+      trackRepo.findOne.mockResolvedValue(singleAuthorTrack);
+      splitRepo.findOne.mockResolvedValueOnce(null).mockResolvedValueOnce(null); // findSplitWithRelationsOrFail no lo encuentra
+
+      await expect(service.autoCompleteSingleAuthorSplit('track-1', soleAuthor.id)).rejects.toThrow(NotFoundException);
+
+      expect(eventBus.emit).toHaveBeenCalledWith(
+        'staff.audit.captured',
+        expect.objectContaining({ module: 'splits', action: 'split.auto_complete', outcome: 'failure' }),
+      );
+    });
+  });
+
   describe("Publisher's Share (metadata informativa)", () => {
     const withCreatedSplit = () =>
       splitRepo.findOne

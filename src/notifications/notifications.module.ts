@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
+import { OrganizationMembership } from 'src/organizations/entities/organization-membership.entity';
+import { MembershipRole } from 'src/authorization/entities/membership-role.entity';
 import { Notification } from './entities/notification.entity';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
@@ -11,7 +13,11 @@ import { RealtimeModule } from 'src/shared/realtime/realtime.module';
 import { FollowsModule } from 'src/follows/follows.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Notification, User]), RealtimeModule, FollowsModule],
+  imports: [
+    TypeOrmModule.forFeature([Notification, User, OrganizationMembership, MembershipRole]),
+    RealtimeModule,
+    FollowsModule,
+  ],
   controllers: [NotificationsController, NotificationsAdminController],
   providers: [NotificationsService, NotificationsGateway, NotificationListener],
   exports: [NotificationsService, NotificationsGateway],

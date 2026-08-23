@@ -7,6 +7,7 @@ describe('PublisherShareService', () => {
   let sharesRepo: any;
   let rosterRepo: any;
   let orgRepo: any;
+  let eventBus: { emit: jest.Mock };
 
   beforeEach(() => {
     sharesRepo = {
@@ -17,8 +18,9 @@ describe('PublisherShareService', () => {
     };
     rosterRepo = { find: jest.fn().mockResolvedValue([]) };
     orgRepo = { findOne: jest.fn().mockResolvedValue({ id: 'pub-1', type: OrganizationType.PUBLISHER }) };
+    eventBus = { emit: jest.fn() };
 
-    service = new PublisherShareService(sharesRepo, rosterRepo, orgRepo);
+    service = new PublisherShareService(sharesRepo, rosterRepo, orgRepo, eventBus as any);
   });
 
   describe('resolveForUser', () => {
@@ -28,7 +30,16 @@ describe('PublisherShareService', () => {
 
       const resolved = await service.resolveForUser('user-1');
 
-      expect(resolved).toEqual([{ organizationId: 'pub-1', organizationName: 'Sony', percentage: 20 }]);
+      expect(resolved).toEqual([
+        {
+          organizationId: 'pub-1',
+          organizationName: 'Sony',
+          organizationIpiNumber: null,
+          percentage: 20,
+          contractUrl: null,
+          confirmedAt: null,
+        },
+      ]);
     });
 
     it('excluye publishers sin el share activado o con porcentaje 0', async () => {

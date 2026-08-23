@@ -600,6 +600,17 @@ export interface AppEventMap {
     organizationId: string;
   };
 
+  // 📜 RELACIÓN EDITORA-AUTOR (Publisher's Share confirmado vía roster)
+
+  'publisher-share.confirmed': {
+    publisherShareId: string;
+    organizationId: string;
+    userId: string;
+    actorId: string;
+    before: Record<string, unknown> | null;
+    after: Record<string, unknown> | null;
+  };
+
   // 💵 COMISIÓN TRANSACCIONAL DEL MARKETPLACE (comprador B2B)
 
   'marketplace.transaction_fee.updated': {

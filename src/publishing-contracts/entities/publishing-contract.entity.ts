@@ -32,6 +32,14 @@ export class PublishingContract {
   @Column({ type: 'varchar', name: 'publisher_name' })
   publisherName: string;
 
+  @ApiProperty({ example: '00000000199', required: false, description: 'IPI (CISAC) de la editorial.' })
+  @Column({ type: 'varchar', name: 'ipi_number', length: 50, nullable: true })
+  ipiNumber: string | null;
+
+  @ApiProperty({ example: 20, required: false, description: 'Porcentaje de participación de la editorial (0-100).' })
+  @Column({ type: 'numeric', precision: 5, scale: 2, nullable: true })
+  percentage: number | null;
+
   @ApiProperty({ example: '2026-01-01' })
   @Column({ type: 'date', name: 'start_date' })
   startDate: string;
@@ -40,13 +48,13 @@ export class PublishingContract {
   @Column({ type: 'date', name: 'end_date', nullable: true })
   endDate: string | null;
 
-  @ApiProperty({ example: 'publishing-contracts/uuid.pdf' })
-  @Column({ type: 'varchar', name: 'document_key' })
-  documentKey: string;
+  @ApiProperty({ example: 'publishing-contracts/uuid.pdf', required: false, description: 'Contrato adjunto (opcional).' })
+  @Column({ type: 'varchar', name: 'document_key', nullable: true })
+  documentKey: string | null;
 
-  @ApiProperty({ example: 'https://cdn.musila.com/...' })
-  @Column({ type: 'text', name: 'document_url' })
-  documentUrl: string;
+  @ApiProperty({ example: 'https://cdn.musila.com/...', required: false })
+  @Column({ type: 'text', name: 'document_url', nullable: true })
+  documentUrl: string | null;
 
   @ApiProperty({ enum: PublishingContractStatus, example: PublishingContractStatus.VIGENTE })
   @Column({

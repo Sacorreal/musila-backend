@@ -8,6 +8,7 @@ import { SubjectType } from 'src/entitlements/entities/subject-type.enum';
 import { Subscription } from 'src/entitlements/entities/subscription.entity';
 import { SubscriptionStatus } from 'src/entitlements/entities/subscription-status.enum';
 import { EventBusService } from 'src/shared/events/event-bus.service';
+import { PublisherShareService } from 'src/publisher-share/publisher-share.service';
 import { DataSource, Repository } from 'typeorm';
 import { ApproveAccessRequestDto } from './dto/approve-access-request.dto';
 import { AccessRequest } from './entities/access-request.entity';
@@ -15,7 +16,9 @@ import { AccessRequestStatus } from './entities/access-request-status.enum';
 import { MembershipStatus } from './entities/membership-status.enum';
 import { OrganizationMembership } from './entities/organization-membership.entity';
 import { RosterMembership } from './entities/roster-membership.entity';
+import { OrganizationType } from './entities/organization-type.enum';
 import { OrganizationsService } from './organizations.service';
+
 
 /** Resumen amigable de una función que el rol habilita, para notificar al usuario. */
 export interface CapabilitySummary {
@@ -41,6 +44,7 @@ export class AccessRequestService {
     private readonly organizationsService: OrganizationsService,
     private readonly roleService: RoleService,
     private readonly eventBus: EventBusService,
+    private readonly publisherShareService: PublisherShareService,
     private readonly dataSource: DataSource,
   ) {}
 
@@ -85,6 +89,14 @@ export class AccessRequestService {
     // Valida existencia y visibilidad del rol en la organización; carga sus capabilities.
     const role = await this.roleService.getRoleForOrganization(organization, dto.roleId);
 
+    const requiresEditorialRelationship =
+      organization.type === OrganizationType.PUBLISHER && dto.membershipType === MembershipType.ROSTER;
+    if (requiresEditorialRelationship && !dto.editorialRelationship) {
+      throw new BadRequestException(
+        'Debes indicar el porcentaje de participación editorial para incorporar a este miembro del roster',
+      );
+    }
+
     await this.dataSource.transaction(async (manager) => {
       const repository =
         dto.membershipType === MembershipType.ORGANIZATION
@@ -117,6 +129,15 @@ export class AccessRequestService {
         [dto.roleId],
         actorUserId,
       );
+
+      if (requiresEditorialRelationship && dto.editorialRelationship) {
+        await this.publisherShareService.confirmForRosterMember(
+          organizationId,
+          request.userId,
+          { ...dto.editorialRelationship, confirmedByUserId: actorUserId },
+          manager,
+        );
+      }
 
       request.status = AccessRequestStatus.APPROVED;
       request.decidedBy = actorUserId;

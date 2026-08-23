@@ -233,7 +233,7 @@ export class OrganizationsService {
 
   async updateOrganization(
     organizationId: string,
-    changes: Partial<Pick<Organization, 'name' | 'type' | 'isActive'>>,
+    changes: Partial<Pick<Organization, 'name' | 'type' | 'isActive' | 'ipiNumber'>>,
   ): Promise<Organization> {
     const organization = await this.findById(organizationId);
     Object.assign(organization, changes);

@@ -26,6 +26,7 @@ import { Split } from './entities/split.entity';
 import { SplitAuthor } from './entities/split-author.entity';
 import { SplitStatus } from './entities/split-status.enum';
 import { SplitAuthorStatus } from './entities/split-author-status.enum';
+import { CoauthorRole } from './entities/coauthor-role.enum';
 import { CreateSplitDto } from './dto/create-split.dto';
 import { UpdateSplitDto } from './dto/update-split.dto';
 import { RejectSplitDto } from './dto/reject-split.dto';
@@ -105,6 +106,50 @@ export class SplitService {
   async isSplitCompletedForTrack(trackId: string): Promise<boolean> {
     const split = await this.splitRepository.findOne({ where: { track: { id: trackId } } });
     return split?.status === SplitStatus.COMPLETED;
+  }
+
+  /**
+   * Autor único = titular del 100% por definición: no hay coautores con quien
+   * negociar, así que el split se autocompleta sin OTP ni firma manual
+   * (Editorial Command Center, Feature 5 / Flow 3). Idempotente: si el track
+   * ya tiene split (de cualquier estado) o tiene más de un autor, no hace nada.
+   */
+  async autoCompleteSingleAuthorSplit(trackId: string, requestedByUserId?: string): Promise<void> {
+    const track = await this.findTrackOrFail(trackId);
+    if (!track.authors || track.authors.length !== 1) return;
+
+    const existingSplit = await this.splitRepository.findOne({ where: { track: { id: trackId } } });
+    if (existingSplit) return;
+
+    const soleAuthor = track.authors[0];
+    const actorId = requestedByUserId ?? soleAuthor.id;
+
+    const split = this.splitRepository.create({
+      track,
+      createdBy: { id: actorId } as User,
+      status: SplitStatus.PENDING_APPROVAL,
+      authors: [
+        this.splitAuthorRepository.create({
+          user: soleAuthor,
+          percentage: PERCENTAGE_TOTAL,
+          role: CoauthorRole.COMPOSITOR_AUTOR,
+          status: SplitAuthorStatus.APPROVED,
+          signedAt: new Date(),
+        }),
+      ],
+    });
+
+    try {
+      const saved = await this.splitRepository.save(split);
+      await this.completeSplit(await this.findSplitWithRelationsOrFail(saved.id));
+
+      this.auditSplitAutoComplete(actorId, soleAuthor.name, trackId, 'success', { splitId: saved.id });
+    } catch (error) {
+      this.auditSplitAutoComplete(actorId, soleAuthor.name, trackId, 'failure', {
+        error: (error as Error).message,
+      });
+      throw error;
+    }
   }
 
   /** Obtiene el split de un track junto con el estado de aprobación de cada coautor. */
@@ -315,6 +360,30 @@ export class SplitService {
       organizationName: share.organizationName,
       percentage: share.percentage,
     }));
+  }
+
+  /**
+   * Traza el autocompletado (éxito/fallo) de un Split Autoral de autor único
+   * reutilizando el canal genérico de auditoría (`staff.audit.captured`), el
+   * único de los mecanismos de auditoría del repo con un campo `outcome`.
+   */
+  private auditSplitAutoComplete(
+    actorUserId: string,
+    actorName: string,
+    trackId: string,
+    outcome: 'success' | 'failure',
+    metadata: Record<string, unknown>,
+  ): void {
+    this.eventBus.emit('staff.audit.captured', {
+      actorUserId,
+      actorName,
+      module: 'splits',
+      action: 'split.auto_complete',
+      entityType: 'Track',
+      entityId: trackId,
+      outcome,
+      metadata,
+    });
   }
 
   private sumPercentages(items: { percentage: number }[]): number {

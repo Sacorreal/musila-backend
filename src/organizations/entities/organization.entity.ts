@@ -49,6 +49,15 @@ export class Organization {
   isActive: boolean;
 
   /**
+   * IPI de la editorial (CISAC), a nivel de organización: una publisher tiene
+   * un único número IPI compartido por todo su roster, no uno por autor. Usado
+   * por el Editorial Command Center para validar el Split Editorial.
+   */
+  @ApiProperty({ example: '00000000199', required: false })
+  @Column('varchar', { name: 'ipi_number', length: 50, nullable: true })
+  ipiNumber?: string;
+
+  /**
    * Cuenta bancaria de la organización a la que se giran los retiros de su
    * wallet (ej. comisiones de publisher). Reutiliza la misma forma que la
    * cuenta bancaria de usuario; solo se persiste, nunca datos sensibles extra.

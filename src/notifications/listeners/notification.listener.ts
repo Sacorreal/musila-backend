@@ -1,9 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { In, Repository } from 'typeorm';
 import { AppEventMap } from 'src/shared/events/contracts/app-event-map';
 import { NotificationsService } from '../notifications.service';
 import { NotificationsGateway } from '../notifications.gateway';
 import { EventListener } from 'src/shared/events/decorators/event-listener.decorator';
 import { FollowsService } from 'src/follows/follows.service';
+import { OrganizationMembership } from 'src/organizations/entities/organization-membership.entity';
+import { MembershipStatus } from 'src/organizations/entities/membership-status.enum';
+import { MembershipRole } from 'src/authorization/entities/membership-role.entity';
+import { MembershipType } from 'src/authorization/entities/membership-type.enum';
+
+const ORGANIZATION_ADMIN_ROLE_KEY = 'ORGANIZATION_ADMIN';
 
 @Injectable()
 export class NotificationListener {
@@ -13,6 +21,10 @@ export class NotificationListener {
     private readonly notificationsService: NotificationsService,
     private readonly notificationsGateway: NotificationsGateway,
     private readonly followsService: FollowsService,
+    @InjectRepository(OrganizationMembership)
+    private readonly organizationMembershipRepo: Repository<OrganizationMembership>,
+    @InjectRepository(MembershipRole)
+    private readonly membershipRoleRepo: Repository<MembershipRole>,
   ) {}
 
   @EventListener({
@@ -450,5 +462,49 @@ export class NotificationListener {
     } catch (error) {
       this.logger.error('Error procesando notificacion de organization.access_request.approved', error);
     }
+  }
+
+  /** Notifica a los admins de la organización cuando llega una nueva solicitud de acceso (Feature 4). */
+  @EventListener({
+    event: 'organization.access_request.created',
+    channel: 'in-app',
+  })
+  async handleAccessRequestCreated(payload: AppEventMap['organization.access_request.created']) {
+    try {
+      const adminUserIds = await this.resolveOrganizationAdminUserIds(payload.organizationId);
+
+      for (const adminUserId of adminUserIds) {
+        const notification = await this.notificationsService.createNotification({
+          recipient: { id: adminUserId } as any,
+          type: 'organization.access_request.created',
+          title: 'Nueva solicitud de acceso',
+          message: 'Alguien solicitó unirse a tu organización con el enlace de invitación.',
+          link: `/org/${payload.organizationId}/settings/members`,
+          data: payload,
+        });
+        this.notificationsGateway.emitToUser(adminUserId, 'notification.received', notification);
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de organization.access_request.created', error);
+    }
+  }
+
+  /** Miembros ACTIVE de staff de la organización con el rol ORGANIZATION_ADMIN. */
+  private async resolveOrganizationAdminUserIds(organizationId: string): Promise<string[]> {
+    const memberships = await this.organizationMembershipRepo.find({
+      where: { organizationId, status: MembershipStatus.ACTIVE },
+    });
+    if (!memberships.length) return [];
+
+    const membershipIds = memberships.map((m) => m.id);
+    const roles = await this.membershipRoleRepo.find({
+      where: { membershipType: MembershipType.ORGANIZATION, membershipId: In(membershipIds) },
+    });
+
+    const adminMembershipIds = new Set(
+      roles.filter((r) => r.role?.key === ORGANIZATION_ADMIN_ROLE_KEY).map((r) => r.membershipId),
+    );
+
+    return memberships.filter((m) => adminMembershipIds.has(m.id)).map((m) => m.userId);
   }
 }

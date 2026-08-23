@@ -22,10 +22,12 @@ export class PublishingContractsService {
     const contract = this.publishingContractRepository.create({
       owner: { id: user.id } as PublishingContract['owner'],
       publisherName: dto.publisherName,
+      ipiNumber: dto.ipiNumber,
+      percentage: dto.percentage,
       startDate: dto.startDate,
       endDate: dto.endDate ?? null,
-      documentKey: dto.documentKey,
-      documentUrl: dto.documentUrl,
+      documentKey: dto.documentKey ?? null,
+      documentUrl: dto.documentUrl ?? null,
     });
 
     const saved = await this.publishingContractRepository.save(contract);
@@ -61,6 +63,8 @@ export class PublishingContractsService {
     const contract = await this.findOne(id, user);
 
     if (dto.publisherName !== undefined) contract.publisherName = dto.publisherName;
+    if (dto.ipiNumber !== undefined) contract.ipiNumber = dto.ipiNumber;
+    if (dto.percentage !== undefined) contract.percentage = dto.percentage;
     if (dto.startDate !== undefined) contract.startDate = dto.startDate;
     if (dto.endDate !== undefined) contract.endDate = dto.endDate;
     if (dto.documentKey !== undefined) contract.documentKey = dto.documentKey;

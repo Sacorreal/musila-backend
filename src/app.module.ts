@@ -43,6 +43,8 @@ import { CertificatesModule } from './certificates/certificates.module';
 import { WalletModule } from './wallet/wallet.module';
 import { AuthorDashboardModule } from './author-dashboard/author-dashboard.module';
 import { PublisherDashboardModule } from './publisher-dashboard/publisher-dashboard.module';
+import { EditorialCommandCenterModule } from './editorial-command-center/editorial-command-center.module';
+import { EditorialRelationshipsModule } from './editorial-relationships/editorial-relationships.module';
 import { FollowsModule } from './follows/follows.module';
 import { SharingModule } from './sharing/sharing.module';
 import { StaffAuthorizationModule } from './staff-authorization/staff-authorization.module';
@@ -106,6 +108,8 @@ import { BankInformationModule } from './bank-information/bank-information.modul
     WalletModule,
     AuthorDashboardModule,
     PublisherDashboardModule,
+    EditorialCommandCenterModule,
+    EditorialRelationshipsModule,
     FollowsModule,
     SharingModule,
     StaffAuthorizationModule,

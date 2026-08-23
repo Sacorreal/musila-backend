@@ -51,6 +51,27 @@ export class PublisherShare {
   @Column('numeric', { precision: 5, scale: 2, default: 0 })
   percentage: number;
 
+  @ApiProperty({ example: 'publishing-contracts/uuid.pdf', required: false })
+  @Column('varchar', { name: 'contract_key', nullable: true })
+  contractKey: string | null;
+
+  @ApiProperty({ example: 'https://cdn.musila.com/...', required: false })
+  @Column('text', { name: 'contract_url', nullable: true })
+  contractUrl: string | null;
+
+  /**
+   * Fecha en la que la editora confirmó esta relación vía el flujo de
+   * incorporación al roster (`AccessRequestService.approve` → Flow 2). `null`
+   * si el registro solo se editó en bulk desde `/settings/publisher-share`
+   * sin pasar por esa confirmación.
+   */
+  @ApiProperty({ example: '2026-08-23T10:00:00Z', required: false })
+  @Column('timestamptz', { name: 'confirmed_at', nullable: true })
+  confirmedAt: Date | null;
+
+  @Column('uuid', { name: 'confirmed_by_user_id', nullable: true })
+  confirmedByUserId: string | null;
+
   @CreateDateColumn({ name: 'created_at', type: 'timestamptz' })
   createdAt: Date;
 

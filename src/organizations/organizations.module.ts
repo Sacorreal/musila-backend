@@ -4,6 +4,7 @@ import { PlanCapability } from 'src/entitlements/entities/plan-capability.entity
 import { Subscription } from 'src/entitlements/entities/subscription.entity';
 import { EmailModule } from 'src/shared/mail/email.module';
 import { StaffAuditModule } from 'src/staff-audit/staff-audit.module';
+import { PublisherShareModule } from 'src/publisher-share/publisher-share.module';
 import { AccessRequest } from './entities/access-request.entity';
 import { OrganizationInvite } from './entities/organization-invite.entity';
 import { OrganizationMembership } from './entities/organization-membership.entity';
@@ -48,6 +49,7 @@ import { WorkspaceInvitesPublicController } from './workspace-invites-public.con
     ]),
     EmailModule,
     forwardRef(() => StaffAuditModule),
+    PublisherShareModule,
   ],
   controllers: [
     OrganizationsAdminController,

@@ -313,6 +313,10 @@ export class TracksService {
     }
 
     if (rest.isAvailable === true && !existingTrack.isAvailable) {
+      // Autor único: el split se autocompleta al 100% sin intervención manual
+      // (Editorial Command Center, Flow 3). No-op si ya hay un split o hay coautores.
+      await this.splitService.autoCompleteSingleAuthorSplit(id, requesterId);
+
       const isSplitCompleted = await this.splitService.isSplitCompletedForTrack(id);
       if (!isSplitCompleted) {
         throw new BadRequestException(
