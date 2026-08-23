@@ -323,4 +323,26 @@ export class EmailService {
       variables: data,
     });
   }
+
+  async sendBankInformationRequestedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['bank-information-requested'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'bank-information-requested',
+      variables: data,
+    });
+  }
+
+  async sendBankInformationExhaustedAdminEmail(
+    to: string | string[],
+    data: EmailTemplateMap['bank-information-notification-exhausted-admin'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'bank-information-notification-exhausted-admin',
+      variables: data,
+    });
+  }
 }

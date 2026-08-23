@@ -221,4 +221,18 @@ export interface EmailTemplateMap {
     abilitiesText: string;
     workspaceUrl: string;
   };
+
+  'bank-information-requested': {
+    userName: string;
+    trackTitle: string;
+    advanceAmount: string;
+    actionUrl: string;
+  };
+
+  'bank-information-notification-exhausted-admin': {
+    adminName: string;
+    userName: string;
+    trackTitle: string;
+    requestId: string;
+  };
 }

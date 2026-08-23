@@ -402,6 +402,25 @@ export interface AppEventMap {
     rejectedAt: Date;
   }
 
+  // 🏦 INFORMACIÓN BANCARIA (cobro de anticipos de licencia)
+
+  /** Emitido cuando un contrato queda firmado con anticipo > 0. Dispara la notificación a cada participante del Split para que configure su cobro. */
+  'wallet.bank_information.requested': {
+    contractId: string;
+    requestedTrackId: string;
+    trackTitle: string;
+    advanceAmount: number;
+    participants: { userId: string; name: string; email: string }[];
+  }
+
+  /** Emitido cuando un usuario guarda/edita su información bancaria de cobro. */
+  'wallet.bank_information.completed': {
+    requestId: string | null;
+    contractId: string | null;
+    userId: string;
+    method: string;
+  }
+
   // 🔗 COMPARTIR
 
   'share.created': {

@@ -896,6 +896,21 @@ export class LicenseContractsService {
         contract.id,
         installments,
       );
+
+      // Notifica a cada participante del Split para que configure su
+      // información bancaria de cobro (no bloquea la venta: el contrato ya
+      // quedó firmado y las cuotas ya se generaron).
+      this.eventBus.emit('wallet.bank_information.requested', {
+        contractId: contract.id,
+        requestedTrackId: contract.requestedTrack.id,
+        trackTitle: track.title,
+        advanceAmount: Number(contract.advanceAmount),
+        participants: authorEntries.map((entry) => ({
+          userId: entry.user.id,
+          name: `${entry.user.name} ${entry.user.lastName}`.trim(),
+          email: entry.user.email,
+        })),
+      });
     } else {
       contract.paymentStatus = LicenseContractPaymentStatus.APROBADA;
       await this.contractRepo.save(contract);

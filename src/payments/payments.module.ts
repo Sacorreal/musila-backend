@@ -19,9 +19,12 @@ import { PlanExpiryNotificationsService } from './plan-expiry-notifications.serv
 import { SubscriptionRenewalService } from './subscription-renewal.service';
 import { WompiProvider } from './providers/wompi/wompi.provider';
 import { WompiSignatureService } from './providers/wompi/wompi-signature.service';
+import { WompiBankTransferProvider } from './providers/wompi/wompi-bank-transfer.provider';
 import { StripeProvider } from './providers/stripe/stripe.provider';
 import { paymentProviderFactory } from './payment-provider.factory';
+import { bankTransferProviderFactory } from './bank-transfer-provider.factory';
 import { PAYMENT_PROVIDER } from './domain/payment-provider.interface';
+import { BANK_TRANSFER_PROVIDER } from './domain/bank-transfer-provider.interface';
 
 @Module({
   imports: [
@@ -47,10 +50,13 @@ import { PAYMENT_PROVIDER } from './domain/payment-provider.interface';
     SubscriptionRenewalService,
     WompiSignatureService,
     WompiProvider,
+    WompiBankTransferProvider,
     StripeProvider,
     // Proveedor de pago activo, seleccionado vía PAYMENT_PROVIDER (env var).
     paymentProviderFactory,
+    // Proveedor de transferencias bancarias activo, vía BANK_TRANSFER_PROVIDER (env var).
+    bankTransferProviderFactory,
   ],
-  exports: [PaymentsService, PAYMENT_PROVIDER],
+  exports: [PaymentsService, PAYMENT_PROVIDER, BANK_TRANSFER_PROVIDER],
 })
 export class PaymentsModule {}

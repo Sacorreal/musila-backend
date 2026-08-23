@@ -58,6 +58,7 @@ import { PublisherCommissionModule } from './publisher-commission/publisher-comm
 import { PublisherShareModule } from './publisher-share/publisher-share.module';
 import { CollectiveManagementSocietyModule } from './collective-management-society/collective-management-society.module';
 import { SocietyAffiliationModule } from './society-affiliation/society-affiliation.module';
+import { BankInformationModule } from './bank-information/bank-information.module';
 
 @Module({
   imports: [
@@ -120,6 +121,7 @@ import { SocietyAffiliationModule } from './society-affiliation/society-affiliat
     PublisherShareModule,
     CollectiveManagementSocietyModule,
     SocietyAffiliationModule,
+    BankInformationModule,
   ],
   controllers: [AppController],
   providers: [
