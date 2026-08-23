@@ -10,8 +10,8 @@ export class AuthorizedRecipientResponseDto {
   @ApiProperty({ example: 'Juan Pérez' })
   recipientName: string;
 
-  @ApiProperty({ example: 'MC-1A2B3C' })
-  recipientMusilaCreatorId: string;
+  @ApiProperty({ example: 'Nombre123' })
+  recipientUsername: string;
 
   @ApiPropertyOptional({ description: 'Fecha de revocación, si aplica' })
   revokedAt?: Date | null;

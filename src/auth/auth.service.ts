@@ -226,6 +226,7 @@ export class AuthService {
       name: dto.name,
       lastName: dto.lastName,
       email: dto.email,
+      username: dto.username,
       password: hashedPassword,
       countryCode: dto.countryCode,
       phone: dto.phone,
@@ -265,6 +266,7 @@ export class AuthService {
       name: dto.name,
       lastName: dto.lastName,
       email: dto.email,
+      username: dto.username,
       password: hashedPassword,
       typeCitizenID: dto.typeCitizenID,
       citizenID: dto.citizenID,
@@ -303,6 +305,9 @@ export class AuthService {
       isVerified: account.isVerified,
       identidadLegalVerificada:
         'identidadLegalVerificada' in account ? account.identidadLegalVerificada : undefined,
+      username: 'username' in account ? account.username : undefined,
+      usernameIsTemporary:
+        'usernameIsTemporary' in account ? account.usernameIsTemporary : undefined,
     };
     return this.jwtService.signAsync(payload);
   }

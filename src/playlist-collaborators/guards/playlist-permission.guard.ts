@@ -78,7 +78,7 @@ export class PlaylistPermissionGuard implements CanActivate {
 
     if (!userPermission) {
       // Acceso de solo lectura vía un enlace de "compartir" (usuario autorizado
-      // por su Musila Creator ID, no un PlaylistCollaborator formal).
+      // por su username, no un PlaylistCollaborator formal).
       if (
         requiredPermission === CollaboratorPermission.READ &&
         (await this.sharingService.hasActivePlaylistAccess(playlistId, user.id))

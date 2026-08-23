@@ -71,19 +71,26 @@ export class UsersController {
   }
 
   @UseGuards(JWTAuthGuard)
-  @Get('search/by-creator-id/:musilaCreatorId')
+  @Get('search/by-username/:username')
   @ApiBearerAuth('JWT-auth')
-  @ApiParam({ name: 'musilaCreatorId', description: 'Musila Creator ID del usuario a buscar' })
-  @ApiOperation({ summary: 'Buscar un usuario por su Musila Creator ID (para agregar coautores a un split)' })
+  @ApiParam({ name: 'username', description: 'Nombre de usuario (sin @) del usuario a buscar' })
+  @ApiOperation({ summary: 'Buscar un usuario por su username (para agregar coautores a un split)' })
   @ApiResponse({ status: 404, description: 'Usuario no encontrado' })
-  async findByMusilaCreatorIdController(@Param('musilaCreatorId') musilaCreatorId: string) {
-    const user = await this.usersService.findByMusilaCreatorIdService(musilaCreatorId);
+  async findByUsernameController(@Param('username') username: string) {
+    const user = await this.usersService.findByUsernameService(username);
     return {
       id: user.id,
       name: user.name,
       lastName: user.lastName,
-      musilaCreatorId: user.musilaCreatorId,
+      username: user.username,
     };
+  }
+
+  @Get('username-available/:username')
+  @ApiParam({ name: 'username', description: 'Nombre de usuario (sin @) a verificar' })
+  @ApiOperation({ summary: 'Verificar disponibilidad de un username (endpoint público, usado en registro y perfil)' })
+  async checkUsernameAvailableController(@Param('username') username: string) {
+    return this.usersService.isUsernameAvailableService(username);
   }
 
   // ── Admin routes (must be before /:id) ──────────────────────────────

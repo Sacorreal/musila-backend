@@ -46,7 +46,7 @@ import * as dotenv from 'dotenv';
 import * as bcrypt from 'bcrypt';
 import { Client, ClientConfig } from 'pg';
 import * as path from 'path';
-import { generateMcid } from '../src/creator-id/utils/generate-mcid.util';
+import { generateTempUsername } from '../src/username/utils/generate-temp-username.util';
 
 const nodeEnv = process.env.NODE_ENV || 'local';
 
@@ -118,16 +118,16 @@ function getClientConfig(): ClientConfig {
   };
 }
 
-async function generateUniqueMcid(client: Client): Promise<string> {
+async function generateUniqueTempUsername(client: Client): Promise<string> {
   for (let attempt = 0; attempt < 5; attempt++) {
-    const candidate = generateMcid();
+    const candidate = generateTempUsername(ADMIN.name, ADMIN.lastName);
     const { rowCount } = await client.query(
-      'SELECT 1 FROM users WHERE musila_creator_id = $1',
+      'SELECT 1 FROM users WHERE LOWER(username) = LOWER($1)',
       [candidate],
     );
     if (rowCount === 0) return candidate;
   }
-  throw new Error('No se pudo generar un Musila Creator ID único, intenta de nuevo');
+  throw new Error('No se pudo generar un nombre de usuario único, intenta de nuevo');
 }
 
 async function syncStaffRole(client: Client, userId: string): Promise<void> {
@@ -175,20 +175,20 @@ async function main() {
     }
   } else {
     const hashedPassword = await bcrypt.hash(ADMIN.password, 10);
-    const musilaCreatorId = await generateUniqueMcid(client);
+    const username = await generateUniqueTempUsername(client);
 
     const result = await client.query(
-      `INSERT INTO users (name, last_name, email, password, plan_type, role, citizen_id, musila_creator_id, is_verified, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, 'compositor', $6, $7, true, NOW(), NOW())
+      `INSERT INTO users (name, last_name, email, password, plan_type, role, citizen_id, username, username_is_temporary, is_verified, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, 'compositor', $6, $7, true, true, NOW(), NOW())
        RETURNING id`,
-      [ADMIN.name, ADMIN.lastName, ADMIN.email, hashedPassword, planType, ADMIN.citizenID, musilaCreatorId],
+      [ADMIN.name, ADMIN.lastName, ADMIN.email, hashedPassword, planType, ADMIN.citizenID, username],
     );
 
     userId = result.rows[0].id;
     console.log(`✔ Usuario ${planType} creado — id: ${userId}`);
     console.log(`  Número de documento (login): ${ADMIN.citizenID}`);
     console.log(`  Email: ${ADMIN.email}`);
-    console.log(`  Musila Creator ID: ${musilaCreatorId}`);
+    console.log(`  Nombre de usuario (temporal, cámbialo al iniciar sesión): @${username}`);
     if (nodeEnv !== 'production') {
       console.log(`  Password: ${ADMIN.password}`);
     }

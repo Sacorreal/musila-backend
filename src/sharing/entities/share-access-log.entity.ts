@@ -37,7 +37,7 @@ export class ShareAccessLog {
   accessorUserId?: string | null;
 
   @Column({ type: 'varchar', name: 'accessor_musila_creator_id', nullable: true })
-  accessorMusilaCreatorId?: string | null;
+  accessorUsername?: string | null;
 
   @Column({ type: 'boolean' })
   granted: boolean;

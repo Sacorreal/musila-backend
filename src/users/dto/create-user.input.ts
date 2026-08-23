@@ -10,6 +10,7 @@ import {
   IsString,
   IsUrl,
   IsUUID,
+  Matches,
   MaxLength,
   MinLength,
   ValidateNested
@@ -63,6 +64,17 @@ export class CreateUserInput {
   @IsEmail({}, { message: 'Debe proporcionar un email válido' })
   @IsNotEmpty({ message: 'El email es obligatorio' })
   email: string;
+
+  @ApiProperty({
+    example: 'Nombre123',
+    description: 'Nombre de usuario único (sin @), 3 a 20 caracteres: letras, números y guion bajo.'
+  })
+  @IsString({ message: 'El nombre de usuario debe ser un texto válido' })
+  @IsNotEmpty({ message: 'El nombre de usuario es obligatorio' })
+  @Matches(/^[A-Za-z0-9_]{3,20}$/, {
+    message: 'El nombre de usuario debe tener entre 3 y 20 caracteres (letras, números y guion bajo)',
+  })
+  username: string;
 
   @ApiProperty({
     example: 'miContraseña123',

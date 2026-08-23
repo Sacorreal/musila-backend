@@ -13,14 +13,14 @@ import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { Payment } from 'src/payments/entities/payment.entity';
-import { CreatorIdModule } from 'src/creator-id/creator-id.module';
+import { UsernameModule } from 'src/username/username.module';
 import { Follow } from 'src/follows/entities/follow.entity';
 import { LegalIdentityModule } from 'src/legal-identity/legal-identity.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([User, AuditLog, MusicalGenre, Track, RequestedTrack, Payment, Follow]),
-    CreatorIdModule,
+    UsernameModule,
     LegalIdentityModule,
   ],
   controllers: [UsersController, MeController],

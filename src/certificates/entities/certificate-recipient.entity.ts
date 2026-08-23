@@ -48,7 +48,7 @@ export class CertificateRecipient {
   citizenId: string | null;
 
   @Column({ type: 'varchar', name: 'musila_creator_id', nullable: true })
-  musilaCreatorId: string | null;
+  username: string | null;
 
   @Column({
     type: 'enum',

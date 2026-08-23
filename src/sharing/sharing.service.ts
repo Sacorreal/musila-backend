@@ -96,14 +96,15 @@ export class SharingService {
     const shareLink = await this.findShareLinkOrFail(shareLinkId);
 
     if (shareLink.resourceType === ShareResourceType.PROFILE) {
-      throw new ConflictException('El enlace de perfil no requiere autorización por Creator ID');
+      throw new ConflictException('El enlace de perfil no requiere autorización por username');
     }
 
-    const recipientUser = await this.usersRepository.findOne({
-      where: { musilaCreatorId: dto.musilaCreatorId },
-    });
+    const recipientUser = await this.usersRepository
+      .createQueryBuilder('u')
+      .where('LOWER(u.username) = LOWER(:username)', { username: dto.username })
+      .getOne();
     if (!recipientUser) {
-      throw new NotFoundException('No existe ningún usuario con ese Musila Creator ID');
+      throw new NotFoundException('No existe ningún usuario con ese nombre de usuario');
     }
 
     const granter = await this.findUserOrFail(grantedBy.id);
@@ -124,7 +125,7 @@ export class SharingService {
       recipient = this.recipientRepository.create({
         shareLink,
         recipientUser,
-        recipientMusilaCreatorId: recipientUser.musilaCreatorId,
+        recipientUsername: recipientUser.username,
         grantedBy: granter,
       });
     }
@@ -326,7 +327,7 @@ export class SharingService {
     resourceType?: ShareResourceType;
     resourceId?: string;
     accessorUserId?: string;
-    accessorMusilaCreatorId?: string;
+    accessorUsername?: string;
     granted: boolean;
     reason: ShareAccessReason;
     ipAddress?: string;
@@ -480,7 +481,7 @@ export class SharingService {
     dto.id = recipient.id;
     dto.recipientUserId = recipient.recipientUser.id;
     dto.recipientName = `${recipient.recipientUser.name} ${recipient.recipientUser.lastName}`;
-    dto.recipientMusilaCreatorId = recipient.recipientMusilaCreatorId;
+    dto.recipientUsername = recipient.recipientUsername;
     dto.revokedAt = recipient.revokedAt;
     dto.createdAt = recipient.createdAt;
     return dto;

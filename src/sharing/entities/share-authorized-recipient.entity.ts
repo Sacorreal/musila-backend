@@ -25,9 +25,9 @@ export class ShareAuthorizedRecipient {
   @JoinColumn({ name: 'recipient_user_id' })
   recipientUser: User;
 
-  /** Snapshot del Creator ID al momento de autorizar (para email/UI aunque el usuario cambie datos). */
+  /** Snapshot del username al momento de autorizar (para email/UI aunque el usuario cambie datos). */
   @Column({ type: 'varchar', name: 'recipient_musila_creator_id' })
-  recipientMusilaCreatorId: string;
+  recipientUsername: string;
 
   @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'granted_by_id' })

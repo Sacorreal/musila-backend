@@ -83,8 +83,8 @@ export class SharingController {
   @Post(':shareLinkId/recipients')
   @UseGuards(JWTAuthGuard, ShareManageGuard)
   @ApiBearerAuth('JWT-auth')
-  @ApiOperation({ summary: 'Autoriza a un usuario (por su Musila Creator ID) a acceder al enlace' })
-  @ApiResponse({ status: 404, description: 'No existe ningún usuario con ese Musila Creator ID' })
+  @ApiOperation({ summary: 'Autoriza a un usuario (por su username) a acceder al enlace' })
+  @ApiResponse({ status: 404, description: 'No existe ningún usuario con ese nombre de usuario' })
   authorizeRecipient(
     @CurrentUser() user: JwtPayload,
     @Param('shareLinkId') shareLinkId: string,

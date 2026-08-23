@@ -38,7 +38,7 @@ function fullNameOf(user: User): string {
 }
 
 function hasCompleteIdentificationData(user: User): boolean {
-  return !!(user.typeCitizenID && user.citizenID && user.musilaCreatorId);
+  return !!(user.typeCitizenID && user.citizenID && user.username);
 }
 
 @Injectable()
@@ -307,7 +307,7 @@ export class CertificatesService {
         email: author.email,
         typeCitizenId: author.typeCitizenID ?? null,
         citizenId: author.citizenID ?? null,
-        musilaCreatorId: author.musilaCreatorId ?? null,
+        username: author.username ?? null,
         status: hasCompleteIdentificationData(author)
           ? CertificateRecipientStatus.PENDING
           : CertificateRecipientStatus.SKIPPED_INCOMPLETE_DATA,

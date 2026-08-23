@@ -3,13 +3,13 @@ import { IsNotEmpty, IsString, Matches } from 'class-validator';
 
 export class AuthorizeRecipientDto {
   @ApiProperty({
-    description: 'Musila Creator ID del usuario a autorizar',
-    example: 'MC-1A2B3C',
+    description: 'Nombre de usuario (sin @) a autorizar',
+    example: 'Nombre123',
   })
   @IsNotEmpty()
   @IsString()
-  @Matches(/^MC-[A-Z0-9]{6}$/, {
-    message: 'musilaCreatorId debe tener el formato MC-XXXXXX',
+  @Matches(/^[A-Za-z0-9_]{3,20}$/, {
+    message: 'El nombre de usuario debe tener entre 3 y 20 caracteres (letras, números y guion bajo)',
   })
-  musilaCreatorId: string;
+  username: string;
 }

@@ -20,6 +20,13 @@ export interface JwtPayload {
    * `LegalIdentityGuard`/`TrackLegalIdentityGuard` siempre re-consultan la DB.
    */
   identidadLegalVerificada?: boolean;
+  username?: string;
+  /**
+   * Solo informativo para la UI (ej. mostrar el modal bloqueante para elegir
+   * un username definitivo). Nunca se usa para autorizar: el endpoint de
+   * actualización de perfil siempre revalida en DB.
+   */
+  usernameIsTemporary?: boolean;
   iat?: number;
   exp?: number;
 }

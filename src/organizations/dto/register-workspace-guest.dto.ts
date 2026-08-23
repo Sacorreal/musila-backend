@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MinLength } from 'class-validator';
 
 /**
  * Registro de un invitado a partir de un enlace de workspace. Endpoint público
@@ -26,6 +26,17 @@ export class RegisterWorkspaceGuestDto {
   @IsNotEmpty()
   @IsEmail()
   email: string;
+
+  @ApiProperty({
+    example: 'Nombre123',
+    description: 'Nombre de usuario único (sin @), 3 a 20 caracteres: letras, números y guion bajo.',
+  })
+  @IsNotEmpty({ message: 'El nombre de usuario es obligatorio' })
+  @IsString()
+  @Matches(/^[A-Za-z0-9_]{3,20}$/, {
+    message: 'El nombre de usuario debe tener entre 3 y 20 caracteres (letras, números y guion bajo)',
+  })
+  username: string;
 
   @ApiPropertyOptional({ example: 'CC', description: 'Tipo de documento' })
   @IsOptional()

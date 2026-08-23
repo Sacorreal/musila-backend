@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { ArrayMaxSize, IsArray, IsEmail, IsEmpty, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength, ValidateNested } from "class-validator";
+import { ArrayMaxSize, IsArray, IsEmail, IsEmpty, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, IsUUID, Matches, MaxLength, MinLength, ValidateNested } from "class-validator";
 import { Type } from "class-transformer";
 import { UserPlanType } from "src/users/entities/user-plan-type.enum";
 import { MusicRole } from "src/users/entities/music-role.enum";
@@ -45,6 +45,17 @@ export class RegisterAuthDto {
     @IsNotEmpty({ message: 'El email es obligatorio' })
     @IsValidEmail({ message: 'No se permiten correos temporales'})
     email: string;
+
+    @ApiProperty({
+        example: 'Nombre123',
+        description: 'Nombre de usuario único (sin @), 3 a 20 caracteres: letras, números y guion bajo.'
+    })
+    @IsString({ message: 'El nombre de usuario debe ser un texto válido' })
+    @IsNotEmpty({ message: 'El nombre de usuario es obligatorio' })
+    @Matches(/^[A-Za-z0-9_]{3,20}$/, {
+        message: 'El nombre de usuario debe tener entre 3 y 20 caracteres (letras, números y guion bajo)',
+    })
+    username: string;
 
     @ApiProperty({
         example: 'miContraseña123',

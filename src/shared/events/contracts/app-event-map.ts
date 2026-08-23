@@ -435,7 +435,7 @@ export interface AppEventMap {
     resourceType?: ShareResourceType;
     resourceId?: string;
     accessorUserId?: string;
-    accessorMusilaCreatorId?: string;
+    accessorUsername?: string;
     granted: boolean;
     reason: ShareAccessReason;
     ipAddress?: string;

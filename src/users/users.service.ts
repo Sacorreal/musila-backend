@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
-import { In, Repository } from 'typeorm';
+import { In, QueryFailedError, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { CreateUserInput } from './dto/create-user.input';
 import { UpdateUserInput } from './dto/update-user.input';
@@ -15,7 +15,7 @@ import { UserPlanType } from './entities/user-plan-type.enum';
 import { MusicRole } from './entities/music-role.enum';
 import { User } from './entities/user.entity';
 import { StorageService } from '../shared/storage/storage.service';
-import { CreatorIdService } from '../creator-id/creator-id.service';
+import { UsernameService } from '../username/username.service';
 import { AuthorizationService } from 'src/authorization/authorization.service';
 import { Follow } from 'src/follows/entities/follow.entity';
 
@@ -39,7 +39,7 @@ export class UsersService {
     @InjectRepository(Follow)
     private readonly followsRepository: Repository<Follow>,
     private readonly storageService: StorageService,
-    private readonly creatorIdService: CreatorIdService,
+    private readonly usernameService: UsernameService,
     private readonly authorizationService: AuthorizationService,
   ) { }
 
@@ -95,22 +95,50 @@ export class UsersService {
   // Métodos Públicos
   // =============================
 
-  async createUserService({ preferredGenres, ...rest }: CreateUserInput) {
+  /**
+   * Convierte la violación del índice único case-insensitive de username
+   * (`UQ_users_username_lower`) en un error de negocio legible. Es la fuente
+   * de verdad de la unicidad: el chequeo previo de `UsernameService.isAvailable`
+   * solo da feedback rápido en la UI, pero no evita una condición de carrera
+   * entre dos solicitudes concurrentes eligiendo el mismo username.
+   */
+  private rethrowIfUsernameTaken(error: unknown): never {
+    const pgError = error as { code?: string; constraint?: string };
+    if (
+      error instanceof QueryFailedError &&
+      pgError.code === '23505' &&
+      pgError.constraint === 'UQ_users_username_lower'
+    ) {
+      throw new ConflictException('Ese nombre de usuario ya está en uso');
+    }
+    throw error;
+  }
+
+  async createUserService({ preferredGenres, username, ...rest }: CreateUserInput) {
     const genres = await this.getValidatedGenres(preferredGenres);
-    const musilaCreatorId = await this.creatorIdService.generateUnique();
+    const normalizedUsername = this.usernameService.normalize(username);
+
+    const isAvailable = await this.usernameService.isAvailable(normalizedUsername);
+    if (!isAvailable) {
+      throw new ConflictException('Ese nombre de usuario ya está en uso');
+    }
 
     const newUser = this.usersRepository.create({
       ...rest,
-      musilaCreatorId,
+      username: normalizedUsername,
       ...(genres && { preferredGenres: genres }),
     });
 
-    return this.saveAndReturnWithRelations(newUser);
+    try {
+      return await this.saveAndReturnWithRelations(newUser);
+    } catch (error) {
+      this.rethrowIfUsernameTaken(error);
+    }
   }
 
   async updateUserService(
     id: string,
-    { preferredGenres, avatarKey, avatarUrl, ...rest }: UpdateUserInput,
+    { preferredGenres, avatarKey, avatarUrl, username, ...rest }: UpdateUserInput,
     actingUser?: { id?: string; planType?: UserPlanType },
   ) {
     const existingUser = await this.findUserWithRelations(id);
@@ -137,6 +165,24 @@ export class UsersService {
     const oldAvatarKey = existingUser.avatarKey;
     Object.assign(existingUser, rest);
 
+    if (username) {
+      const normalizedUsername = this.usernameService.normalize(username);
+      const isSameUsername =
+        normalizedUsername.toLowerCase() === existingUser.username.toLowerCase();
+
+      if (!isSameUsername) {
+        const isAvailable = await this.usernameService.isAvailable(normalizedUsername, id);
+        if (!isAvailable) {
+          throw new ConflictException('Ese nombre de usuario ya está en uso');
+        }
+      }
+
+      existingUser.username = normalizedUsername;
+      // Cualquier elección explícita del usuario cuenta como definitiva,
+      // aunque vuelva a escribir el mismo username temporal del backfill.
+      existingUser.usernameIsTemporary = false;
+    }
+
     const genres = await this.getValidatedGenres(preferredGenres);
     if (genres) existingUser.preferredGenres = genres;
 
@@ -145,7 +191,12 @@ export class UsersService {
       existingUser.avatarUrl = avatarUrl;
     }
 
-    const updatedUser = await this.saveAndReturnWithRelations(existingUser);
+    let updatedUser: User;
+    try {
+      updatedUser = await this.saveAndReturnWithRelations(existingUser);
+    } catch (error) {
+      this.rethrowIfUsernameTaken(error);
+    }
 
     if (avatarKey && oldAvatarKey && oldAvatarKey !== avatarKey) {
       await this.storageService.deleteObject(oldAvatarKey);
@@ -226,11 +277,21 @@ export class UsersService {
     return Object.values(MusicRole);
   }
 
-  /** Búsqueda exacta por Musila Creator ID, usada para agregar coautores a un split. */
-  async findByMusilaCreatorIdService(musilaCreatorId: string): Promise<User> {
-    const user = await this.usersRepository.findOne({ where: { musilaCreatorId } });
+  /** Búsqueda exacta por username (case-insensitive), usada para agregar coautores a un split y autorizar destinatarios de contenido compartido. */
+  async findByUsernameService(username: string): Promise<User> {
+    const normalizedUsername = this.usernameService.normalize(username);
+    const user = await this.usersRepository
+      .createQueryBuilder('u')
+      .where('LOWER(u.username) = LOWER(:username)', { username: normalizedUsername })
+      .getOne();
     if (!user) throw new NotFoundException('Usuario no encontrado');
     return user;
+  }
+
+  /** Disponibilidad de un username, usada por el formulario de registro/perfil para feedback en tiempo real. */
+  async isUsernameAvailableService(username: string, excludeUserId?: string): Promise<{ available: boolean }> {
+    const available = await this.usernameService.isAvailable(username, excludeUserId);
+    return { available };
   }
 
   async findAllAuthorsService(planTypes: UserPlanType[], paginationDto: PaginationDto) {

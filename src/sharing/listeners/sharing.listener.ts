@@ -32,7 +32,7 @@ export class SharingListener {
         resourceTypeLabel,
         resourceTitle: payload.resourceTitle,
         shareUrl: payload.shareUrl,
-        instructionsText: `Inicia sesión en Musila con tu cuenta (Musila Creator ID) para acceder a este ${resourceTypeLabel}.`,
+        instructionsText: `Inicia sesión en Musila con tu cuenta (@usuario) para acceder a este ${resourceTypeLabel}.`,
       });
     } catch (error) {
       this.logger.error(`Error enviando email de contenido compartido a ${payload.recipientEmail}`, error);

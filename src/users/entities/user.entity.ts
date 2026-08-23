@@ -50,8 +50,18 @@ export class User {
   @Column('varchar', { nullable: false, unique: true })
   email: string;
 
-  @Column('varchar', { name: 'musila_creator_id', unique: true })
-  musilaCreatorId: string;
+  @Column('varchar', { length: 20 })
+  username: string;
+
+  /**
+   * true cuando el username fue asignado automáticamente (backfill de
+   * usuarios preexistentes a la migración de Musila Creator ID → username)
+   * y el usuario todavía no eligió uno definitivo. Solo informativo para la
+   * UI (mostrar el modal bloqueante de elegir username); nunca se usa para
+   * autorizar.
+   */
+  @Column('boolean', { name: 'username_is_temporary', default: false })
+  usernameIsTemporary: boolean;
 
   @Column('varchar', { nullable: false, select: false })
   password: string;
