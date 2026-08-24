@@ -345,4 +345,81 @@ export class EmailService {
       variables: data,
     });
   }
+
+  async sendBusinessRegistrationReceivedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['business-registration-received'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'business-registration-received',
+      variables: data,
+    });
+  }
+
+  async sendBusinessRegistrationApprovedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['business-registration-approved'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'business-registration-approved',
+      variables: data,
+    });
+  }
+
+  async sendBusinessRegistrationRejectedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['business-registration-rejected'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'business-registration-rejected',
+      variables: data,
+    });
+  }
+
+  async sendBusinessRegistrationCreatedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['business-registration-created'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'business-registration-created',
+      variables: data,
+    });
+  }
+
+  async sendBusinessRegistrationVerifiedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['business-registration-verified'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'business-registration-verified',
+      variables: data,
+    });
+  }
+
+  async sendBusinessSubscriptionReminderEmail(
+    to: string | string[],
+    data: EmailTemplateMap['business-subscription-reminder'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'business-subscription-reminder',
+      variables: data,
+    });
+  }
+
+  async sendBusinessSubscriptionSuspendedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['business-subscription-suspended'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'business-subscription-suspended',
+      variables: data,
+    });
+  }
 }

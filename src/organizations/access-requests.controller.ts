@@ -21,6 +21,7 @@ import { AccessRequestService } from './access-request.service';
 import { AccessRequestQueryDto } from './dto/access-request-query.dto';
 import { ApproveAccessRequestDto } from './dto/approve-access-request.dto';
 import { RejectAccessRequestDto } from './dto/reject-access-request.dto';
+import { OrganizationVerifiedGuard } from './guards/organization-verified.guard';
 
 /**
  * Panel de solicitudes de acceso al workspace: consulta de pendientes y
@@ -46,6 +47,7 @@ export class AccessRequestsController {
   }
 
   @Post(':requestId/approve')
+  @UseGuards(OrganizationVerifiedGuard)
   @RequireCapability('organization.members.manage')
   @AuditAction('organizations:access-request:approve')
   @ApiParam({ name: 'requestId' })

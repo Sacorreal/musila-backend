@@ -23,6 +23,7 @@ import { CreateLicenseInstallmentCheckoutDto } from './dto/create-license-instal
 import { CreatePaymentSourceDto } from './dto/create-payment-source.dto';
 import { PaymentsService } from './payments.service';
 import { ReceiptService } from './receipt.service';
+import { OrganizationBillingService } from './organization-billing.service';
 import { ProviderEvent } from './domain/payment-provider.types';
 import { resolveOrganizationId } from 'src/authorization/utils/organization-context.util';
 
@@ -33,7 +34,40 @@ export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly receiptService: ReceiptService,
+    private readonly organizationBillingService: OrganizationBillingService,
   ) {}
+
+  @Get('business-registration/:organizationId/checkout')
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Parámetros del Widget de Wompi para el cobro del registro legal B2B (§3)',
+  })
+  @ApiResponse({ status: 200, description: 'Parámetros del Widget y externalReference' })
+  @ApiResponse({ status: 403, description: 'No eres quien registró esta organización' })
+  @ApiResponse({ status: 404, description: 'No hay un cobro pendiente para esta organización' })
+  async getBusinessRegistrationCheckout(
+    @Param('organizationId') organizationId: string,
+    @Req() req: Request,
+  ) {
+    const user = req['user'] as JwtPayload;
+    return this.organizationBillingService.getCheckoutWidget(organizationId, user.id);
+  }
+
+  @Post('business-registration/:organizationId/payment-source')
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Tokenizar tarjeta para habilitar el pago automático de la organización (§3)' })
+  @ApiResponse({ status: 201, description: 'Fuente de pago tokenizada' })
+  @ApiResponse({ status: 403, description: 'No eres quien registró esta organización' })
+  async createOrganizationPaymentSource(
+    @Param('organizationId') organizationId: string,
+    @Body() dto: CreatePaymentSourceDto,
+    @Req() req: Request,
+  ) {
+    const user = req['user'] as JwtPayload;
+    return this.organizationBillingService.enableAutomaticPayment(organizationId, user.id, dto);
+  }
 
   @Post('checkout')
   @ApiOperation({ summary: 'Crear transacción y obtener parámetros del Widget de Wompi' })

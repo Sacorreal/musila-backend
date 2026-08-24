@@ -235,4 +235,46 @@ export interface EmailTemplateMap {
     trackTitle: string;
     requestId: string;
   };
+
+  // 🏢 REGISTRO LEGAL B2B (onboarding comercial de organizaciones)
+
+  'business-registration-received': {
+    legalName: string;
+    statusUrl: string;
+  };
+
+  'business-registration-approved': {
+    legalName: string;
+    planName: string;
+    /** Ausente cuando el plan no tiene precio configurado (flujo manual). */
+    paymentLinkUrl?: string;
+  };
+
+  'business-registration-rejected': {
+    legalName: string;
+    reason: string;
+  };
+
+  'business-registration-created': {
+    legalName: string;
+    activateUrl: string;
+  };
+
+  'business-registration-verified': {
+    legalName: string;
+    planName: string;
+    workspaceUrl: string;
+  };
+
+  'business-subscription-reminder': {
+    legalName: string;
+    daysRemaining: number;
+    dueDate: string;
+    billingUrl: string;
+  };
+
+  'business-subscription-suspended': {
+    legalName: string;
+    billingUrl: string;
+  };
 }

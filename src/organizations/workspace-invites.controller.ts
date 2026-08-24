@@ -17,6 +17,7 @@ import { AuditAction } from 'src/staff-audit/decorators/audit-action.decorator';
 import { StaffAuditInterceptor } from 'src/staff-audit/interceptors/staff-audit.interceptor';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 import { CreateInviteLinkDto } from './dto/create-invite-link.dto';
+import { OrganizationVerifiedGuard } from './guards/organization-verified.guard';
 import { WorkspaceInviteService } from './workspace-invite.service';
 
 /**
@@ -33,6 +34,7 @@ export class WorkspaceInvitesController {
   constructor(private readonly workspaceInviteService: WorkspaceInviteService) {}
 
   @Get()
+  @UseGuards(OrganizationVerifiedGuard)
   @RequireCapability('organization.members.manage')
   @ApiOperation({ summary: 'Obtener (o crear) el enlace de invitación activo del workspace' })
   getLink(
@@ -43,6 +45,7 @@ export class WorkspaceInvitesController {
   }
 
   @Post('regenerate')
+  @UseGuards(OrganizationVerifiedGuard)
   @RequireCapability('organization.members.manage')
   @AuditAction('organizations:invite-link:regenerate')
   @ApiOperation({ summary: 'Revocar el enlace actual y generar uno nuevo' })

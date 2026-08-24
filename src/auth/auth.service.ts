@@ -30,6 +30,8 @@ import { OrganizationInviteService } from 'src/organizations/organization-invite
 import { RegisterOrgAdminDto } from 'src/organizations/dto/register-org-admin.dto';
 import { WorkspaceInviteService } from 'src/organizations/workspace-invite.service';
 import { RegisterWorkspaceGuestDto } from 'src/organizations/dto/register-workspace-guest.dto';
+import { OrganizationsService } from 'src/organizations/organizations.service';
+import { CreateBusinessRegistrationDto } from 'src/organizations/dto/create-business-registration.dto';
 
 const EMAIL_VERIFICATION_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 
@@ -47,6 +49,7 @@ export class AuthService {
     private readonly auditLogService: AuditLogService,
     private readonly organizationInviteService: OrganizationInviteService,
     private readonly workspaceInviteService: WorkspaceInviteService,
+    private readonly organizationsService: OrganizationsService,
   ) {}
 
   /**
@@ -278,6 +281,77 @@ export class AuthService {
 
     const token = await this.createToken(newUser);
     return { token, organizationId: invite.organizationId, status: 'PENDING' as const };
+  }
+
+  /**
+   * `createBusinessForm` (§Registro Legal B2B, paso 1): crea la cuenta del
+   * futuro Organization Admin y, a partir de ella, la organización en
+   * EN_TRAMITE. El formulario solo recolecta datos de la empresa (no el
+   * nombre de la persona) — `name`/`lastName` nacen con un placeholder que se
+   * corrige al "crear el primer perfil" tras CREADA (§5).
+   */
+  async registerBusinessAccount(dto: CreateBusinessRegistrationDto) {
+    const emailExists = await this.usersService.findUserByEmailService(dto.email);
+    if (emailExists) throw new ConflictException('Ya existe un usuario con este email');
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const newUser = await this.createUserWithGeneratedUsername(
+      {
+        name: dto.legalName,
+        lastName: 'Empresa',
+        email: dto.email,
+        password: hashedPassword,
+        countryCode: dto.phoneCountryCode,
+        phone: dto.phoneNumber,
+        isVerified: false,
+      },
+      dto.email.split('@')[0],
+    );
+
+    const organization = await this.organizationsService.createOrganizationForBusinessRegistration({
+      legalName: dto.legalName,
+      organizationType: dto.organizationType,
+      legalCountry: dto.legalCountry,
+      documentType: dto.documentType,
+      documentNumber: dto.documentNumber,
+      phoneCountryCode: dto.phoneCountryCode,
+      phoneNumber: dto.phoneNumber,
+      planKey: dto.planKey,
+      registeredByUserId: newUser.id,
+      adminEmail: newUser.email,
+    });
+
+    await this.sendEmailVerification(newUser.id, newUser.email, newUser.name);
+
+    const token = await this.createToken(newUser);
+    return { token, organizationId: organization.id };
+  }
+
+  /**
+   * Crea un usuario derivando el `username` de una base (email/nombre) y
+   * reintentando con un sufijo aleatorio ante colisión — usado por flujos que,
+   * a diferencia del registro individual, no piden username explícito.
+   */
+  private async createUserWithGeneratedUsername(
+    input: Omit<Parameters<UsersService['createUserService']>[0], 'username'>,
+    usernameBase: string,
+  ): Promise<User> {
+    const base = usernameBase.replace(/[^A-Za-z0-9_]/g, '').slice(0, 15) || 'business';
+
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const suffix = attempt === 0 ? '' : Math.floor(1000 + Math.random() * 9000).toString();
+      const username = `${base}${suffix}`.slice(0, 20);
+      try {
+        return await this.usersService.createUserService({ ...input, username });
+      } catch (err) {
+        if (!(err instanceof ConflictException)) throw err;
+        lastError = err;
+      }
+    }
+    throw lastError instanceof Error
+      ? lastError
+      : new ConflictException('No se pudo generar un nombre de usuario disponible');
   }
 
   /**

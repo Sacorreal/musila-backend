@@ -13,9 +13,11 @@ import { Entitlement } from './entities/entitlement.entity';
 import { Plan } from './entities/plan.entity';
 import { PlanCapability } from './entities/plan-capability.entity';
 import { PlanEntitlement } from './entities/plan-entitlement.entity';
+import { PlanPrice } from './entities/plan-price.entity';
 import { Subscription } from './entities/subscription.entity';
 import { Usage } from './entities/usage.entity';
 import { EntitlementService } from './entitlement.service';
+import { PlanPriceService } from './plan-price.service';
 import { PaymentSubscriptionSyncListener } from './listeners/payment-subscription-sync.listener';
 import { UsageService } from './usage.service';
 import { UserPlanSubscriptionSyncService } from './user-plan-subscription-sync.service';
@@ -32,6 +34,7 @@ import { UserPlanSubscriptionSyncService } from './user-plan-subscription-sync.s
       Plan,
       PlanCapability,
       PlanEntitlement,
+      PlanPrice,
       Entitlement,
       Subscription,
       Usage,
@@ -49,6 +52,7 @@ import { UserPlanSubscriptionSyncService } from './user-plan-subscription-sync.s
     UserPlanSubscriptionSyncService,
     PaymentSubscriptionSyncListener,
     PlansAdminService,
+    PlanPriceService,
   ],
   exports: [
     EntitlementService,

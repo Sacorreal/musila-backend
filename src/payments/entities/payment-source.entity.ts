@@ -34,6 +34,10 @@ export class PaymentSource {
   @Column('varchar', { name: 'user_id', nullable: true })
   userId?: string;
 
+  /** Fuente de pago de una organización B2B (§Registro Legal B2B), en vez de un usuario individual. */
+  @Column('uuid', { name: 'organization_id', nullable: true })
+  organizationId?: string;
+
   @Column('varchar', { name: 'wompi_payment_source_id' })
   wompiPaymentSourceId: string;
 

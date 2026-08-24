@@ -27,6 +27,7 @@ import { ChangeMembershipStatusDto } from './dto/change-membership-status.dto';
 import { InviteMemberDto } from './dto/invite-member.dto';
 import { MembersQueryDto } from './dto/members-query.dto';
 import { SetMembershipRolesDto } from 'src/authorization/dto/set-membership-roles.dto';
+import { OrganizationVerifiedGuard } from './guards/organization-verified.guard';
 import { MembershipService } from './membership.service';
 import { OrganizationsService } from './organizations.service';
 
@@ -64,6 +65,7 @@ export class OrganizationMembersController {
   }
 
   @Post()
+  @UseGuards(OrganizationVerifiedGuard)
   @RequireCapability(['organization.members.manage', 'roster.manage'], 'OR')
   @AuditAction('organizations:member:invite')
   @ApiOperation({

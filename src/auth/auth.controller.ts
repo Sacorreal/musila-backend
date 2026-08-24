@@ -9,6 +9,7 @@ import { RegisterAuthDto } from './dto/register-auth.dto';
 import {RegisterGuestDto } from '../guests/dto/register-guest.dto'
 import { RegisterOrgAdminDto } from '../organizations/dto/register-org-admin.dto';
 import { RegisterWorkspaceGuestDto } from '../organizations/dto/register-workspace-guest.dto';
+import { CreateBusinessRegistrationDto } from '../organizations/dto/create-business-registration.dto';
 import { RequestResetPasswordDto } from './dto/request-reset-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
@@ -107,6 +108,20 @@ export class AuthController {
   @ApiResponse({ status: 410, description: 'El enlace ha expirado o agotó sus usos' })
   async registerWorkspaceGuestController(@Body() dto: RegisterWorkspaceGuestDto) {
     return this.authService.registerWorkspaceGuestFromLink(dto);
+  }
+
+  @Post('register/business')
+  @Throttle({ long: { limit: 5, ttl: 600_000 } })
+  @ApiOperation({
+    summary: 'createBusinessForm — registrar una organización (Musila Business)',
+    description:
+      'Crea la cuenta del futuro Organization Admin y la organización en estado EN_TRAMITE, a la espera de aprobación del admin de Musila. Devuelve un JWT.',
+  })
+  @ApiResponse({ status: 201, description: 'Cuenta y organización creadas (EN_TRAMITE)' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos' })
+  @ApiResponse({ status: 409, description: 'El correo electrónico ya está registrado' })
+  async registerBusinessController(@Body() dto: CreateBusinessRegistrationDto) {
+    return this.authService.registerBusinessAccount(dto);
   }
 
   @Post('forgot-password')

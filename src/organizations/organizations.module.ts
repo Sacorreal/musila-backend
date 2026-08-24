@@ -2,9 +2,12 @@ import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PlanCapability } from 'src/entitlements/entities/plan-capability.entity';
 import { Subscription } from 'src/entitlements/entities/subscription.entity';
+import { LegalIdentityModule } from 'src/legal-identity/legal-identity.module';
+import { AppNotificationsModule } from 'src/notifications/notifications.module';
 import { EmailModule } from 'src/shared/mail/email.module';
 import { StaffAuditModule } from 'src/staff-audit/staff-audit.module';
 import { PublisherShareModule } from 'src/publisher-share/publisher-share.module';
+import { User } from 'src/users/entities/user.entity';
 import { AccessRequest } from './entities/access-request.entity';
 import { OrganizationInvite } from './entities/organization-invite.entity';
 import { OrganizationMembership } from './entities/organization-membership.entity';
@@ -20,8 +23,12 @@ import { OrganizationInviteService } from './organization-invite.service';
 import { OrganizationSecurityPolicyService } from './organization-security-policy.service';
 import { WorkspaceInviteService } from './workspace-invite.service';
 import { AccessRequestListener } from './listeners/access-request.listener';
+import { OrganizationVerifiedGuard } from './guards/organization-verified.guard';
 import { OrganizationInviteListener } from './listeners/organization-invite.listener';
+import { OrganizationRegistrationEmailListener } from './listeners/organization-registration-email.listener';
+import { OrganizationRegistrationNotificationListener } from './listeners/organization-registration-notification.listener';
 import { AccessRequestsController } from './access-requests.controller';
+import { BusinessRegistrationController } from './business-registration.controller';
 import { OrganizationInvitesController } from './organization-invites.controller';
 import { OrganizationMembersController } from './organization-members.controller';
 import { OrganizationSecurityPolicyController } from './organization-security-policy.controller';
@@ -46,8 +53,11 @@ import { WorkspaceInvitesPublicController } from './workspace-invites-public.con
       AccessRequest,
       Subscription,
       PlanCapability,
+      User,
     ]),
     EmailModule,
+    AppNotificationsModule,
+    LegalIdentityModule,
     forwardRef(() => StaffAuditModule),
     PublisherShareModule,
   ],
@@ -61,6 +71,7 @@ import { WorkspaceInvitesPublicController } from './workspace-invites-public.con
     WorkspaceInvitesController,
     WorkspaceInvitesPublicController,
     AccessRequestsController,
+    BusinessRegistrationController,
   ],
   providers: [
     OrganizationsService,
@@ -71,6 +82,9 @@ import { WorkspaceInvitesPublicController } from './workspace-invites-public.con
     AccessRequestService,
     OrganizationInviteListener,
     AccessRequestListener,
+    OrganizationRegistrationEmailListener,
+    OrganizationRegistrationNotificationListener,
+    OrganizationVerifiedGuard,
   ],
   exports: [
     OrganizationsService,

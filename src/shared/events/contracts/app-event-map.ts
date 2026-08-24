@@ -600,6 +600,68 @@ export interface AppEventMap {
     organizationId: string;
   };
 
+  // 🏢 REGISTRO LEGAL B2B (onboarding comercial de organizaciones)
+
+  /** `createBusinessForm` enviado: la organización nace en EN_TRAMITE. */
+  'organization.registration.submitted': {
+    organizationId: string;
+    organizationName: string;
+    adminEmail: string;
+    planKey: string;
+  };
+
+  /** El admin de Musila aprobó la solicitud: EN_TRAMITE → APROBADA. */
+  'organization.registration.approved': {
+    organizationId: string;
+    organizationName: string;
+    adminEmail: string;
+    planKey: string;
+    planName: string;
+    /** Ausente cuando el plan no tiene precio configurado (flujo manual). */
+    paymentLinkUrl?: string;
+  };
+
+  /** El admin de Musila rechazó la solicitud. */
+  'organization.registration.rejected': {
+    organizationId: string;
+    organizationName: string;
+    adminEmail: string;
+    reason: string;
+  };
+
+  /** Pago confirmado (automático o manual): APROBADA → CREADA. */
+  'organization.registration.created': {
+    organizationId: string;
+    organizationName: string;
+    adminEmail: string;
+  };
+
+  /** Todos los requisitos cumplidos: CREADA → VERIFICADA. Arranca la suscripción. */
+  'organization.registration.verified': {
+    organizationId: string;
+    organizationName: string;
+    adminEmail: string;
+    planKey: string;
+    planName: string;
+    subscriptionStartAt: Date;
+  };
+
+  /** Recordatorio de vencimiento de suscripción (5 y 1 días antes). */
+  'organization.subscription.reminder': {
+    organizationId: string;
+    organizationName: string;
+    adminEmail: string;
+    daysRemaining: number;
+    dueDate: Date;
+  };
+
+  /** Suscripción suspendida por falta de pago 5 días después del vencimiento. */
+  'organization.subscription.suspended': {
+    organizationId: string;
+    organizationName: string;
+    adminEmail: string;
+  };
+
   // 📜 RELACIÓN EDITORA-AUTOR (Publisher's Share confirmado vía roster)
 
   'publisher-share.confirmed': {
