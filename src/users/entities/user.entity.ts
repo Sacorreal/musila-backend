@@ -15,8 +15,20 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { UserRole } from './user-role.enum';
+import { UserPlanType } from './user-plan-type.enum';
+import { MusicRole } from './music-role.enum';
 import { UserPlan } from './user-plan.enum';
+import { ProSociety } from './pro-society.enum';
+import { SocialNetworksData } from './social-networks.type';
+
+export interface UserBankAccount {
+  bankName: string;
+  accountType: string;
+  accountNumber: string;
+  accountHolderName: string;
+  accountHolderIdType: string;
+  accountHolderIdNumber: string;
+}
 
 @Entity({ name: 'users' })
 export class User {
@@ -38,6 +50,19 @@ export class User {
   @Column('varchar', { nullable: false, unique: true })
   email: string;
 
+  @Column('varchar', { length: 20 })
+  username: string;
+
+  /**
+   * true cuando el username fue asignado automáticamente (backfill de
+   * usuarios preexistentes a la migración de Musila Creator ID → username)
+   * y el usuario todavía no eligió uno definitivo. Solo informativo para la
+   * UI (mostrar el modal bloqueante de elegir username); nunca se usa para
+   * autorizar.
+   */
+  @Column('boolean', { name: 'username_is_temporary', default: false })
+  usernameIsTemporary: boolean;
+
   @Column('varchar', { nullable: false, select: false })
   password: string;
 
@@ -55,10 +80,14 @@ export class User {
 
   @Column({
     type: 'enum',
-    enum: UserRole,
-    default: UserRole.INVITADO,
+    enum: UserPlanType,
+    default: UserPlanType.INVITADO,
+    name: 'plan_type',
   })
-  role: UserRole;
+  planType: UserPlanType;
+
+  @Column({ type: 'enum', enum: MusicRole, default: MusicRole.COMPOSITOR })
+  role: MusicRole;
 
   @Column('varchar', { name: 'avatar', nullable: true })
   avatarUrl?: string;
@@ -69,11 +98,23 @@ export class User {
   @Column('boolean', { default: false, name: 'is_verified' })
   isVerified: boolean;
 
+  /**
+   * Identidad legal verificada (Ley 527): gate para firmar splits y reproducir
+   * canciones de terceros. Los datos detallados viven en `LegalIdentity`
+   * (relación 1:1, ver `legal-identity` module); esta bandera vive aquí para
+   * que los guards la consulten con un solo lookup por PK (<200ms).
+   */
+  @Column('boolean', { default: false, name: 'identidad_legal_verificada' })
+  identidadLegalVerificada: boolean;
+
   @Column('text', { nullable: true })
   biography?: string;
 
   @Column('jsonb', { name: 'social_networks', nullable: true })
-  socialNetworks?: Record<string, string>;
+  socialNetworks?: SocialNetworksData;
+
+  @Column('jsonb', { name: 'bank_account', nullable: true })
+  bankAccount?: UserBankAccount;
 
   @ManyToMany(() => Track, (track) => track.authors, { nullable: true })
   tracks?: Track[];
@@ -128,11 +169,32 @@ export class User {
   @Column('varchar', { nullable: true, name: 'fiscal_address' })
   fiscalAddress?: string;
 
+  @Column('varchar', { nullable: true, name: 'pro_society' })
+  proSociety?: ProSociety;
+
+  @Column('varchar', { nullable: true, name: 'ipi_number' })
+  ipiNumber?: string;
+
+  @Column('varchar', { nullable: true, name: 'publisher' })
+  publisher?: string;
+
   @Column('varchar', { nullable: true, name: 'reset_token', select: false })
   resetToken?: string;
 
   @Column('timestamp', { nullable: true, name: 'reset_token_expires' })
   resetTokenExpires?: Date;
+
+  @Column('varchar', { nullable: true, name: 'email_verification_token', select: false })
+  emailVerificationToken?: string;
+
+  @Column('timestamp', { nullable: true, name: 'email_verification_token_expires' })
+  emailVerificationTokenExpires?: Date;
+
+  @Column('uuid', { nullable: true, name: 'referred_by_affiliate_id' })
+  referredByAffiliateId?: string;
+
+  @Column('timestamptz', { nullable: true, name: 'referred_at' })
+  referredAt?: Date;
 
   @CreateDateColumn({
     name: 'created_at',

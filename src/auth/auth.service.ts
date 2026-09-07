@@ -1,5 +1,8 @@
 import {
+  ConflictException,
+  GoneException,
   Injectable,
+  Logger,
   UnauthorizedException,
   BadRequestException,
 } from '@nestjs/common';
@@ -8,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { GuestsService } from 'src/guests/guests.service';
 import { User } from 'src/users/entities/user.entity';
 import { UsersService } from 'src/users/users.service';
+import { AuditLogService } from 'src/users/audit-log.service';
 
 import { LoginAuthDto } from './dto/login-auth.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
@@ -18,17 +22,50 @@ import * as crypto from 'crypto';
 import { EventBusService } from 'src/shared/events/event-bus.service';
 import { RequestResetPasswordDto } from './dto/request-reset-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 import { PaymentsService } from 'src/payments/payments.service';
+import { AffiliatesService } from 'src/affiliates/affiliates.service';
+import { OrganizationInviteService } from 'src/organizations/organization-invite.service';
+import { RegisterOrgAdminDto } from 'src/organizations/dto/register-org-admin.dto';
+import { WorkspaceInviteService } from 'src/organizations/workspace-invite.service';
+import { RegisterWorkspaceGuestDto } from 'src/organizations/dto/register-workspace-guest.dto';
+import { OrganizationsService } from 'src/organizations/organizations.service';
+import { CreateBusinessRegistrationDto } from 'src/organizations/dto/create-business-registration.dto';
+
+const EMAIL_VERIFICATION_EXPIRATION_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly guestsService: GuestsService,
     private readonly jwtService: JwtService,
     private readonly eventBus: EventBusService,
     private readonly paymentsService: PaymentsService,
+    private readonly affiliatesService: AffiliatesService,
+    private readonly auditLogService: AuditLogService,
+    private readonly organizationInviteService: OrganizationInviteService,
+    private readonly workspaceInviteService: WorkspaceInviteService,
+    private readonly organizationsService: OrganizationsService,
   ) {}
+
+  /**
+   * Trampa de tiempo anti-bot: rechaza envíos que llegan antes de que un
+   * humano razonablemente pudiera completar el formulario. Complementa al
+   * honeypot `companyWebsite`. Usa el mismo mensaje genérico que este para
+   * no revelar el mecanismo a un atacante.
+   */
+  private static readonly MIN_FORM_FILL_TIME_MS = 3000;
+
+  private assertHumanTiming(formStartedAt?: number): void {
+    if (formStartedAt === undefined) return;
+    if (Date.now() - formStartedAt < AuthService.MIN_FORM_FILL_TIME_MS) {
+      throw new BadRequestException('Solicitud inválida');
+    }
+  }
 
   /**
    * Login unificado para User y Guest usando citizenID.
@@ -66,28 +103,99 @@ export class AuthService {
     return { token };
   }
 
-  async registerService(user: RegisterAuthDto) {
+  async registerService(user: RegisterAuthDto, ip: string, userAgent?: string) {
+    this.assertHumanTiming(user.formStartedAt);
+
     const userExists = await this.usersService.findUserBycitizenIDService(
       user.citizenID,
     );
-
     if (userExists) throw new UnauthorizedException('El usuario ya existe');
 
+    const emailExists = await this.usersService.findUserByEmailService(user.email);
+    if (emailExists) throw new ConflictException('Ya existe un usuario con este email');
+
     const hashedPassword = await bcrypt.hash(user.password, 10);
-    const { externalReference, ...userFields } = user;
+    const {
+      externalReference,
+      referralCode,
+      companyWebsite: _companyWebsite, // honeypot: nunca se persiste
+      formStartedAt: _formStartedAt, // solo para verificación de timing, nunca se persiste
+      ...userFields
+    } = user;
 
     const newUser = await this.usersService.createUserService({
       ...userFields,
       password: hashedPassword,
+      // isVerified nunca se toma del cliente: siempre arranca sin verificar.
+      isVerified: false,
     });
 
     if (externalReference) {
       await this.paymentsService.linkUserToPayment(externalReference, newUser.id);
     }
 
+    if (referralCode) {
+      try {
+        await this.affiliatesService.attributeReferral(newUser.id, referralCode);
+      } catch (err: any) {
+        this.logger.warn(`No se pudo atribuir el referido: ${err?.message}`);
+      }
+    }
+
+    await this.auditLogService.log(newUser.id, 'user.registered', { userAgent }, ip);
+    await this.sendEmailVerification(newUser.id, newUser.email, newUser.name);
+
     const token = await this.createToken(newUser);
 
     return { token };
+  }
+
+  /** Genera y envía el token de verificación de email (24h de validez). */
+  private async sendEmailVerification(userId: string, email: string, name: string): Promise<void> {
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + EMAIL_VERIFICATION_EXPIRATION_MS);
+
+    await this.usersService.saveEmailVerificationToken(userId, verificationToken, expires);
+
+    this.eventBus.emit('user.email.verification.requested', {
+      email,
+      name,
+      token: verificationToken,
+    });
+  }
+
+  async verifyEmailService(dto: VerifyEmailDto): Promise<{ message: string }> {
+    const user = await this.usersService.findUserByEmailVerificationToken(dto.token);
+
+    if (!user) {
+      throw new BadRequestException('Token inválido');
+    }
+    if (user.isVerified) {
+      return { message: 'Tu correo ya estaba verificado' };
+    }
+    if (
+      user.emailVerificationTokenExpires &&
+      user.emailVerificationTokenExpires < new Date()
+    ) {
+      throw new GoneException('El enlace de verificación ha expirado, solicita uno nuevo');
+    }
+
+    await this.usersService.markEmailAsVerified(user.id);
+
+    return { message: 'Correo verificado correctamente' };
+  }
+
+  async resendVerificationService(dto: ResendVerificationDto): Promise<{ message: string }> {
+    const successMessage = 'Si el correo existe y no ha sido verificado, se ha enviado un nuevo enlace';
+    const user = await this.usersService.findUserByEmailService(dto.email);
+
+    if (!user || user.isVerified) {
+      return { message: successMessage };
+    }
+
+    await this.sendEmailVerification(user.id, user.email, user.name);
+
+    return { message: successMessage };
   }
 
   async registerGuestService(guest: RegisterGuestDto) {
@@ -99,15 +207,181 @@ export class AuthService {
   }
 
   /**
+   * Registro del Organization Admin a partir de una invitación por email:
+   * valida el token, crea el usuario oficial (ya verificado, pues el email
+   * fue validado por el token) y lo activa como miembro con rol
+   * ORGANIZATION_ADMIN. Devuelve el JWT para iniciar sesión automáticamente.
+   */
+  async registerOrgAdminFromInvite(dto: RegisterOrgAdminDto) {
+    if (dto.password !== dto.repeatPassword)
+      throw new BadRequestException('Las contraseñas no coinciden');
+
+    const invite = await this.organizationInviteService.validate(dto.token);
+    if (invite.email.toLowerCase() !== dto.email.toLowerCase()) {
+      throw new BadRequestException('El email no coincide con la invitación');
+    }
+
+    const emailExists = await this.usersService.findUserByEmailService(dto.email);
+    if (emailExists) throw new ConflictException('Ya existe un usuario con este email');
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const newUser = await this.usersService.createUserService({
+      name: dto.name,
+      lastName: dto.lastName,
+      email: dto.email,
+      username: dto.username,
+      password: hashedPassword,
+      countryCode: dto.countryCode,
+      phone: dto.phone,
+      typeCitizenID: dto.typeCitizenID,
+      citizenID: dto.citizenID,
+      // El email fue validado por el token de invitación: la cuenta nace verificada.
+      isVerified: true,
+    });
+
+    const { organizationId } = await this.organizationInviteService.consumeForUser(
+      dto.token,
+      newUser.id,
+    );
+
+    const token = await this.createToken(newUser);
+    return { token, organizationId };
+  }
+
+  /**
+   * Registro de un invitado a partir de un enlace de workspace reutilizable:
+   * valida el enlace, crea la cuenta (ya verificada, pues el email fue validado
+   * implícitamente por el uso del enlace) y genera una solicitud de acceso
+   * PENDING para que el administrador la apruebe. Devuelve el JWT para iniciar
+   * sesión automáticamente; el usuario queda a la espera de aprobación.
+   */
+  async registerWorkspaceGuestFromLink(dto: RegisterWorkspaceGuestDto) {
+    if (dto.password !== dto.repeatPassword)
+      throw new BadRequestException('Las contraseñas no coinciden');
+
+    const invite = await this.workspaceInviteService.validatePublic(dto.token);
+
+    const emailExists = await this.usersService.findUserByEmailService(dto.email);
+    if (emailExists) throw new ConflictException('Ya existe un usuario con este email');
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const newUser = await this.usersService.createUserService({
+      name: dto.name,
+      lastName: dto.lastName,
+      email: dto.email,
+      username: dto.username,
+      password: hashedPassword,
+      typeCitizenID: dto.typeCitizenID,
+      citizenID: dto.citizenID,
+      // El email fue validado por el uso del enlace: la cuenta nace verificada.
+      isVerified: true,
+    });
+
+    await this.workspaceInviteService.consumeForNewUser(dto.token, newUser.id);
+
+    const token = await this.createToken(newUser);
+    return { token, organizationId: invite.organizationId, status: 'PENDING' as const };
+  }
+
+  /**
+   * `createBusinessForm` (§Registro Legal B2B, paso 1): crea la cuenta del
+   * futuro Organization Admin y, a partir de ella, la organización en
+   * EN_TRAMITE. El formulario solo recolecta datos de la empresa (no el
+   * nombre de la persona) — `name`/`lastName` nacen con un placeholder que se
+   * corrige al "crear el primer perfil" tras CREADA (§5).
+   */
+  async registerBusinessAccount(dto: CreateBusinessRegistrationDto) {
+    const emailExists = await this.usersService.findUserByEmailService(dto.email);
+    if (emailExists) throw new ConflictException('Ya existe un usuario con este email');
+
+    const hashedPassword = await bcrypt.hash(dto.password, 10);
+    const newUser = await this.createUserWithGeneratedUsername(
+      {
+        name: dto.legalName,
+        lastName: 'Empresa',
+        email: dto.email,
+        password: hashedPassword,
+        countryCode: dto.phoneCountryCode,
+        phone: dto.phoneNumber,
+        isVerified: false,
+      },
+      dto.email.split('@')[0],
+    );
+
+    const organization = await this.organizationsService.createOrganizationForBusinessRegistration({
+      legalName: dto.legalName,
+      organizationType: dto.organizationType,
+      legalCountry: dto.legalCountry,
+      documentType: dto.documentType,
+      documentNumber: dto.documentNumber,
+      phoneCountryCode: dto.phoneCountryCode,
+      phoneNumber: dto.phoneNumber,
+      planKey: dto.planKey,
+      registeredByUserId: newUser.id,
+      adminEmail: newUser.email,
+    });
+
+    await this.sendEmailVerification(newUser.id, newUser.email, newUser.name);
+
+    const token = await this.createToken(newUser);
+    return { token, organizationId: organization.id };
+  }
+
+  /**
+   * Crea un usuario derivando el `username` de una base (email/nombre) y
+   * reintentando con un sufijo aleatorio ante colisión — usado por flujos que,
+   * a diferencia del registro individual, no piden username explícito.
+   */
+  private async createUserWithGeneratedUsername(
+    input: Omit<Parameters<UsersService['createUserService']>[0], 'username'>,
+    usernameBase: string,
+  ): Promise<User> {
+    const base = usernameBase.replace(/[^A-Za-z0-9_]/g, '').slice(0, 15) || 'business';
+
+    let lastError: unknown;
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const suffix = attempt === 0 ? '' : Math.floor(1000 + Math.random() * 9000).toString();
+      const username = `${base}${suffix}`.slice(0, 20);
+      try {
+        return await this.usersService.createUserService({ ...input, username });
+      } catch (err) {
+        if (!(err instanceof ConflictException)) throw err;
+        lastError = err;
+      }
+    }
+    throw lastError instanceof Error
+      ? lastError
+      : new ConflictException('No se pudo generar un nombre de usuario disponible');
+  }
+
+  /**
+   * Emite una sesión (JWT) para un usuario ya autenticado por Passkey (§11).
+   * La verificación criptográfica la realiza `PasskeyService`; aquí solo se
+   * reutiliza el mecanismo de sesión existente sin duplicar lógica de tokens.
+   */
+  async issuePasskeySession(userId: string): Promise<{ token: string }> {
+    const user = await this.usersService.findOneUserService(userId);
+    if (!user) throw new UnauthorizedException('Usuario no encontrado');
+    const token = await this.createToken(user);
+    return { token };
+  }
+
+  /**
    * Genera token JWT unificado para User o Guest.
    */
   private async createToken(account: User | Guest): Promise<string> {
     const payload: JwtPayload = {
       id: account.id,
       email: account.email,
-      role: account.role,
+      planType: account.planType,
       name: account.name,
       plan: 'plan' in account ? (account).plan : undefined,
+      isVerified: account.isVerified,
+      identidadLegalVerificada:
+        'identidadLegalVerificada' in account ? account.identidadLegalVerificada : undefined,
+      username: 'username' in account ? account.username : undefined,
+      usernameIsTemporary:
+        'usernameIsTemporary' in account ? account.usernameIsTemporary : undefined,
     };
     return this.jwtService.signAsync(payload);
   }

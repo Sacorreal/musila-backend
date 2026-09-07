@@ -2,7 +2,7 @@ import React from 'react';
 import { Document, Page, View, Text, Image, StyleSheet } from '@react-pdf/renderer';
 import { Payment, PaymentType } from './entities/payment.entity';
 import { User } from 'src/users/entities/user.entity';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 
 const S = StyleSheet.create({
   page: {
@@ -136,15 +136,15 @@ const S = StyleSheet.create({
 });
 
 function getPlanLabel(payment: Payment): string {
-  const roleNames: Partial<Record<UserRole, string>> = {
-    [UserRole.AUTOR]: 'Autor',
-    [UserRole.CANTAUTOR]: 'Cantautor',
-    [UserRole.INTERPRETE]: 'Intérprete',
+  const planTypeNames: Partial<Record<UserPlanType, string>> = {
+    [UserPlanType.PLAN_AUTOR]: 'Plan Autor',
+    [UserPlanType.PLAN_360]: 'Plan 360',
+    [UserPlanType.PLAN_DESCUBRIDOR]: 'Plan Descubridor',
   };
-  const roleName = roleNames[payment.roleType] ?? payment.roleType;
-  if (payment.paymentType === PaymentType.ONE_TIME) return `${roleName} Pro — Vitalicio`;
+  const planTypeName = planTypeNames[payment.planType] ?? payment.planType;
+  if (payment.paymentType === PaymentType.ONE_TIME) return `${planTypeName} Pro — Vitalicio`;
   const isAnnual = Number(payment.amount ?? 0) >= 100_000;
-  return `${roleName} Pro — ${isAnnual ? 'Anual' : 'Mensual'}`;
+  return `${planTypeName} Pro — ${isAnnual ? 'Anual' : 'Mensual'}`;
 }
 
 function formatCurrency(amount: number): string {

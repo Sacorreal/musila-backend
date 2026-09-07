@@ -7,10 +7,11 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { AuthorizationService } from 'src/authorization/authorization.service';
 import { CollaboratorPermission } from '../entities/collaborator-permission.enum';
 import { PLAYLIST_PERMISSION_KEY } from '../decorators/require-permission.decorator';
 import { PlaylistCollaboratorsService } from '../playlist-collaborators.service';
+import { SharingService } from 'src/sharing/sharing.service';
 
 interface PlaylistRequest {
   user: JwtPayload;
@@ -22,6 +23,8 @@ export class PlaylistPermissionGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly collaboratorsService: PlaylistCollaboratorsService,
+    private readonly sharingService: SharingService,
+    private readonly authorizationService: AuthorizationService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -51,8 +54,12 @@ export class PlaylistPermissionGuard implements CanActivate {
       throw new NotFoundException('ID de la playlist no especificado en la ruta');
     }
 
-    // 1. ADMIN de sistema tiene acceso total
-    if (user.role === UserRole.ADMIN) {
+    // 1. El staff con moderación de playlists tiene acceso total
+    const moderation = await this.authorizationService.check(
+      { userId: user.id },
+      { caps: ['platform.playlists.moderate'], operator: 'AND' },
+    );
+    if (moderation.allowed) {
       return true;
     }
 
@@ -70,6 +77,14 @@ export class PlaylistPermissionGuard implements CanActivate {
     );
 
     if (!userPermission) {
+      // Acceso de solo lectura vía un enlace de "compartir" (usuario autorizado
+      // por su username, no un PlaylistCollaborator formal).
+      if (
+        requiredPermission === CollaboratorPermission.READ &&
+        (await this.sharingService.hasActivePlaylistAccess(playlistId, user.id))
+      ) {
+        return true;
+      }
       throw new ForbiddenException('No eres dueño ni colaborador de esta playlist');
     }
 

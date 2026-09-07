@@ -1,5 +1,7 @@
 
 import {
+  ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsBoolean,
   IsNotEmpty,
@@ -26,6 +28,27 @@ export class CreateTrackInput {
   @IsNotEmpty({ message: 'El título es obligatorio' })
   title: string;
 
+  @ApiPropertyOptional({
+    type: [String],
+    example: ['Rapsodia Bohemia', 'BoRhap'],
+    description: 'Títulos alternativos de la obra (opcional). Metadato informativo con uno o varios nombres alternativos.',
+  })
+  @IsOptional()
+  @IsArray({ message: 'Los títulos alternativos deben ser un arreglo de textos' })
+  @IsString({ each: true, message: 'Cada título alternativo debe ser un texto válido' })
+  @Transform(({ value }: { value: unknown }): string[] => {
+    const toArray = Array.isArray(value)
+      ? value
+      : typeof value === 'string'
+        ? value.split(',')
+        : [];
+    return toArray
+      .filter((v): v is string => typeof v === 'string')
+      .map((v) => v.trim())
+      .filter(Boolean);
+  })
+  alternativeTitles?: string[];
+
   @ApiProperty({
     example: '550e8400-e29b-41d4-a716-446655440000',
     description: 'Identificador único (UUID v4) del género musical asociado al track.'
@@ -36,11 +59,11 @@ export class CreateTrackInput {
 
   @ApiPropertyOptional({
     example: 'Rock Progresivo',
-    description: 'Subgénero musical de la canción'
+    description: 'Ritmo musical de la canción'
   })
-  @IsString({ message: 'El subgénero debe ser un texto válido' })
+  @IsString({ message: 'El ritmo debe ser un texto válido' })
   @IsOptional()
-  subGenre?: string;
+  ritmo?: string;
 
   @ApiPropertyOptional({
     example: 'https://ejemplo.com/imagenes/bohemian-rhapsody.jpg',
@@ -118,6 +141,14 @@ export class CreateTrackInput {
   @IsOptional()
   coverUrl?: string
 
+  @ApiPropertyOptional({ description: 'Llave de almacenamiento de la partitura en PDF (opcional)' })
+  @IsOptional()
+  sheetMusicKey?: string
+
+  @ApiPropertyOptional({ description: 'URL pública de la partitura en PDF (opcional)' })
+  @IsOptional()
+  sheetMusicUrl?: string
+
   @ApiPropertyOptional({
     type: [ExternalIdInput],
     description:
@@ -144,4 +175,42 @@ export class CreateTrackInput {
   @ValidateNested({ each: true })
   @Type(() => IntellectualPropertyInput)
   intellectualProperties?: IntellectualPropertyInput[];
+
+  @ApiProperty({
+    type: [String],
+    example: [
+      '880e8400-e29b-41d4-a716-446655440000',
+      '990e8400-e29b-41d4-a716-446655440000',
+    ],
+    description: 'Lista de identificadores únicos (UUID v4) de los moods del track (mínimo 1, máximo 2).',
+  })
+  @IsArray({ message: 'moodsIds debe ser un arreglo de UUIDs' })
+  @ArrayMinSize(1, { message: 'Debes seleccionar al menos 1 mood' })
+  @ArrayMaxSize(2, { message: 'Máximo 2 moods por canción' })
+  @IsUUID('4', {
+    each: true,
+    message: 'Cada moodId debe ser un UUID v4 válido',
+  })
+  @Transform(({ value }: { value: string | string[] }): string[] => {
+    if (Array.isArray(value)) return value;
+    if (typeof value === 'string') return value.split(',').map((v: string) => v.trim()).filter(Boolean);
+    return [];
+  })
+  moodsIds: string[];
+
+  @ApiPropertyOptional({
+    example: '110e8400-e29b-41d4-a716-446655440000',
+    description: 'Identificador único (UUID v4) del tema/uso asociado al track (opcional, máximo 1).',
+  })
+  @IsOptional()
+  @IsUUID('4', { message: 'El themeId debe ser un UUID v4 válido' })
+  themeId?: string;
+
+  @ApiPropertyOptional({
+    example: false,
+    description: 'Indica si la canción está grabada a dúo/varias voces (Feat).',
+  })
+  @IsOptional()
+  @IsBoolean({ message: 'isFeat debe ser un valor booleano' })
+  isFeat?: boolean;
 }

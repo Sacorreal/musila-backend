@@ -14,6 +14,9 @@ import { UpdateMeDto } from './dto/update-me.dto';
 import { ChangeEmailDto } from './dto/change-email.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateBillingDto } from './dto/update-billing.dto';
+import { BankAccountInput } from './dto/bank-account.input';
+import { LegalIdentityService } from 'src/legal-identity/legal-identity.service';
+import { UpsertLegalIdentityDto } from 'src/legal-identity/dto/upsert-legal-identity.dto';
 
 @Injectable()
 export class MeService {
@@ -21,6 +24,7 @@ export class MeService {
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly auditLog: AuditLogService,
+    private readonly legalIdentityService: LegalIdentityService,
   ) {}
 
   async getProfile(userId: string) {
@@ -76,6 +80,31 @@ export class MeService {
   async updateBilling(userId: string, dto: UpdateBillingDto) {
     await this.userRepo.update(userId, dto);
     return this.getBilling(userId);
+  }
+
+  async getBankAccount(userId: string) {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      select: ['id', 'bankAccount'],
+    });
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+    return user.bankAccount ?? null;
+  }
+
+  async updateBankAccount(userId: string, dto: BankAccountInput) {
+    await this.userRepo.update(userId, { bankAccount: dto });
+    return this.getBankAccount(userId);
+  }
+
+  // ── Identidad legal (Ley 527 / Ley 1581) ────────────────
+
+  getLegalIdentity(userId: string) {
+    return this.legalIdentityService.getDecryptedByUserId(userId);
+  }
+
+  async updateLegalIdentity(userId: string, dto: UpsertLegalIdentityDto) {
+    await this.legalIdentityService.upsert(userId, dto);
+    return this.getProfile(userId);
   }
 
   private sanitize(user: User) {

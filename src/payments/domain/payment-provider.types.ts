@@ -7,7 +7,7 @@
  * provider para evitar errores de unidad.
  */
 
-export type ProviderName = 'wompi';
+export type ProviderName = 'wompi' | 'stripe';
 
 /** Estados normalizados de una transacción, alineados con Wompi. */
 export enum ProviderTransactionStatus {

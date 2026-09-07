@@ -1,0 +1,6 @@
+export enum EntitlementScope {
+  USER = 'USER',
+  MEMBERSHIP = 'MEMBERSHIP',
+  ORGANIZATION = 'ORGANIZATION',
+  TRACKSPACE = 'TRACKSPACE',
+}

@@ -1,10 +1,13 @@
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateIntellectualPropertyInput } from './dto/create-intellectual-property.input';
 import { UpdateIntellectualPropertyInput } from './dto/update-intellectual-property.input';
 import { IntellectualPropertyService } from './intellectual-property.service';
-import { Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
-import { PaginationDto} from '../shared/dto/pagination.dto';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { PaginationDto } from '../shared/dto/pagination.dto';
 import { PaginatedIntellectualPropertyResponseDto } from './dto/intellectual-property-pagination.dto';
+import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 
 @ApiTags('Propiedad Intelectual')
 @Controller('intellectual-property')
@@ -14,6 +17,9 @@ export class IntellectualPropertyController {
   ) { }
 
   @Post()
+  @RequireCapability('catalog.manage')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Crear registro de propiedad intelectual',
     description: 'Crea un nuevo registro de propiedad intelectual en el sistema.',
@@ -59,6 +65,9 @@ export class IntellectualPropertyController {
   }
 
   @Put(':id')
+  @RequireCapability('catalog.manage')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
+  @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Actualizar registro de propiedad intelectual',
     description: 'Actualiza la información de un registro de propiedad intelectual existente.',
@@ -76,17 +85,21 @@ export class IntellectualPropertyController {
   }
 
   @Delete(':id')
+  @RequireCapability('catalog.manage')
+  @UseGuards(JWTAuthGuard, AuthorizationGuard)
+  @ApiBearerAuth('JWT-auth')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({
     summary: 'Eliminar registro de propiedad intelectual',
     description: 'Elimina un registro de propiedad intelectual del sistema por su ID.',
   })
   @ApiParam({ name: 'id', description: 'ID del registro de propiedad intelectual a eliminar (UUID)', example: '123e4567-e89b-12d3-a456-426614174000' })
   @ApiResponse({
-    status: 200,
+    status: 204,
     description: 'Registro de propiedad intelectual eliminado exitosamente',
   })
   @ApiResponse({ status: 404, description: 'Registro no encontrado' })
-  removeIntellectualProperty(@Param('id') id: string) {
-    return this.intellectualPropertyService.remove(id);
+  async removeIntellectualProperty(@Param('id') id: string) {
+    await this.intellectualPropertyService.remove(id);
   }
 }

@@ -13,11 +13,11 @@ export class CreateMusicalGenreInput {
   @ApiPropertyOptional({
     example: ['Hard Rock', 'Rock Alternativo', 'Indie Rock'],
     description:
-      'Lista de subgéneros asociados al género principal. Este campo es opcional.',
+      'Lista de ritmos asociados al género principal. Este campo es opcional.',
   })
   @IsArray()
   @IsOptional()
-  subGenre?: string[];
+  ritmo?: string[];
 
   @ApiPropertyOptional({ description: 'Slug del género musical (auto-generado si se omite)', example: 'rock' })
   @IsString()

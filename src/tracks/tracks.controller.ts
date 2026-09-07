@@ -3,12 +3,14 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   ParseUUIDPipe,
   Post,
   Put,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
 
 import {
@@ -29,25 +31,33 @@ import { UsersService } from 'src/users/users.service';
 import { CreateTrackInput } from './dto/create-track.input';
 import { UpdateTrackInput } from './dto/update-track.input';
 import { TracksService } from './tracks.service';
-import { UserRole } from '../users/entities/user-role.enum';
+import { TrackPlaysService } from './track-plays.service';
 
 import { PaginatedTracksResponseDto, TrackResponseDto } from './dto/track-response.dto'
-import { RolesGuard } from 'src/users/guards/roles.guard';
-import { Roles } from 'src/users/decorators/roles.decorator';
-import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
+import { EmailVerifiedGuard } from 'src/users/guards/email-verified.guard';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
+import { AuthorizationService } from 'src/authorization/authorization.service';
+import { ConsumeEntitlement } from 'src/entitlements/decorators/consume-entitlement.decorator';
+import { EntitlementConsumeInterceptor } from 'src/entitlements/interceptors/entitlement-consume.interceptor';
+import { TrackLegalIdentityGuard } from './guards/track-legal-identity.guard';
 
 @ApiTags('Tracks')
-@UseGuards(JWTAuthGuard, RolesGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard)
 @Controller('tracks')
 export class TracksController {
   constructor(
     private readonly tracksService: TracksService,
     private readonly usersService: UsersService,
+    private readonly authorizationService: AuthorizationService,
+    private readonly trackPlaysService: TrackPlaysService,
   ) {}
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.AUTOR, UserRole.CANTAUTOR)
-  @PlanLimit('tracks')
+  @RequireCapability('track.create')
+  @ConsumeEntitlement('tracks.publish')
+  @UseGuards(EmailVerifiedGuard, AuthorizationGuard)
+  @UseInterceptors(EntitlementConsumeInterceptor)
   @ApiConsumes('multipart/form-data')
   @ApiBody({ type: CreateTrackInput })  
     @ApiOperation({
@@ -63,10 +73,11 @@ export class TracksController {
     status: 400,
     description: 'Datos inválidos',
   })
-  async createTrackController(   
-    @Body() createTrackInput: CreateTrackInput,    
+  async createTrackController(
+    @Body() createTrackInput: CreateTrackInput,
+    @CurrentUser() user: JwtPayload,
   ) {
-    return await this.tracksService.createTrackService(createTrackInput);
+    return await this.tracksService.createTrackService(createTrackInput, user.id);
   }
 
   @Get()
@@ -87,7 +98,7 @@ export class TracksController {
   } 
   
   @Get('my-tracks')
-  @Roles(UserRole.AUTOR, UserRole.CANTAUTOR)
+  @RequireCapability('catalog.view')
   @ApiOperation({
     summary: 'Obtener todos los tracks autoría del usuario logeado'
   })
@@ -141,7 +152,28 @@ export class TracksController {
   ): Promise<TrackResponseDto> {
     return await this.tracksService.findOneTrackService(id);
   }
-  
+
+  @Post(':id/play')
+  @HttpCode(204)
+  @UseGuards(TrackLegalIdentityGuard)
+  @ApiOperation({
+    summary: 'Registrar una reproducción del track',
+    description:
+      'Registra un evento de reproducción efectiva del track. Alimenta las métricas de reproducciones y usuarios únicos del dashboard del autor. Bloqueado (403) si el track es de otro autor y el usuario no tiene la identidad legal verificada.',
+  })
+  @ApiParam({
+    name: 'id',
+    description: 'ID del track reproducido (UUID)',
+    example: '123e4567-e89b-12d3-a456-426614174000',
+  })
+  @ApiResponse({ status: 204, description: 'Reproducción registrada' })
+  async registerTrackPlayController(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtPayload,
+  ): Promise<void> {
+    await this.trackPlaysService.register(id, user.id);
+  }
+
 
   @Put(':id')
   @ApiOperation({
@@ -164,7 +196,8 @@ export class TracksController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const requesterId = user.role === UserRole.ADMIN ? undefined : user.id;
+    const capabilityKeys = await this.authorizationService.getEffectiveCapabilityKeys({ userId: user.id });
+    const requesterId = capabilityKeys.includes('platform.content.tracks.view') ? undefined : user.id;
     return await this.tracksService.updateTrackService(id, updateTrackInput, requesterId);
   }
 
@@ -187,7 +220,8 @@ export class TracksController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtPayload,
   ) {
-    const requesterId = user.role === UserRole.ADMIN ? undefined : user.id;
+    const capabilityKeys = await this.authorizationService.getEffectiveCapabilityKeys({ userId: user.id });
+    const requesterId = capabilityKeys.includes('platform.content.tracks.view') ? undefined : user.id;
     return await this.tracksService.removeTrackService(id, requesterId);
   }
 }

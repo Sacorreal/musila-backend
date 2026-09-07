@@ -6,8 +6,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
+import { Mood } from 'src/moods/entities/mood.entity';
+import { Theme } from 'src/themes/entities/theme.entity';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { ADMIN_PLAN_TYPES, UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { FindOptionsWhere, ILike, In, Repository } from 'typeorm';
 import { CreateTrackInput } from './dto/create-track.input';
@@ -16,9 +18,14 @@ import { Track } from './entities/track.entity';
 import { TrackResponseDto, PaginatedTracksResponseDto } from './dto/track-response.dto';
 import { FindAllTracksOptions } from './interface/tracks-options.interface';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
+import { EventBusService } from 'src/shared/events/event-bus.service';
+import { CertificatesService } from 'src/certificates/certificates.service';
+import { SplitService } from 'src/splits/split.service';
 
 const tracksRelations: string[] = [
   'genre',
+  'moods',
+  'theme',
   'intellectualProperties',
   'authors',
   'playlists',
@@ -32,7 +39,14 @@ export class TracksService {
     private readonly tracksRepository: Repository<Track>,
     @InjectRepository(MusicalGenre)
     private readonly genreRepository: Repository<MusicalGenre>,
+    @InjectRepository(Mood)
+    private readonly moodsRepository: Repository<Mood>,
+    @InjectRepository(Theme)
+    private readonly themesRepository: Repository<Theme>,
     @InjectRepository(User) private readonly usersRepository: Repository<User>,
+    private readonly eventBus: EventBusService,
+    private readonly certificatesService: CertificatesService,
+    private readonly splitService: SplitService,
 
   ) { }
 
@@ -54,15 +68,20 @@ export class TracksService {
 
   async createTrackService(
     createTrackInput: CreateTrackInput,
+    requestedByUserId?: string,
   ): Promise<TrackResponseDto> {
     const {
       genreId,
-      subGenre,
+      ritmo,
       authorsIds,
+      moodsIds,
+      themeId,
       audioKey,
       audioUrl,
       coverKey,
       coverUrl,
+      sheetMusicKey,
+      sheetMusicUrl,
       externalsIds,
       ...rest
     } = createTrackInput;
@@ -80,23 +99,23 @@ export class TracksService {
         'El género musical no existe',
       );
 
-    // Si el cliente envía un subgénero, lo validamos contra la lista del género.
-    // Si no envía subgénero, no forzamos validación ni bloqueamos la creación.
-    if (subGenre) {
-      if (genre.subGenre && genre.subGenre.length > 0) {
-        const isValidSubGenre = genre.subGenre.some(
-          (sg) => sg.toLowerCase() === subGenre.toLowerCase(),
+    // Si el cliente envía un ritmo, lo validamos contra la lista del género.
+    // Si no envía ritmo, no forzamos validación ni bloqueamos la creación.
+    if (ritmo) {
+      if (genre.ritmo && genre.ritmo.length > 0) {
+        const isValidRitmo = genre.ritmo.some(
+          (sg) => sg.toLowerCase() === ritmo.toLowerCase(),
         );
 
-        if (!isValidSubGenre) {
+        if (!isValidRitmo) {
           throw new BadRequestException(
-            `El subgénero "${subGenre}" no pertenece al género "${genre.genre}". ` +
-            `Los subgéneros válidos son: ${genre.subGenre.join(', ')}.`,
+            `El ritmo "${ritmo}" no pertenece al género "${genre.genre}". ` +
+            `Los ritmos válidos son: ${genre.ritmo.join(', ')}.`,
           );
         }
       } else {
         throw new BadRequestException(
-          `El género "${genre.genre}" no tiene subgéneros definidos para asociar un subgénero.`,
+          `El género "${genre.genre}" no tiene ritmos definidos para asociar un ritmo.`,
         );
       }
     }
@@ -116,6 +135,26 @@ export class TracksService {
     }
 
     // =============================
+    // 2.5️⃣ Validar moods y tema
+    // =============================
+
+    const moods = await this.moodsRepository.find({
+      where: { id: In(moodsIds) },
+    });
+
+    if (moods.length !== moodsIds.length) {
+      throw new NotFoundException('Uno o más moods no existen');
+    }
+
+    let theme: Theme | null = null;
+    if (themeId) {
+      theme = await this.themesRepository.findOne({
+        where: { id: themeId },
+      });
+      if (!theme) throw new NotFoundException('El tema no existe');
+    }
+
+    // =============================
     // 3️⃣ Validar que venga audio
     // =============================
 
@@ -131,8 +170,10 @@ export class TracksService {
 
     if (rest.intellectualProperties) {
       const splitSheets = rest.intellectualProperties.filter(ip => ip.type === 'splitSheet');
-      if (splitSheets.length > 1) {
-        throw new BadRequestException('Solo se permite un documento Split Sheet por canción');
+      if (splitSheets.length > 0) {
+        throw new BadRequestException(
+          'El Split Sheet ya no se sube manualmente: se genera automáticamente desde el módulo de Split una vez que todos los coautores aprueban.',
+        );
       }
     }
 
@@ -143,17 +184,33 @@ export class TracksService {
     const newTrack = this.tracksRepository.create({
       ...rest,
       genre,
-      subGenre,
+      ritmo,
       authors,
+      moods,
+      theme: theme ?? null,
       audioKey,
       audioUrl,
       externalsIds,
       coverKey: coverKey ?? null,
       year: new Date().getFullYear(),
       coverUrl: coverUrl ?? null,
+      sheetMusicKey: sheetMusicKey ?? null,
+      sheetMusicUrl: sheetMusicUrl ?? null,
+      // El split de coautoría solo puede existir una vez creado el track, así
+      // que todo track nace no disponible hasta que su split quede firmado.
+      isAvailable: false,
     } as any);
 
     const saved = await this.saveAndReturnWithRelations(newTrack as unknown as Track);
+
+    this.eventBus.emit('track.created', {
+      trackId: saved.id,
+      audioKey: saved.audioKey,
+      requestedByUserId,
+      trackTitle: saved.title,
+      authorIds: saved.authors.map((author) => author.id),
+    });
+
     return TrackResponseDto.fromEntity(saved);
   }
 
@@ -167,8 +224,11 @@ export class TracksService {
       skip: offset,
       order: { createdAt: 'DESC' },
     });
+
+    const certificateStatuses = await this.certificatesService.getStatusesForTracks(tracks.map((t) => t.id));
+
     return {
-      data: tracks.map((t) => TrackResponseDto.fromEntity(t)),
+      data: tracks.map((t) => TrackResponseDto.fromEntity(t, certificateStatuses.get(t.id))),
       total,
     };
   }
@@ -186,7 +246,7 @@ export class TracksService {
       offset,
       isGospel,
       language,
-      subGenre,
+      ritmo,
       genreId,
       isAvailable,
       title,
@@ -194,11 +254,11 @@ export class TracksService {
 
     // 1. Determinar si el usuario tiene acceso a todas las canciones (RBAC)
     const hasGlobalAccess = [
-      UserRole.ADMIN,
-      UserRole.INTERPRETE,
-      UserRole.CANTAUTOR,
-      UserRole.INVITADO
-    ].includes(user?.role);
+      ...ADMIN_PLAN_TYPES,
+      UserPlanType.PLAN_DESCUBRIDOR,
+      UserPlanType.PLAN_360,
+      UserPlanType.INVITADO
+    ].includes(user?.planType);
 
     // Admins ven todos los tracks por defecto; el resto solo los disponibles
     const effectiveIsAvailable = isAvailable ?? (hasGlobalAccess ? undefined : true);
@@ -208,7 +268,7 @@ export class TracksService {
       ...(effectiveIsAvailable !== undefined && { isAvailable: effectiveIsAvailable }),
       ...(isGospel !== undefined && { isGospel }),
       ...(language && { language }),
-      ...(subGenre && { subGenre }),
+      ...(ritmo && { ritmo }),
       ...(genreId && { genre: { id: genreId } }),
       ...(title && { title: ILike(`%${title}%`) }),
       // 3. Restricción de propietario: Si NO tiene acceso global, filtra por su ID
@@ -241,12 +301,27 @@ export class TracksService {
       if (!isAuthor) throw new ForbiddenException('No tienes permiso para editar este track');
     }
 
-    const { genreId, authorsIds, ...rest } = updateTrackInput;
+    const { genreId, authorsIds, moodsIds, themeId, ...rest } = updateTrackInput;
 
     if (rest.intellectualProperties) {
       const splitSheets = rest.intellectualProperties.filter(ip => ip.type === 'splitSheet');
-      if (splitSheets.length > 1) {
-        throw new BadRequestException('Solo se permite un documento Split Sheet por canción');
+      if (splitSheets.length > 0) {
+        throw new BadRequestException(
+          'El Split Sheet ya no se sube manualmente: se genera automáticamente desde el módulo de Split una vez que todos los coautores aprueban.',
+        );
+      }
+    }
+
+    if (rest.isAvailable === true && !existingTrack.isAvailable) {
+      // Autor único: el split se autocompleta al 100% sin intervención manual
+      // (Editorial Command Center, Flow 3). No-op si ya hay un split o hay coautores.
+      await this.splitService.autoCompleteSingleAuthorSplit(id, requesterId);
+
+      const isSplitCompleted = await this.splitService.isSplitCompletedForTrack(id);
+      if (!isSplitCompleted) {
+        throw new BadRequestException(
+          'No puedes publicar el track sin haber firmado el split de coautoría',
+        );
       }
     }
 
@@ -268,6 +343,28 @@ export class TracksService {
       if (authors.length !== authorsIds.length)
         throw new NotFoundException('Uno o más autores no existen');
       existingTrack.authors = authors;
+    }
+
+    if (moodsIds) {
+      const moods = await this.moodsRepository.find({
+        where: { id: In(moodsIds) },
+      });
+
+      if (moods.length !== moodsIds.length)
+        throw new NotFoundException('Uno o más moods no existen');
+      existingTrack.moods = moods;
+    }
+
+    if (themeId !== undefined) {
+      if (themeId === null) {
+        existingTrack.theme = undefined;
+      } else {
+        const theme = await this.themesRepository.findOne({
+          where: { id: themeId },
+        });
+        if (!theme) throw new NotFoundException('El tema no existe');
+        existingTrack.theme = theme;
+      }
     }
 
     const updated = await this.saveAndReturnWithRelations(existingTrack);

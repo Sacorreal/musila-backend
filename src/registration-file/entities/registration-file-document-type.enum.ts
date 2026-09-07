@@ -1,0 +1,15 @@
+export enum RegistrationFileDocumentType {
+  LETRA = 'letra',
+  PARTITURA = 'partitura',
+  AUDIO_MP3 = 'audio_mp3',
+  AUDIO_WAV = 'audio_wav',
+  CARATULA = 'caratula',
+  CONTRATO_EDITORIAL = 'contrato_editorial',
+  CONTRATO_ENCARGO = 'contrato_encargo',
+  REGISTRO_DNDA = 'registro_dnda',
+  DECLARACION_SAYCO = 'declaracion_sayco',
+  AUTORIZACION = 'autorizacion',
+  LICENCIA = 'licencia',
+  CERTIFICADO_PI = 'certificado_pi',
+  OTRO = 'otro',
+}

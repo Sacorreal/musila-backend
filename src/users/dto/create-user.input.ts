@@ -10,10 +10,15 @@ import {
   IsString,
   IsUrl,
   IsUUID,
+  Matches,
   MaxLength,
-  MinLength
+  MinLength,
+  ValidateNested
 } from 'class-validator';
-import { UserRole } from '../entities/user-role.enum';
+import { Type } from 'class-transformer';
+import { UserPlanType } from '../entities/user-plan-type.enum';
+import { MusicRole } from '../entities/music-role.enum';
+import { SocialNetworksInput } from './social-networks.input';
 
 
 export class CreateUserInput {
@@ -61,6 +66,17 @@ export class CreateUserInput {
   email: string;
 
   @ApiProperty({
+    example: 'Nombre123',
+    description: 'Nombre de usuario único (sin @), 3 a 20 caracteres: letras, números y guion bajo.'
+  })
+  @IsString({ message: 'El nombre de usuario debe ser un texto válido' })
+  @IsNotEmpty({ message: 'El nombre de usuario es obligatorio' })
+  @Matches(/^[A-Za-z0-9_]{3,20}$/, {
+    message: 'El nombre de usuario debe tener entre 3 y 20 caracteres (letras, números y guion bajo)',
+  })
+  username: string;
+
+  @ApiProperty({
     example: 'miContraseña123',
     description: 'Contraseña de acceso (mínimo 6 caracteres).'
   })
@@ -102,13 +118,22 @@ export class CreateUserInput {
   citizenID?: string;
 
   @ApiPropertyOptional({
-    example: UserRole.ADMIN,
-    enum: UserRole,
-    description: 'Rol asignado al usuario dentro del sistema (opcional). Valores posibles definidos en el enum UserRole.'
+    example: UserPlanType.ADMIN,
+    enum: UserPlanType,
+    description: 'Tipo de plan asignado al usuario dentro del sistema (opcional). Valores posibles definidos en el enum UserPlanType.'
   })
-  @IsEnum(UserRole, { message: 'El rol debe ser un valor válido de UserRole' })
+  @IsEnum(UserPlanType, { message: 'El plan debe ser un valor válido de UserPlanType' })
   @IsOptional()
-  role?: UserRole;
+  planType?: UserPlanType;
+
+  @ApiPropertyOptional({
+    example: MusicRole.COMPOSITOR,
+    enum: MusicRole,
+    description: 'Rol musical descriptivo del usuario (opcional, editable por admin).'
+  })
+  @IsEnum(MusicRole, { message: 'El rol debe ser un valor válido de MusicRole' })
+  @IsOptional()
+  role?: MusicRole;
 
   @ApiPropertyOptional({
     example: 'https://ejemplo.com/imagenes/avatar.jpg',
@@ -139,11 +164,13 @@ export class CreateUserInput {
   biography?: string;
 
   @ApiPropertyOptional({
-    example: { instagram: 'https://urlderedsocial.com', twitter: 'https://urlderedsocial2.com' },
-    description: 'Redes sociales asociadas al usuario como un objeto clave-valor (opcional).'
+    type: SocialNetworksInput,
+    description: 'Redes sociales asociadas al usuario (opcional). Solo se aceptan claves conocidas con valores URL válidos.'
   })
   @IsOptional()
-  socialNetworks?: Record<string, string>;
+  @ValidateNested()
+  @Type(() => SocialNetworksInput)
+  socialNetworks?: SocialNetworksInput;
 
   @ApiPropertyOptional({ example: ['uuid1', 'uuid2'], description: 'IDs de géneros preferidos' })
   @IsArray()

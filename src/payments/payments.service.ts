@@ -11,13 +11,15 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserPlan } from 'src/users/entities/user-plan.enum';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { LessThan, Repository } from 'typeorm';
-import { v4 as uuid } from 'uuid';
+import { randomUUID } from 'crypto';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { CreateLicenseCheckoutDto } from './dto/create-license-checkout.dto';
+import { CreateLicenseInstallmentCheckoutDto } from './dto/create-license-installment-checkout.dto';
 import { CreatePaymentSourceDto } from './dto/create-payment-source.dto';
+import { PaymentPaginationDto } from './dto/payment-pagination.dto';
 import {
   BillingPeriod,
   Payment,
@@ -41,32 +43,42 @@ import {
   PAYMENT_PROVIDER,
   PaymentProvider,
 } from './domain/payment-provider.interface';
+import { OtpVerificationService } from 'src/shared/otp-verification/otp-verification.service';
+import { OtpPurpose } from 'src/shared/otp-verification/otp-purpose.enum';
 import {
   ParsedTransactionEvent,
   ProviderEvent,
   ProviderPaymentSourceStatus,
   ProviderTransactionStatus,
 } from './domain/payment-provider.types';
+import { LICENSE_COMMISSION_RATE } from 'src/shared/billing/license-commission.constants';
+import { CommissionService } from 'src/commission/commission.service';
+import { PublisherCommissionFreezeService } from 'src/wallet/services/publisher-commission-freeze.service';
+import type { ResolvedCommission } from 'src/commission/commission.types';
+import { LicenseCollectionsService } from 'src/license-collections/license-collections.service';
+import { LicenseCollection } from 'src/license-collections/entities/license-collection.entity';
+import { CollectionStatus } from 'src/license-collections/entities/collection-status.enum';
 
 const CURRENCY = 'COP';
-const LICENSE_COMMISSION_RATE = 0.10;
 
-const PLAN_PRICES: Record<UserRole, number> = {
-  [UserRole.AUTOR]: 39900,
-  [UserRole.CANTAUTOR]: 59900,
-  [UserRole.INTERPRETE]: 39900,
-  [UserRole.ADMIN]: 0,
-  [UserRole.INVITADO]: 0,
-  [UserRole.EDITOR]: 0,
+const PLAN_PRICES: Record<UserPlanType, number> = {
+  [UserPlanType.PLAN_AUTOR]: 39900,
+  [UserPlanType.PLAN_360]: 59900,
+  [UserPlanType.PLAN_DESCUBRIDOR]: 39900,
+  [UserPlanType.SUPERADMIN]: 0,
+  [UserPlanType.ADMIN]: 0,
+  [UserPlanType.INVITADO]: 0,
+  [UserPlanType.PLAN_PUBLISHER]: 0,
 };
 
-const ANNUAL_PLAN_PRICES: Record<UserRole, number> = {
-  [UserRole.AUTOR]: 359100,
-  [UserRole.CANTAUTOR]: 539100,
-  [UserRole.INTERPRETE]: 39900, // pago único, sin variación
-  [UserRole.ADMIN]: 0,
-  [UserRole.INVITADO]: 0,
-  [UserRole.EDITOR]: 0,
+const ANNUAL_PLAN_PRICES: Record<UserPlanType, number> = {
+  [UserPlanType.PLAN_AUTOR]: 359100,
+  [UserPlanType.PLAN_360]: 539100,
+  [UserPlanType.PLAN_DESCUBRIDOR]: 39900, // pago único, sin variación
+  [UserPlanType.SUPERADMIN]: 0,
+  [UserPlanType.ADMIN]: 0,
+  [UserPlanType.INVITADO]: 0,
+  [UserPlanType.PLAN_PUBLISHER]: 0,
 };
 
 @Injectable()
@@ -88,7 +100,16 @@ export class PaymentsService {
     @InjectRepository(RequestedTrack)
     private readonly requestedTrackRepo: Repository<RequestedTrack>,
     private readonly eventBus: EventBusService,
+    private readonly otpVerificationService: OtpVerificationService,
+    private readonly licenseCollectionsService: LicenseCollectionsService,
+    private readonly commissionService: CommissionService,
+    private readonly publisherCommissionFreezeService: PublisherCommissionFreezeService,
   ) {}
+
+  /** Nombre del proveedor de pago activo, para persistir en `Payment.provider`. */
+  private get activeProviderName(): PaymentProviderName {
+    return this.provider.name as unknown as PaymentProviderName;
+  }
 
   private webAppUrl(): string {
     const nodeEnv = this.configService.get<string>('NODE_ENV', 'local');
@@ -101,10 +122,10 @@ export class PaymentsService {
     return this.configService.get<string>(key, 'http://localhost:3000');
   }
 
-  private resolveAmount(role: UserRole, billingPeriod?: string) {
-    const isLifetime = role === UserRole.INTERPRETE;
+  private resolveAmount(planType: UserPlanType, billingPeriod?: string) {
+    const isLifetime = planType === UserPlanType.PLAN_DESCUBRIDOR;
     const isAnnual = billingPeriod === 'annual' && !isLifetime;
-    const amountCop = isAnnual ? ANNUAL_PLAN_PRICES[role] : PLAN_PRICES[role];
+    const amountCop = isAnnual ? ANNUAL_PLAN_PRICES[planType] : PLAN_PRICES[planType];
     return {
       isLifetime,
       isAnnual,
@@ -120,8 +141,8 @@ export class PaymentsService {
    * inicializar el Widget de Wompi (incluida la firma de integridad).
    */
   async createCheckout(dto: CreateCheckoutDto) {
-    const reference = uuid();
-    const { amountInCents } = this.resolveAmount(dto.role, dto.billingPeriod);
+    const reference = randomUUID();
+    const { amountInCents } = this.resolveAmount(dto.planType, dto.billingPeriod);
 
     if (amountInCents <= 0) {
       throw new ServiceUnavailableException('El plan seleccionado no está disponible.');
@@ -152,7 +173,7 @@ export class PaymentsService {
     try {
       await this.pendingRepo.save({
         externalReference: reference,
-        role: dto.role,
+        planType: dto.planType,
         plan: UserPlan.PRO,
         status: PendingRegistrationStatus.PENDING,
         expiresAt,
@@ -180,7 +201,11 @@ export class PaymentsService {
 
   // ─── Checkout de licencia ─────────────────────────────────────────────────────
 
-  async createLicenseCheckout(dto: CreateLicenseCheckoutDto, userId: string) {
+  async createLicenseCheckout(
+    dto: CreateLicenseCheckoutDto,
+    userId: string,
+    organizationId?: string,
+  ) {
     const track = await this.requestedTrackRepo.findOne({
       where: { id: dto.requestedTrackId },
       relations: ['requester', 'owner', 'track', 'chat'],
@@ -192,10 +217,27 @@ export class PaymentsService {
     if (track.status !== RequestsStatus.PENDIENTE) throw new BadRequestException('Esta solicitud no está en estado pendiente');
     if (track.licensePaymentStatus === LicensePaymentStatus.APPROVED) throw new BadRequestException('Esta licencia ya fue pagada');
 
-    const licensePriceInCents = Math.round(Number(track.licensePrice) * 100);
-    const commissionInCents = Math.round(licensePriceInCents * LICENSE_COMMISSION_RATE);
+    await this.otpVerificationService.assertAndConsumeVerification(
+      userId,
+      OtpPurpose.LICENSE_SIGNING,
+      dto.requestedTrackId,
+    );
+
+    const licensePrice = Number(track.licensePrice);
+    const licensePriceInCents = Math.round(licensePrice * 100);
+
+    // §17: si el comprador actúa como organización (LABEL/MANAGEMENT), la
+    // comisión sale del entitlement configurable por plan y se congela en el
+    // Deal. Los usuarios personales conservan la comisión legacy.
+    const frozen = organizationId
+      ? await this.resolveAndFreezeCommission(track, organizationId, licensePrice)
+      : null;
+
+    const commissionInCents = frozen
+      ? Math.round(frozen.amount * 100)
+      : Math.round(licensePriceInCents * LICENSE_COMMISSION_RATE);
     const amountInCents = licensePriceInCents + commissionInCents;
-    const reference = uuid();
+    const reference = randomUUID();
 
     let signature: string;
     try {
@@ -212,16 +254,34 @@ export class PaymentsService {
 
     track.licensePaymentReference = reference;
     track.licensePaymentStatus = LicensePaymentStatus.PENDING;
+    // Congela (Opción A) la tarifa de comisión de publisher vigente por vendedor.
+    // Inmutable frente a cambios posteriores del % en la configuración de la publisher.
+    await this.publisherCommissionFreezeService.freeze(track);
     await this.requestedTrackRepo.save(track);
 
+    if (frozen) {
+      // §24: el snapshot ya está persistido; se notifica el congelamiento.
+      this.eventBus.emit('marketplace.commission.frozen', {
+        requestedTrackId: track.id,
+        buyerOrganizationId: frozen.organizationId,
+        buyerPlanId: frozen.planId,
+        buyerSubscriptionId: frozen.subscriptionId,
+        rate: frozen.rate,
+        amount: frozen.amount,
+        currency: frozen.currency,
+        licenseAmount: frozen.licenseAmount,
+        occurredAt: new Date(),
+      });
+    }
+
     await this.paymentRepo.save({
-      provider: PaymentProviderName.WOMPI,
+      provider: this.activeProviderName,
       userId,
       status: PaymentStatus.PENDING,
       amount: amountInCents / 100,
       currency: CURRENCY,
-      planType: UserPlan.FREE,
-      roleType: UserRole.INVITADO,
+      billingTier: UserPlan.FREE,
+      planType: UserPlanType.INVITADO,
       paymentType: PaymentType.LICENSE,
       externalReference: reference,
       requestedTrackId: track.id,
@@ -230,7 +290,131 @@ export class PaymentsService {
     return {
       widget: { publicKey, currency: CURRENCY, amountInCents, reference, signature, redirectUrl },
       externalReference: reference,
-      licensePrice: Number(track.licensePrice),
+      licensePrice,
+      commission: commissionInCents / 100,
+      commissionRate: frozen ? frozen.rate : LICENSE_COMMISSION_RATE * 100,
+      total: amountInCents / 100,
+    };
+  }
+
+  /**
+   * Preview de la comisión de una solicitud, SIN efectos secundarios (§18: "el
+   * comprador debe conocer el fee antes de pagar"). No consume OTP ni crea
+   * pago ni congela nada. Para compradores B2B resuelve la tarifa configurable;
+   * para usuarios personales devuelve la comisión legacy.
+   */
+  async previewLicenseCommission(
+    requestedTrackId: string,
+    userId: string,
+    organizationId?: string,
+  ) {
+    const track = await this.requestedTrackRepo.findOne({
+      where: { id: requestedTrackId },
+      relations: ['requester'],
+    });
+
+    if (!track) throw new NotFoundException('Solicitud de licencia no encontrada');
+    if (track.requester.id !== userId) throw new BadRequestException('Solo el solicitante puede consultar el pago');
+    if (!track.licensePrice) throw new BadRequestException('El propietario aún no ha establecido un precio');
+
+    const licensePrice = Number(track.licensePrice);
+
+    if (organizationId) {
+      const resolved = await this.commissionService.resolveCommission({
+        organizationId,
+        dealAmount: licensePrice,
+      });
+      return {
+        licensePrice,
+        commission: resolved.amount,
+        commissionRate: resolved.rate,
+        currency: resolved.currency,
+        total: resolved.buyerTotal,
+        isB2B: true,
+      };
+    }
+
+    const commission = Math.round(licensePrice * LICENSE_COMMISSION_RATE * 100) / 100;
+    return {
+      licensePrice,
+      commission,
+      commissionRate: LICENSE_COMMISSION_RATE * 100,
+      currency: CURRENCY,
+      total: licensePrice + commission,
+      isB2B: false,
+    };
+  }
+
+  /**
+   * Resuelve la comisión B2B vigente del comprador y la congela en el Deal
+   * (§13). No captura errores de dominio (BUYER_ORGANIZATION_TYPE_NOT_SUPPORTED,
+   * TRANSACTION_FEE_NOT_CONFIGURED): deben propagarse al comprador antes de
+   * pagar (§18/§26).
+   */
+  private async resolveAndFreezeCommission(
+    track: RequestedTrack,
+    organizationId: string,
+    licensePrice: number,
+  ): Promise<ResolvedCommission> {
+    const resolved = await this.commissionService.resolveCommission({
+      organizationId,
+      dealAmount: licensePrice,
+    });
+    this.commissionService.freezeCommission(track, resolved);
+    return resolved;
+  }
+
+  // ─── Checkout de cuota de anticipo (Licencia de Primer Uso generada en línea) ──
+
+  async createLicenseInstallmentCheckout(dto: CreateLicenseInstallmentCheckoutDto, userId: string) {
+    const collection = await this.licenseCollectionsService.findOne(dto.collectionId);
+
+    if (collection.requestedTrack.requester.id !== userId) {
+      throw new BadRequestException('Solo el solicitante puede pagar esta cuota');
+    }
+    if (collection.status === CollectionStatus.PAGADO) {
+      throw new BadRequestException('Esta cuota ya fue pagada');
+    }
+
+    const installmentAmountInCents = Math.round(Number(collection.amount) * 100);
+    const commissionInCents = Math.round(installmentAmountInCents * LICENSE_COMMISSION_RATE);
+    const amountInCents = installmentAmountInCents + commissionInCents;
+    const reference = collection.paymentReference ?? randomUUID();
+
+    let signature: string;
+    try {
+      signature = this.provider.generateIntegritySignature({ reference, amountInCents, currency: CURRENCY });
+    } catch (err: any) {
+      this.logger.error(`[createLicenseInstallmentCheckout] error generando firma: ${err?.message}`);
+      throw new ServiceUnavailableException('No se pudo iniciar el proceso de pago.');
+    }
+
+    const publicKey = this.configService.get<string>('WOMPI_PUBLIC_KEY', '');
+    if (!publicKey) throw new ServiceUnavailableException('No se pudo iniciar el proceso de pago.');
+
+    const redirectUrl = `${this.webAppUrl()}/music/solicitudes/${collection.requestedTrack.id}?ref=${reference}`;
+
+    if (!collection.paymentReference) {
+      await this.licenseCollectionsService.setPaymentReference(collection.id, reference);
+    }
+
+    await this.paymentRepo.save({
+      provider: this.activeProviderName,
+      userId,
+      status: PaymentStatus.PENDING,
+      amount: amountInCents / 100,
+      currency: CURRENCY,
+      billingTier: UserPlan.FREE,
+      planType: UserPlanType.INVITADO,
+      paymentType: PaymentType.LICENSE,
+      externalReference: reference,
+      requestedTrackId: collection.requestedTrack.id,
+    });
+
+    return {
+      widget: { publicKey, currency: CURRENCY, amountInCents, reference, signature, redirectUrl },
+      externalReference: reference,
+      installmentAmount: installmentAmountInCents / 100,
       commission: commissionInCents / 100,
       total: amountInCents / 100,
     };
@@ -295,44 +479,65 @@ export class PaymentsService {
         await this.handleLicensePayment(parsed, licenseTrack);
         return;
       }
-      this.logger.warn(`[Webhook Wompi] no se encontró pending ni licencia para ref=${parsed.reference}`);
+
+      const collection = await this.licenseCollectionsService.findByPaymentReference(parsed.reference);
+      if (collection) {
+        await this.handleLicenseInstallmentPayment(parsed, collection);
+        return;
+      }
+
+      // La referencia no corresponde a suscripción/licencia/colección: puede ser
+      // una pauta publicitaria. Se delega vía evento para no acoplar este módulo
+      // al de promociones (evita dependencia circular).
+      this.eventBus.emit('payment.webhook.unmatched', {
+        reference: parsed.reference,
+        status: String(parsed.status),
+        transactionId: parsed.transactionId,
+        amountInCents: parsed.amountInCents ?? undefined,
+      });
+      this.logger.log(
+        `[Webhook Wompi] ref=${parsed.reference} sin pending/licencia; emitido payment.webhook.unmatched`,
+      );
       return;
     }
 
     const paymentStatus = this.mapStatus(parsed.status);
-    const isLifetime = pending?.role === UserRole.INTERPRETE;
+    const isLifetime = pending?.planType === UserPlanType.PLAN_DESCUBRIDOR;
 
     let expiresAt: Date | undefined;
     let billingPeriod: BillingPeriod | undefined;
     if (paymentStatus === PaymentStatus.APPROVED && !isLifetime) {
       const isAnnual =
         parsed.amountInCents != null &&
-        pending?.role != null &&
-        parsed.amountInCents >= ANNUAL_PLAN_PRICES[pending.role] * 100;
+        pending?.planType != null &&
+        parsed.amountInCents >= ANNUAL_PLAN_PRICES[pending.planType] * 100;
       billingPeriod = isAnnual ? BillingPeriod.ANNUAL : BillingPeriod.MONTHLY;
       expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + (isAnnual ? 365 : 30));
     }
 
-    const paymentData: Partial<Payment> = {
-      provider: PaymentProviderName.WOMPI,
+    const paymentData: Omit<Partial<Payment>, 'user'> = {
+      provider: this.activeProviderName,
       wompiTransactionId: parsed.transactionId,
       userId: pending?.userId,
       status: paymentStatus,
       amount: parsed.amountInCents != null ? parsed.amountInCents / 100 : undefined,
       currency: CURRENCY,
-      planType: UserPlan.PRO,
-      roleType: pending?.role ?? UserRole.INVITADO,
+      billingTier: UserPlan.PRO,
+      planType: pending?.planType ?? UserPlanType.INVITADO,
       paymentType: isLifetime ? PaymentType.ONE_TIME : PaymentType.SUBSCRIPTION,
       billingPeriod,
       externalReference: parsed.reference,
       expiresAt,
     };
 
+    let paymentId: string;
     if (existing) {
       await this.paymentRepo.update(existing.id, paymentData);
+      paymentId = existing.id;
     } else {
-      await this.paymentRepo.save(paymentData);
+      const saved = await this.paymentRepo.save(paymentData);
+      paymentId = saved.id;
     }
 
     if (paymentStatus === PaymentStatus.APPROVED && pending) {
@@ -343,6 +548,21 @@ export class PaymentsService {
         await this.userRepo.update(pending.userId, {
           plan: UserPlan.PRO,
           planExpiresAt: expiresAt,
+        });
+
+        const previousApprovedCount = await this.paymentRepo.count({
+          where: { userId: pending.userId, status: PaymentStatus.APPROVED },
+        });
+        this.eventBus.emit('payment.subscription.approved', {
+          userId: pending.userId,
+          planType: pending.planType ?? UserPlanType.INVITADO,
+          plan: UserPlan.PRO,
+          paymentId,
+          paymentType: isLifetime ? PaymentType.ONE_TIME : PaymentType.SUBSCRIPTION,
+          billingPeriod,
+          amount: paymentData.amount ?? 0,
+          isFirstPurchase: previousApprovedCount <= 1,
+          occurredAt: new Date(),
         });
       }
       this.logger.log(`[Webhook Wompi] registro ${pending.id} confirmado`);
@@ -363,15 +583,15 @@ export class PaymentsService {
       return;
     }
 
-    const paymentData: Partial<Payment> = {
-      provider: PaymentProviderName.WOMPI,
+    const paymentData: Omit<Partial<Payment>, 'user'> = {
+      provider: this.activeProviderName,
       wompiTransactionId: parsed.transactionId,
       userId: track.requester?.id,
       status: paymentStatus,
       amount: parsed.amountInCents != null ? parsed.amountInCents / 100 : undefined,
       currency: CURRENCY,
-      planType: UserPlan.FREE,
-      roleType: UserRole.INVITADO,
+      billingTier: UserPlan.FREE,
+      planType: UserPlanType.INVITADO,
       paymentType: PaymentType.LICENSE,
       externalReference: parsed.reference,
       requestedTrackId: track.id,
@@ -402,6 +622,48 @@ export class PaymentsService {
     }
   }
 
+  private async handleLicenseInstallmentPayment(
+    parsed: ParsedTransactionEvent,
+    collection: LicenseCollection,
+  ): Promise<void> {
+    const paymentStatus = this.mapStatus(parsed.status);
+
+    const existingPayment = await this.paymentRepo.findOne({
+      where: { wompiTransactionId: parsed.transactionId },
+    });
+    if (existingPayment && existingPayment.status === PaymentStatus.APPROVED) {
+      this.logger.log(`[Webhook License Installment] evento duplicado tx=${parsed.transactionId}, ignorado`);
+      return;
+    }
+
+    const paymentData: Omit<Partial<Payment>, 'user'> = {
+      provider: this.activeProviderName,
+      wompiTransactionId: parsed.transactionId,
+      userId: collection.requestedTrack.requester?.id,
+      status: paymentStatus,
+      amount: parsed.amountInCents != null ? parsed.amountInCents / 100 : undefined,
+      currency: CURRENCY,
+      billingTier: UserPlan.FREE,
+      planType: UserPlanType.INVITADO,
+      paymentType: PaymentType.LICENSE,
+      externalReference: parsed.reference,
+      requestedTrackId: collection.requestedTrack.id,
+    };
+
+    if (existingPayment) {
+      await this.paymentRepo.update(existingPayment.id, paymentData);
+    } else {
+      await this.paymentRepo.save(paymentData);
+    }
+
+    if (paymentStatus === PaymentStatus.APPROVED) {
+      await this.licenseCollectionsService.markCollectionPaid(collection.id);
+      this.logger.log(`[Webhook License Installment] cuota ${collection.id} aprobada`);
+    } else if (paymentStatus === PaymentStatus.REJECTED || paymentStatus === PaymentStatus.CANCELLED) {
+      this.logger.log(`[Webhook License Installment] pago fallido para cuota ${collection.id}`);
+    }
+  }
+
   private mapStatus(status: ProviderTransactionStatus): PaymentStatus {
     switch (status) {
       case ProviderTransactionStatus.APPROVED:
@@ -426,7 +688,7 @@ export class PaymentsService {
     if (!pending) return { status: 'not_found' };
 
     if (pending.status === PendingRegistrationStatus.PAYMENT_CONFIRMED) {
-      return { status: 'approved', userId: pending.userId, plan: 'pro', role: pending.role };
+      return { status: 'approved', userId: pending.userId, plan: 'pro', planType: pending.planType };
     }
 
     if (pending.status === PendingRegistrationStatus.EXPIRED || new Date() > pending.expiresAt) {
@@ -509,7 +771,7 @@ export class PaymentsService {
   async chargeRecurring(
     userId: string,
     paymentSourceId: string,
-    role: UserRole,
+    planType: UserPlanType,
     billingPeriod: BillingPeriod = BillingPeriod.MONTHLY,
   ) {
     const source = await this.paymentSourceRepo.findOne({
@@ -519,8 +781,8 @@ export class PaymentsService {
       throw new ServiceUnavailableException('Fuente de pago no encontrada');
     }
 
-    const reference = uuid();
-    const { amountInCents } = this.resolveAmount(role, billingPeriod);
+    const reference = randomUUID();
+    const { amountInCents } = this.resolveAmount(planType, billingPeriod);
     const user = await this.userRepo.findOne({ where: { id: userId } });
 
     const result = await this.provider.chargeRecurring({
@@ -540,16 +802,16 @@ export class PaymentsService {
     const newExpiry = new Date(baseDate);
     newExpiry.setDate(newExpiry.getDate() + days);
 
-    await this.paymentRepo.save({
-      provider: PaymentProviderName.WOMPI,
+    const savedPayment = await this.paymentRepo.save({
+      provider: this.activeProviderName,
       wompiTransactionId: result.transactionId,
       paymentSourceId: source.id,
       userId,
       status: paymentStatus,
       amount: amountInCents / 100,
       currency: CURRENCY,
-      planType: UserPlan.PRO,
-      roleType: role,
+      billingTier: UserPlan.PRO,
+      planType,
       paymentType: PaymentType.SUBSCRIPTION,
       billingPeriod,
       externalReference: reference,
@@ -558,6 +820,17 @@ export class PaymentsService {
 
     if (isApproved) {
       await this.userRepo.update(userId, { plan: UserPlan.PRO, planExpiresAt: newExpiry });
+      this.eventBus.emit('payment.subscription.approved', {
+        userId,
+        planType,
+        plan: UserPlan.PRO,
+        paymentId: savedPayment.id,
+        paymentType: PaymentType.SUBSCRIPTION,
+        billingPeriod,
+        amount: amountInCents / 100,
+        isFirstPurchase: false,
+        occurredAt: new Date(),
+      });
     }
 
     return { transactionId: result.transactionId, status: result.status, isApproved, newExpiry };
@@ -584,6 +857,20 @@ export class PaymentsService {
       plan: UserPlan.PRO,
       planExpiresAt: payment?.expiresAt ?? undefined,
     });
+
+    if (payment && payment.status === PaymentStatus.APPROVED) {
+      this.eventBus.emit('payment.subscription.approved', {
+        userId,
+        planType: payment.planType,
+        plan: UserPlan.PRO,
+        paymentId: payment.id,
+        paymentType: payment.paymentType,
+        billingPeriod: payment.billingPeriod,
+        amount: Number(payment.amount ?? 0),
+        isFirstPurchase: true,
+        occurredAt: new Date(),
+      });
+    }
   }
 
   async getHistory(
@@ -616,6 +903,61 @@ export class PaymentsService {
     const payment = await this.paymentRepo.findOne({ where: { id: paymentId } });
     if (!payment || payment.userId !== userId) return null;
     return payment;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Lectura para el panel de administración (sin mutaciones: los pagos y fuentes
+  // de pago se generan exclusivamente vía Wompi/webhooks, nunca a mano).
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async findAllPaymentsAdmin(pagination: PaymentPaginationDto) {
+    const { limit = 10, offset = 0, status, provider, paymentType, billingTier, userId } = pagination;
+    const qb = this.paymentRepo
+      .createQueryBuilder('payment')
+      .leftJoinAndSelect('payment.user', 'user')
+      .orderBy('payment.createdAt', 'DESC')
+      .take(limit)
+      .skip(offset);
+
+    if (status) qb.andWhere('payment.status = :status', { status });
+    if (provider) qb.andWhere('payment.provider = :provider', { provider });
+    if (paymentType) qb.andWhere('payment.paymentType = :paymentType', { paymentType });
+    if (billingTier) qb.andWhere('payment.billingTier = :billingTier', { billingTier });
+    if (userId) qb.andWhere('payment.userId = :userId', { userId });
+
+    const [data, total] = await qb.getManyAndCount();
+    return { data, total, limit, offset };
+  }
+
+  async findOnePaymentAdmin(id: string): Promise<Payment> {
+    const payment = await this.paymentRepo.findOne({ where: { id }, relations: ['user'] });
+    if (!payment) throw new NotFoundException('Pago no encontrado');
+    return payment;
+  }
+
+  async findAllPaymentSourcesAdmin(pagination: { limit?: number; offset?: number; userId?: string }) {
+    const { limit = 10, offset = 0, userId } = pagination;
+    const qb = this.paymentSourceRepo
+      .createQueryBuilder('source')
+      .leftJoinAndSelect('source.user', 'user')
+      .orderBy('source.createdAt', 'DESC')
+      .take(limit)
+      .skip(offset);
+
+    if (userId) qb.andWhere('source.userId = :userId', { userId });
+
+    const [data, total] = await qb.getManyAndCount();
+    return { data, total, limit, offset };
+  }
+
+  async findAllPendingRegistrationsAdmin(pagination: { limit?: number; offset?: number }) {
+    const { limit = 10, offset = 0 } = pagination;
+    const [data, total] = await this.pendingRepo.findAndCount({
+      order: { createdAt: 'DESC' },
+      take: limit,
+      skip: offset,
+    });
+    return { data, total, limit, offset };
   }
 
   async cleanupExpiredPendingRegistrations() {

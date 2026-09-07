@@ -7,12 +7,16 @@ import { User } from 'src/users/entities/user.entity';
 import { Guest } from 'src/guests/entities/guest.entity';
 import { Track } from 'src/tracks/entities/track.entity';
 import { PlaylistCollaboratorsModule } from 'src/playlist-collaborators/playlist-collaborators.module';
+import { UsersModule } from 'src/users/users.module';
+import { SharingModule } from 'src/sharing/sharing.module';
 
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Playlist, User, Guest, Track]),
-    PlaylistCollaboratorsModule
+    PlaylistCollaboratorsModule,
+    UsersModule,
+    SharingModule,
   ],
   controllers: [PlaylistsController],
   providers: [PlaylistsService],

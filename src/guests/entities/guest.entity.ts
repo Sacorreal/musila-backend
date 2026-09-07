@@ -1,5 +1,5 @@
 import { PlaylistCollaborator } from 'src/playlist-collaborators/entities/playlist-collaborator.entity';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { Chat } from 'src/chat/entities/chat.entity'
 import { Column, Entity, ManyToMany, ManyToOne, OneToMany, PrimaryGeneratedColumn, CreateDateColumn, DeleteDateColumn, UpdateDateColumn } from 'typeorm';
@@ -54,11 +54,11 @@ export class Guest {
   @Column('varchar', { nullable: false, select: false })
   password: string;
 
-  @ApiProperty({ enum: UserRole, example: UserRole.INVITADO, description: 'Rol de sistema' })
-  @Column({ type: 'enum', enum: UserRole, default: UserRole.INVITADO })
-  role: UserRole;
+  @ApiProperty({ enum: UserPlanType, example: UserPlanType.INVITADO, description: 'Plan de sistema' })
+  @Column({ type: 'enum', enum: UserPlanType, default: UserPlanType.INVITADO, name: 'plan_type' })
+  planType: UserPlanType;
 
-  @ManyToOne(() => User, (user) => user.guests, { nullable: false })
+  @ManyToOne(() => User, (user) => user.guests, { nullable: false, onDelete: 'CASCADE' })
   invited_by: User;
 
   @OneToMany(() => PlaylistCollaborator, collaborator => collaborator.guest, { nullable: true })

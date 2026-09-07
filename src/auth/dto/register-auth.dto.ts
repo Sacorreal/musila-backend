@@ -1,8 +1,21 @@
 import { ApiProperty, ApiPropertyOptional } from "@nestjs/swagger";
-import { ArrayMaxSize, IsArray, IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsOptional, IsString, IsUrl, IsUUID, MaxLength, MinLength } from "class-validator";
-import { UserRole } from "src/users/entities/user-role.enum";
+import { ArrayMaxSize, IsArray, IsEmail, IsEmpty, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, IsUrl, IsUUID, Matches, MaxLength, MinLength, ValidateNested } from "class-validator";
+import { Type } from "class-transformer";
+import { UserPlanType } from "src/users/entities/user-plan-type.enum";
+import { MusicRole } from "src/users/entities/music-role.enum";
+import { SocialNetworksInput } from "src/users/dto/social-networks.input";
+import { IsValidEmail } from "../decorators/is-valid-email.decorator";
 
-
+/**
+ * Tipos de plan que un usuario puede autoasignarse en el registro público.
+ * SUPERADMIN, ADMIN, PLAN_PUBLISHER e INVITADO quedan excluidos deliberadamente: solo se
+ * asignan vía el panel de administración o flujos internos, nunca desde este endpoint.
+ */
+export const PUBLIC_REGISTER_PLAN_TYPES = [
+    UserPlanType.PLAN_AUTOR,
+    UserPlanType.PLAN_DESCUBRIDOR,
+    UserPlanType.PLAN_360,
+] as const;
 
 export class RegisterAuthDto {
     @ApiProperty({
@@ -12,7 +25,7 @@ export class RegisterAuthDto {
     @IsString({ message: 'El nombre debe ser un texto válido' })
     @IsNotEmpty({ message: 'El nombre es obligatorio' })
     @MaxLength(255, { message: 'El nombre no puede superar los 255 caracteres' })
-    name: string;
+    name!: string;
 
     @ApiProperty({
         example: 'Pérez',
@@ -20,6 +33,7 @@ export class RegisterAuthDto {
     })
     @IsString({ message: 'El apellido debe ser un texto válido' })
     @IsNotEmpty({ message: 'El apellido es obligatorio' })
+    @MaxLength(255, { message: 'El apellido no puede superar los 255 caracteres' })
     lastName: string;
 
 
@@ -29,7 +43,19 @@ export class RegisterAuthDto {
     })
     @IsEmail({}, { message: 'Debe proporcionar un email válido' })
     @IsNotEmpty({ message: 'El email es obligatorio' })
+    @IsValidEmail({ message: 'No se permiten correos temporales'})
     email: string;
+
+    @ApiProperty({
+        example: 'Nombre123',
+        description: 'Nombre de usuario único (sin @), 3 a 20 caracteres: letras, números y guion bajo.'
+    })
+    @IsString({ message: 'El nombre de usuario debe ser un texto válido' })
+    @IsNotEmpty({ message: 'El nombre de usuario es obligatorio' })
+    @Matches(/^[A-Za-z0-9_]{3,20}$/, {
+        message: 'El nombre de usuario debe tener entre 3 y 20 caracteres (letras, números y guion bajo)',
+    })
+    username: string;
 
     @ApiProperty({
         example: 'miContraseña123',
@@ -62,6 +88,7 @@ export class RegisterAuthDto {
     })
     @IsString({ message: 'El apellido debe ser un texto válido' })
     @IsOptional()
+    @MaxLength(255, { message: 'El segundo apellido no puede superar los 255 caracteres' })
     secondLastName?: string;
 
     @ApiProperty({
@@ -70,6 +97,7 @@ export class RegisterAuthDto {
     })
     @IsString({ message: 'El segundo nombre debe ser un texto válido' })
     @IsOptional()
+    @MaxLength(255, { message: 'El segundo nombre no puede superar los 255 caracteres' })
     secondName?: string
 
     @ApiProperty({
@@ -97,13 +125,22 @@ export class RegisterAuthDto {
     citizenID: string;
 
     @ApiProperty({
-        example: UserRole.ADMIN,
-        enum: UserRole,
-        description: 'Rol asignado al usuario dentro del sistema (opcional). Valores posibles definidos en el enum UserRole.'
+        example: UserPlanType.PLAN_AUTOR,
+        enum: PUBLIC_REGISTER_PLAN_TYPES,
+        description: 'Plan que el usuario elige al registrarse. Solo se permiten planes públicos (Plan Autor, Plan Descubridor, Plan 360); superadmin/admin/plan_publisher/invitado se asignan por otras vías.'
+    })
+    @IsNotEmpty({ message: 'El plan es obligatorio' })
+    @IsIn(PUBLIC_REGISTER_PLAN_TYPES, { message: 'El plan debe ser plan_autor, plan_descubridor o plan_360' })
+    planType: (typeof PUBLIC_REGISTER_PLAN_TYPES)[number];
+
+    @ApiProperty({
+        example: MusicRole.COMPOSITOR,
+        enum: MusicRole,
+        description: 'Rol musical descriptivo del usuario (disciplina, no determina permisos).'
     })
     @IsNotEmpty({ message: 'El rol es obligatorio' })
-    @IsEnum(UserRole, { message: 'El rol debe ser un valor válido de UserRole' })
-    role: UserRole;
+    @IsEnum(MusicRole, { message: 'El rol debe ser un valor válido de MusicRole' })
+    role: MusicRole;
 
     @ApiPropertyOptional({
         example: 'https://ejemplo.com/imagenes/avatar.jpg',
@@ -114,27 +151,36 @@ export class RegisterAuthDto {
     avatar?: string;
 
     @ApiPropertyOptional({
-        example: true,
-        description: 'Indica si la cuenta del usuario está verificada (opcional).'
-    })
-    @IsOptional()
-    @IsBoolean({ message: 'isVerified debe ser un valor booleano' })
-    isVerified?: boolean;
-
-    @ApiPropertyOptional({
         example: 'Desarrolladora full stack apasionada por la música.',
         description: 'Breve biografía o descripción personal del usuario (opcional).'
     })
     @IsOptional()
     @IsString({ message: 'La biografía debe ser un texto válido' })
+    @MaxLength(1000, { message: 'La biografía no puede superar los 1000 caracteres' })
     biography?: string;
 
     @ApiPropertyOptional({
-        example: { instagram: 'https://urlderedsocial.com', twitter: 'https://urlderedsocial2.com' },
-        description: 'Redes sociales asociadas al usuario como un objeto clave-valor (opcional).'
+        type: SocialNetworksInput,
+        description: 'Redes sociales asociadas al usuario (opcional). Solo se aceptan claves conocidas con valores URL válidos.'
     })
     @IsOptional()
-    socialNetworks?: Record<string, string>;
+    @ValidateNested()
+    @Type(() => SocialNetworksInput)
+    socialNetworks?: SocialNetworksInput;
+
+    @ApiPropertyOptional({
+        description: 'Campo trampa anti-bot: debe llegar siempre vacío. No mostrar en la UI real.',
+    })
+    @IsOptional()
+    @IsEmpty({ message: 'Solicitud inválida' })
+    companyWebsite?: string;
+
+    @ApiPropertyOptional({
+        description: 'Timestamp (epoch ms) de cuándo se mostró el formulario al usuario. Trampa de tiempo anti-bot: no mostrar en la UI real.',
+    })
+    @IsOptional()
+    @IsNumber()
+    formStartedAt?: number;
 
     @ApiPropertyOptional({ example: ['uuid1', 'uuid2'], description: 'IDs de géneros preferidos' })
     @IsArray()
@@ -147,4 +193,9 @@ export class RegisterAuthDto {
     @IsOptional()
     @IsString()
     externalReference?: string;
+
+    @ApiPropertyOptional({ description: 'Código de referido de un afiliado (programa de afiliados).' })
+    @IsOptional()
+    @IsString()
+    referralCode?: string;
 }

@@ -1,4 +1,9 @@
 import { LicenseType } from "src/requested-tracks/entities/license-type.enum";
+import { UserPlanType } from "src/users/entities/user-plan-type.enum";
+import { UserPlan } from "src/users/entities/user-plan.enum";
+import { BillingPeriod, PaymentType } from "src/payments/entities/payment.entity";
+import { ShareResourceType } from "src/sharing/entities/share-resource-type.enum";
+import { ShareAccessReason } from "src/sharing/entities/share-access-reason.enum";
 
 export interface AppEventMap {
   // 👥 INVITES
@@ -48,6 +53,12 @@ export interface AppEventMap {
   'user.password.changed': {
     email: string;
     name: string;
+  };
+
+  'user.email.verification.requested': {
+    email: string;
+    name: string;
+    token: string;
   };
 
   'event-test': {
@@ -112,6 +123,14 @@ export interface AppEventMap {
     requesterName: string;
   }
 
+  'track.request.approved': {
+    requestId: string;
+    chatId: string;
+    trackTitle: string;
+    requesterId: string;
+    approvedByUserId: string;
+  }
+
   'track.request.price.set': {
     requestId: string;
     chatId: string;
@@ -128,4 +147,615 @@ export interface AppEventMap {
     ownerId: string;
   }
 
+  'track.created': {
+    trackId: string;
+    audioKey: string;
+    requestedByUserId?: string;
+    trackTitle: string;
+    authorIds: string[];
+  }
+
+  // 💳 PAGOS / SUSCRIPCIONES
+
+  'payment.subscription.approved': {
+    userId: string;
+    planType: UserPlanType;
+    plan: UserPlan;
+    paymentId: string;
+    paymentType: PaymentType;
+    billingPeriod?: BillingPeriod;
+    amount: number;
+    isFirstPurchase: boolean;
+    occurredAt: Date;
+  }
+
+  // ⚖️ EVIDENCIA LEGAL
+
+  'legal-proof.generated': {
+    legalProofId: string;
+    entityType: string;
+    entityId: string;
+    sha256Hash: string;
+    otsKey: string | null;
+    status: string;
+    occurredAt: Date;
+  }
+
+  'legal-proof.failed': {
+    entityType: string;
+    entityId: string;
+    reason: string;
+    occurredAt: Date;
+  }
+
+  // 🔐 OTP
+
+  'otp.code.issued': {
+    userId: string;
+    code: string;
+    purposeLabel: string;
+    expiresAt: Date;
+  }
+
+  // 🖋️ SPLIT
+
+  'split.created': {
+    splitId: string;
+    trackId: string;
+    trackTitle: string;
+    createdByUserId: string;
+    createdByName: string;
+    authors: {
+      userId: string;
+      name: string;
+      email: string;
+      percentage: number;
+      role: string;
+    }[];
+  }
+
+  'split.author.rejected': {
+    splitId: string;
+    trackId: string;
+    trackTitle: string;
+    authorUserId: string;
+    authorName: string;
+    reason: string;
+    createdByUserId: string;
+    createdByName: string;
+    createdByEmail: string;
+  }
+
+  'split.completed': {
+    splitId: string;
+    trackId: string;
+    trackTitle: string;
+    createdByUserId: string;
+    createdByName: string;
+    createdByEmail: string;
+    /** Todos los coautores firmantes: el track quedó publicado, se notifica a cada uno. */
+    authors: {
+      userId: string;
+      name: string;
+      email: string;
+    }[];
+  }
+
+  // 💰 GESTIÓN DE COBROS (anticipos de licencia de primer uso)
+
+  'license.collection.link.sent': {
+    collectionId: string;
+    requestedTrackId: string;
+    channel: string;
+    sentAt: Date;
+  }
+
+  'license.collection.send.exhausted': {
+    collectionId: string;
+    requestedTrackId: string;
+    trackTitle: string;
+    attempts: number;
+    lastError: string;
+  }
+
+  'license.collection.overdue': {
+    collectionId: string;
+    requestedTrackId: string;
+    trackTitle: string;
+    dueDate: Date;
+    licenseContractId?: string;
+  }
+
+  // 📜 CONTRATO DE LICENCIA DE PRIMER USO (generado en línea)
+
+  'license.contract.terms.saved': {
+    contractId: string;
+    requestedTrackId: string;
+    ownerId: string;
+    trackTitle: string;
+  }
+
+  'license.contract.preview.generated': {
+    contractId: string;
+    requestedTrackId: string;
+    trackTitle: string;
+    signatories: { userId: string; name: string; email: string; roleLabel: string }[];
+  }
+
+  'license.contract.signatory.signed': {
+    contractId: string;
+    signatoryId: string;
+    userId: string;
+    userName: string;
+    roleLabel: string;
+    trackTitle: string;
+    allSigned: boolean;
+  }
+
+  'license.contract.signatory.rejected': {
+    contractId: string;
+    signatoryId: string;
+    userId: string;
+    userName: string;
+    reason: string;
+    trackTitle: string;
+    ownerId: string;
+    ownerEmail: string;
+    ownerName: string;
+  }
+
+  'license.contract.signed': {
+    contractId: string;
+    requestedTrackId: string;
+    trackTitle: string;
+    documentUrl: string;
+    parties: { userId: string; name: string; email: string }[];
+  }
+
+  'license.contract.fully_paid': {
+    licenseContractId: string;
+    requestedTrackId: string;
+  }
+
+  'license.contract.expiration.pending_confirmation': {
+    contractId: string;
+    requestedTrackId: string;
+    trackTitle: string;
+    ownerId: string;
+    ownerEmail: string;
+    ownerName: string;
+    requesterId: string;
+    requesterEmail: string;
+    requesterName: string;
+  }
+
+  'license.contract.fulfilled': {
+    contractId: string;
+    requestedTrackId: string;
+    trackTitle: string;
+    confirmedByUserId: string;
+    otherPartyId: string;
+    otherPartyEmail: string;
+    otherPartyName: string;
+    isrc: string;
+  }
+
+  // 📄 CERTIFICADO DE AUTORÍA
+
+  'certificate.issued': {
+    certificateId: string;
+    trackId: string;
+    trackTitle: string;
+    registryNumber: string;
+    recipients: { userId: string; name: string; email: string }[];
+    incompleteRecipients: { userId: string; name: string }[];
+    requestedByUserId?: string;
+    requestedByUserEmail?: string;
+  }
+
+  'certificate.generation.failed': {
+    trackId: string;
+    trackTitle: string;
+    requestedByUserId?: string;
+    primaryUserEmail?: string;
+    attempts: number;
+    lastError: string;
+  }
+
+  // 💰 WALLET
+
+  'license.collection.installment.paid': {
+    collectionId: string;
+    requestedTrackId: string;
+    licenseContractId: string | null;
+    installmentNumber: number;
+    amount: number;
+    paidAt: Date;
+  }
+
+  'wallet.withdrawal.requested': {
+    withdrawalId: string;
+    userId: string;
+    userName: string;
+    userEmail: string;
+    amount: number;
+    currency: string;
+    requestedAt: Date;
+  }
+
+  'wallet.withdrawal.paid': {
+    withdrawalId: string;
+    userId: string;
+    userEmail: string;
+    userName: string;
+    amount: number;
+    paidAt: Date;
+  }
+
+  'wallet.withdrawal.rejected': {
+    withdrawalId: string;
+    userId: string;
+    userEmail: string;
+    userName: string;
+    amount: number;
+    reason: string;
+    rejectedAt: Date;
+  }
+
+  // 🏦 INFORMACIÓN BANCARIA (cobro de anticipos de licencia)
+
+  /** Emitido cuando un contrato queda firmado con anticipo > 0. Dispara la notificación a cada participante del Split para que configure su cobro. */
+  'wallet.bank_information.requested': {
+    contractId: string;
+    requestedTrackId: string;
+    trackTitle: string;
+    advanceAmount: number;
+    participants: { userId: string; name: string; email: string }[];
+  }
+
+  /** Emitido cuando un usuario guarda/edita su información bancaria de cobro. */
+  'wallet.bank_information.completed': {
+    requestId: string | null;
+    contractId: string | null;
+    userId: string;
+    method: string;
+  }
+
+  // 🔗 COMPARTIR
+
+  'share.created': {
+    shareLinkId: string;
+    resourceType: ShareResourceType;
+    resourceId: string;
+    ownerName: string;
+    shareUrl: string;
+  }
+
+  'share.recipient.authorized': {
+    shareLinkId: string;
+    resourceType: ShareResourceType;
+    resourceId: string;
+    resourceTitle: string;
+    recipientEmail: string;
+    recipientName: string;
+    authorizedByName: string;
+    shareUrl: string;
+  }
+
+  'share.recipient.revoked': {
+    shareLinkId: string;
+    recipientUserId: string;
+    revokedByName: string;
+  }
+
+  'share.access.attempted': {
+    token: string;
+    shareLinkId?: string;
+    resourceType?: ShareResourceType;
+    resourceId?: string;
+    accessorUserId?: string;
+    accessorUsername?: string;
+    granted: boolean;
+    reason: ShareAccessReason;
+    ipAddress?: string;
+    userAgent?: string;
+  }
+
+  // 🛡️ STAFF AUTHORIZATION (roles y permisos internos)
+
+  'staff-role.permissions.changed': {
+    staffRoleId: string;
+  }
+
+  'staff-role.deleted': {
+    staffRoleId: string;
+  }
+
+  'staff-assignment.changed': {
+    userId: string;
+  }
+
+  'staff.audit.captured': {
+    actorUserId: string;
+    actorName: string;
+    actorRoleName?: string;
+    module: string;
+    action: string;
+    httpMethod?: string;
+    route?: string;
+    entityType?: string;
+    entityId?: string;
+    statusCode?: number;
+    outcome: 'success' | 'failure';
+    ipAddress?: string;
+    userAgent?: string;
+    metadata?: Record<string, any>;
+    durationMs?: number;
+  }
+
+  // 📁 EXPEDIENTE DE REGISTRO
+
+  'registration-file.created': {
+    registrationFileId: string;
+    trackId: string;
+    caseNumber: string;
+    createdByUserId: string;
+    activeProfileKeys: string[];
+  }
+
+  'registration-file.status-changed': {
+    registrationFileId: string;
+    trackId: string;
+    caseNumber: string;
+    previousStatus: string;
+    status: string;
+  }
+
+  'registration-file.profile-status-changed': {
+    registrationFileId: string;
+    profileKey: string;
+    status: string;
+    officialRegistryNumber?: string | null;
+  }
+
+  'registration-file.generated': {
+    registrationFileId: string;
+    caseNumber: string;
+    pdfUrl: string;
+    zipUrl: string;
+  }
+
+  'publishing-contract.created': {
+    publishingContractId: string;
+    ownerId: string;
+    publisherName: string;
+  }
+
+  // 🎼 SOCIEDADES DE GESTIÓN COLECTIVA (afiliaciones autor ↔ CMO)
+
+  'society-affiliation.created': SocietyAffiliationEventPayload;
+  'society-affiliation.updated': SocietyAffiliationEventPayload;
+  'society-affiliation.ended': SocietyAffiliationEventPayload;
+  'society-affiliation.verified': SocietyAffiliationEventPayload;
+  'society-affiliation.rejected': SocietyAffiliationEventPayload;
+
+  // 🔐 AUTHORIZATION ENGINE (capabilities, roles, memberships, subscriptions)
+
+  'authorization.role.updated': {
+    roleId: string;
+  }
+
+  'authorization.capability.updated': {
+    capabilityId: string;
+  }
+
+  'authorization.membership.updated': {
+    userId: string;
+  }
+
+  'authorization.subscription.updated': {
+    subjectType: string;
+    subjectId: string;
+  }
+
+  // 🏢 ORGANIZACIONES B2B (invitación del Organization Admin inicial)
+
+  'organization.admin.invited': {
+    email: string;
+    token: string;
+    organizationName: string;
+    inviteUrl: string;
+    adminName?: string;
+  };
+
+  'organization.admin.assigned': {
+    email: string;
+    name: string;
+    organizationName: string;
+    workspaceUrl: string;
+  };
+
+  // 🏢 SOLICITUDES DE ACCESO AL WORKSPACE (enlace de invitación reutilizable)
+
+  'organization.access_request.created': {
+    organizationId: string;
+    requesterUserId: string;
+    accessRequestId: string;
+  };
+
+  'organization.access_request.approved': {
+    userId: string;
+    email: string;
+    recipientName: string;
+    organizationId: string;
+    organizationName: string;
+    membershipType: string;
+    roleId: string;
+    roleName: string;
+    capabilities: { name: string; description: string }[];
+  };
+
+  'organization.access_request.rejected': {
+    userId: string;
+    organizationId: string;
+  };
+
+  // 🏢 REGISTRO LEGAL B2B (onboarding comercial de organizaciones)
+
+  /** `createBusinessForm` enviado: la organización nace en EN_TRAMITE. */
+  'organization.registration.submitted': {
+    organizationId: string;
+    organizationName: string;
+    adminEmail: string;
+    planKey: string;
+  };
+
+  /** El admin de Musila aprobó la solicitud: EN_TRAMITE → APROBADA. */
+  'organization.registration.approved': {
+    organizationId: string;
+    organizationName: string;
+    adminEmail: string;
+    planKey: string;
+    planName: string;
+    /** Ausente cuando el plan no tiene precio configurado (flujo manual). */
+    paymentLinkUrl?: string;
+  };
+
+  /** El admin de Musila rechazó la solicitud. */
+  'organization.registration.rejected': {
+    organizationId: string;
+    organizationName: string;
+    adminEmail: string;
+    reason: string;
+  };
+
+  /** Pago confirmado (automático o manual): APROBADA → CREADA. */
+  'organization.registration.created': {
+    organizationId: string;
+    organizationName: string;
+    adminEmail: string;
+  };
+
+  /** Todos los requisitos cumplidos: CREADA → VERIFICADA. Arranca la suscripción. */
+  'organization.registration.verified': {
+    organizationId: string;
+    organizationName: string;
+    adminEmail: string;
+    planKey: string;
+    planName: string;
+    subscriptionStartAt: Date;
+  };
+
+  /** Recordatorio de vencimiento de suscripción (5 y 1 días antes). */
+  'organization.subscription.reminder': {
+    organizationId: string;
+    organizationName: string;
+    adminEmail: string;
+    daysRemaining: number;
+    dueDate: Date;
+  };
+
+  /** Suscripción suspendida por falta de pago 5 días después del vencimiento. */
+  'organization.subscription.suspended': {
+    organizationId: string;
+    organizationName: string;
+    adminEmail: string;
+  };
+
+  // 📜 RELACIÓN EDITORA-AUTOR (Publisher's Share confirmado vía roster)
+
+  'publisher-share.confirmed': {
+    publisherShareId: string;
+    organizationId: string;
+    userId: string;
+    actorId: string;
+    before: Record<string, unknown> | null;
+    after: Record<string, unknown> | null;
+  };
+
+  // 💵 COMISIÓN TRANSACCIONAL DEL MARKETPLACE (comprador B2B)
+
+  'marketplace.transaction_fee.updated': {
+    planId: string;
+    organizationType: string;
+    previousRate: number | null;
+    newRate: number;
+    configId: string;
+    entitlementId: string;
+    actorUserId: string | null;
+  }
+
+  'marketplace.commission.frozen': {
+    requestedTrackId: string;
+    buyerOrganizationId: string;
+    buyerPlanId: string;
+    buyerSubscriptionId: string;
+    rate: number;
+    amount: number;
+    currency: string;
+    licenseAmount: number;
+    occurredAt: Date;
+  }
+
+  // 📢 PAUTAS (PROMOTIONS)
+
+  /**
+   * Emitido por PaymentsService cuando una referencia de webhook no corresponde
+   * a una suscripción/licencia/colección. Lo consume el dominio de pautas para
+   * casar el pago con una pauta pendiente (desacopla PaymentsModule de
+   * PromotionsModule y evita dependencia circular).
+   */
+  'payment.webhook.unmatched': {
+    reference: string;
+    status: string;
+    transactionId?: string;
+    amountInCents?: number;
+  }
+
+  /** Pago de la pauta confirmado → en revisión. Notifica al admin y al compositor. */
+  'promotion.submitted': PromotionEventPayload;
+  /** El admin aprobó la pauta → programada. Notifica al compositor/solicitante. */
+  'promotion.approved': PromotionEventPayload;
+  /** El admin rechazó la pauta (con motivo). Notifica al solicitante. */
+  'promotion.rejected': PromotionEventPayload;
+  /** La pauta se publicó (cron). Notifica al compositor/solicitante. */
+  'promotion.activated': PromotionEventPayload;
+  /** Solicitud en revisión con SLA vencido → escala al admin. */
+  'promotion.sla.pending': PromotionEventPayload;
+
+  /** El superadmin cambió el precio de un tipo de pauta. */
+  'promotion.pricing.updated': {
+    type: string;
+    previousAmount: number | null;
+    newAmount: number;
+    configId: string;
+    actorUserId: string | null;
+  }
+
+}
+
+/** Payload común de los eventos de auditoría de `SocietyAffiliation` (§13 del requerimiento). */
+export interface SocietyAffiliationEventPayload {
+  societyAffiliationId: string;
+  actorId: string;
+  authorId: string;
+  organizationId: string | null;
+  societyId: string;
+  rightsType: string;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+}
+
+/** Payload común de los eventos de ciclo de vida de una pauta. */
+export interface PromotionEventPayload {
+  promotionId: string;
+  type: string;
+  targetId: string;
+  organizationId: string;
+  requesterId: string;
+  status: string;
+  resourceTitle: string;
+  rejectionReason: string | null;
+  startsAt: Date | null;
+  expiresAt: Date | null;
 }

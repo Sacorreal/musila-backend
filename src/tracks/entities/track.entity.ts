@@ -1,5 +1,7 @@
 import { IntellectualProperty } from 'src/intellectual-property/entities/intellectual-property.entity';
 import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
+import { Mood } from 'src/moods/entities/mood.entity';
+import { Theme } from 'src/themes/entities/theme.entity';
 import { Playlist } from 'src/playlists/entities/playlist.entity';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { User } from 'src/users/entities/user.entity';
@@ -26,6 +28,9 @@ export class Track {
   @Column('varchar', { nullable: false })
   title: string;
 
+  @Column('jsonb', { name: 'alternative_titles', nullable: true })
+  alternativeTitles?: string[];
+
   @ManyToOne(() => MusicalGenre, (musicalGenre) => musicalGenre.tracks, {
     onDelete: 'CASCADE',
     nullable: false,
@@ -33,8 +38,8 @@ export class Track {
   })
   genre: MusicalGenre;
 
-  @Column('varchar', { name: 'sub_genre', nullable: true })
-  subGenre?: string;
+  @Column('varchar', { name: 'ritmo', nullable: true })
+  ritmo?: string;
 
   @Column({ type: 'varchar', nullable: true })
   coverUrl?: string;
@@ -78,6 +83,19 @@ export class Track {
   @Column('boolean', { default: false, name: 'is_gospel' })
   isGospel: boolean;
 
+  @ManyToMany(() => Mood, (mood) => mood.tracks, { nullable: false })
+  @JoinTable({ name: 'track_moods' })
+  moods: Mood[];
+
+  @ManyToOne(() => Theme, (theme) => theme.tracks, {
+    nullable: true,
+    onDelete: 'SET NULL',
+  })
+  theme?: Theme;
+
+  @Column('boolean', { default: false, name: 'is_feat' })
+  isFeat: boolean;
+
   @OneToMany(() => RequestedTrack, (requestedTrack) => requestedTrack.track, {
     nullable: true,
   })
@@ -85,6 +103,12 @@ export class Track {
 
   @Column('varchar', { nullable: true, name: 'cover_key' })
   coverKey?: string
+
+  @Column('varchar', { nullable: true, name: 'sheet_music_key' })
+  sheetMusicKey?: string;
+
+  @Column('varchar', { nullable: true, name: 'sheet_music_url' })
+  sheetMusicUrl?: string;
 
   @CreateDateColumn({
     name: 'created_at',

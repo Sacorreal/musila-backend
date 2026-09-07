@@ -62,7 +62,7 @@ export class ReceiptService {
       const logoBuffer = fs.readFileSync(logoPath);
       logoSrc = `data:image/png;base64,${logoBuffer.toString('base64')}`;
     } catch (err) {
-      this.logger.warn(`No se pudo cargar el logo: ${(err as any)?.message}`);
+      this.logger.warn(`No se pudo cargar el logo: ${(err)?.message}`);
     }
 
     return this.renderPdf(paymentId, payment, user, logoSrc);
@@ -82,7 +82,7 @@ export class ReceiptService {
     } catch (err) {
       if (logoSrc) {
         // Reintentar sin imagen — puede que @react-pdf/renderer rechace el data URI
-        this.logger.warn(`PDF con logo falló, reintentando sin imagen: ${(err as any)?.message}`);
+        this.logger.warn(`PDF con logo falló, reintentando sin imagen: ${(err)?.message}`);
         return this.renderPdf(paymentId, payment, user, undefined);
       }
       this.logger.error(`Error generando PDF para pago ${paymentId}: ${err}`);

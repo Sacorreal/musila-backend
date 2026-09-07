@@ -2,7 +2,7 @@ import { IsBoolean, IsEnum, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
-import { UserRole } from '../entities/user-role.enum';
+import { UserPlanType } from '../entities/user-plan-type.enum';
 
 export class FilterUserDto extends PaginationDto {
   @ApiPropertyOptional({ description: 'Buscar por nombre, apellido o email (búsqueda parcial)', example: 'juan' })
@@ -10,10 +10,10 @@ export class FilterUserDto extends PaginationDto {
   @IsOptional()
   search?: string;
 
-  @ApiPropertyOptional({ description: 'Filtrar por rol', enum: UserRole })
-  @IsEnum(UserRole)
+  @ApiPropertyOptional({ description: 'Filtrar por tipo de plan', enum: UserPlanType })
+  @IsEnum(UserPlanType)
   @IsOptional()
-  role?: UserRole;
+  planType?: UserPlanType;
 
   @ApiPropertyOptional({ description: 'Filtrar por estado de verificación', example: true })
   @IsBoolean()

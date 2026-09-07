@@ -15,6 +15,7 @@ import { LicenseType } from './license-type.enum';
 import { LicensePaymentStatus } from './license-payment-status.enum';
 import { RequestsStatus } from './requests-status.enum';
 import { Chat } from 'src/chat/entities/chat.entity';
+import { PublisherCommissionSnapshotEntry } from 'src/publisher-commission/publisher-commission.types';
 
 
 @Entity({ name: 'requested_track' })
@@ -23,17 +24,17 @@ export class RequestedTrack {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (user) => user.requestSent)
+  @ManyToOne(() => User, (user) => user.requestSent, { onDelete: 'CASCADE' })
   requester: User;
 
-  @ManyToOne(() => User, (user) => user.requestReceived)
+  @ManyToOne(() => User, (user) => user.requestReceived, { onDelete: 'CASCADE' })
   @JoinColumn()
   owner: User;
 
   @OneToOne(() => Chat, (chat) => chat.request)
   chat?: Chat
 
-  @ManyToOne(() => Track, (track) => track.requestedTrack)
+  @ManyToOne(() => Track, (track) => track.requestedTrack, { onDelete: 'CASCADE' })
   track: Track;
 
   @Column({
@@ -71,6 +72,45 @@ export class RequestedTrack {
     name: 'license_payment_status',
   })
   licensePaymentStatus: LicensePaymentStatus;
+
+  // ─── Snapshot de comisión B2B congelada (§13) ────────────────────────────
+  // Se resuelve y congela cuando el comprador (organización LABEL/MANAGEMENT)
+  // formaliza el pago. Es inmutable: un cambio posterior de plan o de tarifa
+  // en Admin no altera estos valores (§21). Nulo en compras de usuarios
+  // personales, que no usan el mecanismo B2B de este requerimiento.
+
+  @Column({ type: 'uuid', nullable: true, name: 'buyer_organization_id' })
+  buyerOrganizationId: string | null;
+
+  @Column({ type: 'uuid', nullable: true, name: 'buyer_plan_id' })
+  buyerPlanId: string | null;
+
+  @Column({ type: 'uuid', nullable: true, name: 'buyer_subscription_id' })
+  buyerSubscriptionId: string | null;
+
+  @Column({ type: 'numeric', precision: 5, scale: 2, nullable: true, name: 'commission_rate' })
+  commissionRate: number | null;
+
+  @Column({ type: 'numeric', precision: 18, scale: 2, nullable: true, name: 'commission_amount' })
+  commissionAmount: number | null;
+
+  @Column({ type: 'varchar', length: 3, nullable: true, name: 'commission_currency' })
+  commissionCurrency: string | null;
+
+  @Column({ type: 'timestamptz', nullable: true, name: 'commission_resolved_at' })
+  commissionResolvedAt: Date | null;
+
+  // ─── Snapshot de comisión de publisher congelada (Opción A) ──────────────
+  // Se congela al iniciar el pago de la licencia con el % vigente por vendedor.
+  // Es inmutable: un cambio posterior del % en la configuración de la publisher
+  // no altera estos valores. Guarda solo la tarifa por vendedor; el monto se
+  // calcula por evento en la distribución (soporta anticipos por cuotas).
+
+  @Column({ type: 'jsonb', nullable: true, name: 'publisher_commission_snapshot' })
+  publisherCommissionSnapshot: PublisherCommissionSnapshotEntry[] | null;
+
+  @Column({ type: 'timestamptz', nullable: true, name: 'publisher_commission_frozen_at' })
+  publisherCommissionFrozenAt: Date | null;
 
   @CreateDateColumn({
     name: 'created_at',

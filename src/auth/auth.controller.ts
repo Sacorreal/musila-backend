@@ -1,4 +1,5 @@
-import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Headers, Ip, Post } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBody, ApiConsumes, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 
@@ -6,8 +7,13 @@ import { LoginAuthDto } from './dto/login-auth.dto';
 import { RegisterAuthDto } from './dto/register-auth.dto';
 
 import {RegisterGuestDto } from '../guests/dto/register-guest.dto'
+import { RegisterOrgAdminDto } from '../organizations/dto/register-org-admin.dto';
+import { RegisterWorkspaceGuestDto } from '../organizations/dto/register-workspace-guest.dto';
+import { CreateBusinessRegistrationDto } from '../organizations/dto/create-business-registration.dto';
 import { RequestResetPasswordDto } from './dto/request-reset-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
 
 
 @ApiTags('Autenticación')
@@ -16,6 +22,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) { }
 
   @Post('login')
+  @Throttle({ long: { limit: 15, ttl: 600_000 } })
   @ApiOperation({
     summary: 'Iniciar sesión',
     description: 'Autentica un usuario con su correo electrónico y contraseña. Retorna un token JWT para acceder a los recursos protegidos.',
@@ -37,6 +44,7 @@ export class AuthController {
   }
 
   @Post('register')
+  @Throttle({ long: { limit: 5, ttl: 600_000 } })
   @ApiOperation({
     summary: 'Registrar nuevo usuario',
     description: 'Crea una nueva cuenta de usuario en el sistema. Permite subir un avatar opcional.',
@@ -55,10 +63,14 @@ export class AuthController {
   })
   @ApiResponse({ status: 400, description: 'Datos inválidos o contraseñas no coinciden' })
   @ApiResponse({ status: 409, description: 'El correo electrónico ya está registrado' })
-  async registerController(@Body() user: RegisterAuthDto) {
+  async registerController(
+    @Body() user: RegisterAuthDto,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent?: string,
+  ) {
     if (user.password !== user.repeatPassword)
       throw new BadRequestException('Las contraseñas no coinciden');
-    return this.authService.registerService(user);
+    return this.authService.registerService(user, ip, userAgent);
   }
 
   @Post('register/guest')
@@ -68,7 +80,52 @@ export class AuthController {
     return this.authService.registerGuestService(guest)
   }
 
+  @Post('register/org-admin')
+  @Throttle({ long: { limit: 5, ttl: 600_000 } })
+  @ApiOperation({
+    summary: 'Registrar al Organization Admin desde una invitación',
+    description:
+      'Crea la cuenta del Organization Admin a partir del token de invitación recibido por email y lo activa como miembro con rol ORGANIZATION_ADMIN. Devuelve un JWT.',
+  })
+  @ApiResponse({ status: 201, description: 'Cuenta creada y membership activada' })
+  @ApiResponse({ status: 400, description: 'Token inválido, email no coincide o contraseñas distintas' })
+  @ApiResponse({ status: 409, description: 'El correo electrónico ya está registrado' })
+  @ApiResponse({ status: 410, description: 'La invitación ha expirado' })
+  async registerOrgAdminController(@Body() dto: RegisterOrgAdminDto) {
+    return this.authService.registerOrgAdminFromInvite(dto);
+  }
+
+  @Post('register/workspace-guest')
+  @Throttle({ long: { limit: 5, ttl: 600_000 } })
+  @ApiOperation({
+    summary: 'Registrar a un invitado desde un enlace de workspace',
+    description:
+      'Crea la cuenta del invitado a partir del token del enlace reutilizable y genera una solicitud de acceso PENDING para que el administrador la apruebe. Devuelve un JWT; el usuario queda a la espera de aprobación.',
+  })
+  @ApiResponse({ status: 201, description: 'Cuenta creada y solicitud de acceso generada' })
+  @ApiResponse({ status: 400, description: 'Enlace revocado o contraseñas distintas' })
+  @ApiResponse({ status: 409, description: 'El correo electrónico ya está registrado' })
+  @ApiResponse({ status: 410, description: 'El enlace ha expirado o agotó sus usos' })
+  async registerWorkspaceGuestController(@Body() dto: RegisterWorkspaceGuestDto) {
+    return this.authService.registerWorkspaceGuestFromLink(dto);
+  }
+
+  @Post('register/business')
+  @Throttle({ long: { limit: 5, ttl: 600_000 } })
+  @ApiOperation({
+    summary: 'createBusinessForm — registrar una organización (Musila Business)',
+    description:
+      'Crea la cuenta del futuro Organization Admin y la organización en estado EN_TRAMITE, a la espera de aprobación del admin de Musila. Devuelve un JWT.',
+  })
+  @ApiResponse({ status: 201, description: 'Cuenta y organización creadas (EN_TRAMITE)' })
+  @ApiResponse({ status: 400, description: 'Datos inválidos' })
+  @ApiResponse({ status: 409, description: 'El correo electrónico ya está registrado' })
+  async registerBusinessController(@Body() dto: CreateBusinessRegistrationDto) {
+    return this.authService.registerBusinessAccount(dto);
+  }
+
   @Post('forgot-password')
+  @Throttle({ long: { limit: 5, ttl: 600_000 } })
   @ApiOperation({
     summary: 'Solicitar recuperación de contraseña',
     description: 'Envía un enlace de recuperación al correo electrónico si existe.',
@@ -93,5 +150,28 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Datos inválidos o token expirado/inexistente' })
   async resetPassword(@Body() dto: ResetPasswordDto) {
     return this.authService.resetPasswordService(dto);
+  }
+
+  @Post('verify-email')
+  @ApiOperation({
+    summary: 'Verificar correo electrónico',
+    description: 'Marca la cuenta como verificada usando el token enviado por correo al registrarse.',
+  })
+  @ApiResponse({ status: 200, description: 'Correo verificado correctamente' })
+  @ApiResponse({ status: 400, description: 'Token inválido' })
+  @ApiResponse({ status: 410, description: 'El enlace de verificación ha expirado' })
+  async verifyEmail(@Body() dto: VerifyEmailDto) {
+    return this.authService.verifyEmailService(dto);
+  }
+
+  @Post('resend-verification')
+  @Throttle({ long: { limit: 5, ttl: 600_000 } })
+  @ApiOperation({
+    summary: 'Reenviar correo de verificación',
+    description: 'Genera y envía un nuevo enlace de verificación si la cuenta existe y aún no está verificada.',
+  })
+  @ApiResponse({ status: 200, description: 'Solicitud procesada correctamente' })
+  async resendVerification(@Body() dto: ResendVerificationDto) {
+    return this.authService.resendVerificationService(dto);
   }
 }

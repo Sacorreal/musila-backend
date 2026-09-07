@@ -19,10 +19,13 @@ import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { CreateLicenseCheckoutDto } from './dto/create-license-checkout.dto';
+import { CreateLicenseInstallmentCheckoutDto } from './dto/create-license-installment-checkout.dto';
 import { CreatePaymentSourceDto } from './dto/create-payment-source.dto';
 import { PaymentsService } from './payments.service';
 import { ReceiptService } from './receipt.service';
+import { OrganizationBillingService } from './organization-billing.service';
 import { ProviderEvent } from './domain/payment-provider.types';
+import { resolveOrganizationId } from 'src/authorization/utils/organization-context.util';
 
 @ApiTags('payments')
 @Controller('payments')
@@ -31,7 +34,40 @@ export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,
     private readonly receiptService: ReceiptService,
+    private readonly organizationBillingService: OrganizationBillingService,
   ) {}
+
+  @Get('business-registration/:organizationId/checkout')
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({
+    summary: 'Parámetros del Widget de Wompi para el cobro del registro legal B2B (§3)',
+  })
+  @ApiResponse({ status: 200, description: 'Parámetros del Widget y externalReference' })
+  @ApiResponse({ status: 403, description: 'No eres quien registró esta organización' })
+  @ApiResponse({ status: 404, description: 'No hay un cobro pendiente para esta organización' })
+  async getBusinessRegistrationCheckout(
+    @Param('organizationId') organizationId: string,
+    @Req() req: Request,
+  ) {
+    const user = req['user'] as JwtPayload;
+    return this.organizationBillingService.getCheckoutWidget(organizationId, user.id);
+  }
+
+  @Post('business-registration/:organizationId/payment-source')
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Tokenizar tarjeta para habilitar el pago automático de la organización (§3)' })
+  @ApiResponse({ status: 201, description: 'Fuente de pago tokenizada' })
+  @ApiResponse({ status: 403, description: 'No eres quien registró esta organización' })
+  async createOrganizationPaymentSource(
+    @Param('organizationId') organizationId: string,
+    @Body() dto: CreatePaymentSourceDto,
+    @Req() req: Request,
+  ) {
+    const user = req['user'] as JwtPayload;
+    return this.organizationBillingService.enableAutomaticPayment(organizationId, user.id, dto);
+  }
 
   @Post('checkout')
   @ApiOperation({ summary: 'Crear transacción y obtener parámetros del Widget de Wompi' })
@@ -51,7 +87,36 @@ export class PaymentsController {
   @ApiResponse({ status: 404, description: 'Solicitud no encontrada' })
   async createLicenseCheckout(@Body() dto: CreateLicenseCheckoutDto, @Req() req: Request) {
     const user = req['user'] as JwtPayload;
-    return this.paymentsService.createLicenseCheckout(dto, user.id);
+    // §22/§23: la organización activa (header x-organization-id) es parte del
+    // contexto de autorización. Si el comprador actúa como organización, se
+    // resuelve la comisión B2B; el backend valida su tipo real en BD.
+    const organizationId = resolveOrganizationId(req);
+    return this.paymentsService.createLicenseCheckout(dto, user.id, organizationId);
+  }
+
+  @Post('license-installment-checkout')
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Iniciar pago de una cuota de anticipo de un contrato de licencia de primer uso' })
+  @ApiResponse({ status: 201, description: 'Parámetros del Widget de Wompi para el pago de la cuota' })
+  @ApiResponse({ status: 400, description: 'Cuota inválida, ya pagada o no pertenece al usuario' })
+  async createLicenseInstallmentCheckout(
+    @Body() dto: CreateLicenseInstallmentCheckoutDto,
+    @Req() req: Request,
+  ) {
+    const user = req['user'] as JwtPayload;
+    return this.paymentsService.createLicenseInstallmentCheckout(dto, user.id);
+  }
+
+  @Get('license-quote/:requestedTrackId')
+  @UseGuards(JWTAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Preview del desglose de comisión de una licencia antes de pagar (§18)' })
+  @ApiResponse({ status: 200, description: 'Desglose: precio, comisión, porcentaje y total' })
+  async getLicenseQuote(@Param('requestedTrackId') requestedTrackId: string, @Req() req: Request) {
+    const user = req['user'] as JwtPayload;
+    const organizationId = resolveOrganizationId(req);
+    return this.paymentsService.previewLicenseCommission(requestedTrackId, user.id, organizationId);
   }
 
   @Get('license-status/:reference')

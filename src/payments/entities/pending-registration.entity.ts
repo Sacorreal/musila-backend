@@ -1,5 +1,5 @@
 import { UserPlan } from 'src/users/entities/user-plan.enum';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import {
   Column,
   CreateDateColumn,
@@ -23,8 +23,8 @@ export class PendingRegistration {
   @Column('varchar', { name: 'external_reference', unique: true })
   externalReference: string;
 
-  @Column({ type: 'enum', enum: UserRole })
-  role: UserRole;
+  @Column({ type: 'enum', enum: UserPlanType, name: 'plan_type' })
+  planType: UserPlanType;
 
   @Column({ type: 'enum', enum: UserPlan })
   plan: UserPlan;

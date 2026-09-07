@@ -5,7 +5,7 @@ import {
   EmailTemplateMap,
   SendEmailOptions,
 } from '../interfaces/email.interface';
-import type { EmailConfig } from '../interfaces/email.interface';
+import type { EmailAttachment, EmailConfig } from '../interfaces/email.interface';
 
 @Injectable()
 export class EmailService {
@@ -20,7 +20,7 @@ export class EmailService {
     options: SendEmailOptions<T>,
   ): Promise<void> {
     try {
-      const { to, templateId, variables } = options;
+      const { to, templateId, variables, attachments } = options;
 
       await this.resend.emails.send({
         to,
@@ -28,6 +28,7 @@ export class EmailService {
           id: templateId,
           variables,
         },
+        ...(attachments?.length ? { attachments } : {}),
       } as any);
 
       this.logger.log('Email enviado 📨');
@@ -93,6 +94,17 @@ export class EmailService {
     });
   }
 
+  async sendVerifyEmailEmail(
+    to: string | string[],
+    data: EmailTemplateMap['verify-email'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'verify-email',
+      variables: data,
+    });
+  }
+
   async sendTrackRequestUpdatedEmail(
     to: string | string[],
     data: EmailTemplateMap['update-request-track-status'],
@@ -100,6 +112,313 @@ export class EmailService {
     return this.sendEmail({
       to,
       templateId: 'update-request-track-status',
+      variables: data,
+    });
+  }
+
+  async sendOtpCodeEmail(to: string | string[], data: EmailTemplateMap['otp-code']) {
+    return this.sendEmail({
+      to,
+      templateId: 'otp-code',
+      variables: data,
+    });
+  }
+
+  async sendSplitCoauthorInvitationEmail(
+    to: string | string[],
+    data: EmailTemplateMap['split-coauthor-invitation'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'split-coauthor-invitation',
+      variables: data,
+    });
+  }
+
+  async sendSplitCompletedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['split-completed'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'split-completed',
+      variables: data,
+    });
+  }
+
+  async sendSplitRejectedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['split-rejected'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'split-rejected',
+      variables: data,
+    });
+  }
+
+  async sendLicenseCollectionPaymentLinkEmail(
+    to: string | string[],
+    data: EmailTemplateMap['license-collection-payment-link'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'license-collection-payment-link',
+      variables: data,
+    });
+  }
+
+  async sendLicenseContractSignatureRequestEmail(
+    to: string | string[],
+    data: EmailTemplateMap['license-contract-signature-request'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'license-contract-signature-request',
+      variables: data,
+    });
+  }
+
+  async sendLicenseContractSignedCopyEmail(
+    to: string | string[],
+    data: EmailTemplateMap['license-contract-signed-copy'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'license-contract-signed-copy',
+      variables: data,
+    });
+  }
+
+  async sendLicenseContractRejectedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['license-contract-rejected'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'license-contract-rejected',
+      variables: data,
+    });
+  }
+
+  async sendCertificateIssuedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['track-certificate-issued'],
+    attachments: EmailAttachment[],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'track-certificate-issued',
+      variables: data,
+      attachments,
+    });
+  }
+
+  async sendCertificatePendingEmail(
+    to: string | string[],
+    data: EmailTemplateMap['track-certificate-pending'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'track-certificate-pending',
+      variables: data,
+    });
+  }
+
+  async sendCertificateCoauthorIncompleteEmail(
+    to: string | string[],
+    data: EmailTemplateMap['track-certificate-coauthor-incomplete'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'track-certificate-coauthor-incomplete',
+      variables: data,
+    });
+  }
+
+  async sendCertificateTechAlertEmail(
+    to: string | string[],
+    data: EmailTemplateMap['track-certificate-tech-alert'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'track-certificate-tech-alert',
+      variables: data,
+    });
+  }
+
+  async sendWalletWithdrawalRequestedAdminEmail(
+    to: string | string[],
+    data: EmailTemplateMap['wallet-withdrawal-requested-admin'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'wallet-withdrawal-requested-admin',
+      variables: data,
+    });
+  }
+
+  async sendWalletWithdrawalPaidEmail(
+    to: string | string[],
+    data: EmailTemplateMap['wallet-withdrawal-paid'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'wallet-withdrawal-paid',
+      variables: data,
+    });
+  }
+
+  async sendWalletWithdrawalRejectedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['wallet-withdrawal-rejected'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'wallet-withdrawal-rejected',
+      variables: data,
+    });
+  }
+
+  async sendShareContentEmail(
+    to: string | string[],
+    data: EmailTemplateMap['share-content-notification'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'share-content-notification',
+      variables: data,
+    });
+  }
+
+  async sendOrganizationAdminInviteEmail(
+    to: string | string[],
+    data: EmailTemplateMap['organization-admin-invite'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'organization-admin-invite',
+      variables: data,
+    });
+  }
+
+  async sendOrganizationAdminAssignedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['organization-admin-assigned'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'organization-admin-assigned',
+      variables: data,
+    });
+  }
+
+  async sendOrganizationAccessApprovedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['organization-access-approved'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'organization-access-approved',
+      variables: data,
+    });
+  }
+
+  async sendBankInformationRequestedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['bank-information-requested'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'bank-information-requested',
+      variables: data,
+    });
+  }
+
+  async sendBankInformationExhaustedAdminEmail(
+    to: string | string[],
+    data: EmailTemplateMap['bank-information-notification-exhausted-admin'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'bank-information-notification-exhausted-admin',
+      variables: data,
+    });
+  }
+
+  async sendBusinessRegistrationReceivedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['business-registration-received'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'business-registration-received',
+      variables: data,
+    });
+  }
+
+  async sendBusinessRegistrationApprovedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['business-registration-approved'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'business-registration-approved',
+      variables: data,
+    });
+  }
+
+  async sendBusinessRegistrationRejectedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['business-registration-rejected'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'business-registration-rejected',
+      variables: data,
+    });
+  }
+
+  async sendBusinessRegistrationCreatedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['business-registration-created'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'business-registration-created',
+      variables: data,
+    });
+  }
+
+  async sendBusinessRegistrationVerifiedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['business-registration-verified'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'business-registration-verified',
+      variables: data,
+    });
+  }
+
+  async sendBusinessSubscriptionReminderEmail(
+    to: string | string[],
+    data: EmailTemplateMap['business-subscription-reminder'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'business-subscription-reminder',
+      variables: data,
+    });
+  }
+
+  async sendBusinessSubscriptionSuspendedEmail(
+    to: string | string[],
+    data: EmailTemplateMap['business-subscription-suspended'],
+  ) {
+    return this.sendEmail({
+      to,
+      templateId: 'business-subscription-suspended',
       variables: data,
     });
   }

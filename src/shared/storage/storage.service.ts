@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   DeleteObjectCommand,
+  GetObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -14,6 +15,12 @@ import {
 } from '@nestjs/common';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { v4 as uuid } from 'uuid';
+import type { Readable } from 'stream';
+import { pipeline } from 'stream/promises';
+import { createWriteStream } from 'fs';
+import { randomUUID } from 'crypto';
+import * as os from 'os';
+import * as path from 'path';
 
 import { STORAGE_OPTIONS } from './constants/storage-options.constants';
 import { ACL } from './constants/acl.constants';
@@ -81,6 +88,98 @@ export class StorageService {
       throw new InternalServerErrorException(
         'Error generating upload URL',
       );
+    }
+  }
+
+  // =====================================================
+  // ✅ UPLOAD BUFFER (subida server-side, sin presigned URL)
+  // =====================================================
+
+  async uploadBuffer(params: {
+    key: string;
+    buffer: Buffer;
+    contentType: string;
+  }): Promise<{ key: string; publicUrl: string }> {
+    const stage = this.resolveStage();
+    const fullKey = `${stage}/${params.key}`;
+
+    try {
+      await this.s3.send(
+        new PutObjectCommand({
+          Bucket: this.options.bucket,
+          Key: fullKey,
+          Body: params.buffer,
+          ContentType: params.contentType,
+          ACL: ACL.PUBLIC_READ,
+        }),
+      );
+
+      return {
+        key: fullKey,
+        publicUrl: this.buildPublicUrl(fullKey),
+      };
+    } catch (error) {
+      this.logger.error('Error al subir archivo al storage:', error);
+      throw new InternalServerErrorException('Error uploading file to storage');
+    }
+  }
+
+  // =====================================================
+  // ✅ DOWNLOAD OBJECT (lectura server-side)
+  // =====================================================
+
+  async downloadObject(key: string): Promise<Buffer> {
+    try {
+      const response = await this.s3.send(
+        new GetObjectCommand({
+          Bucket: this.options.bucket,
+          Key: key,
+        }),
+      );
+
+      const stream = response.Body as Readable;
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream) {
+        chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      }
+
+      return Buffer.concat(chunks);
+    } catch (error) {
+      this.logger.error('Error al descargar archivo del storage:', error);
+      throw new InternalServerErrorException('Error downloading file from storage');
+    }
+  }
+
+  // =====================================================
+  // ✅ DOWNLOAD OBJECT TO TEMP FILE (lectura server-side a disco)
+  // =====================================================
+
+  async downloadObjectToTempFile(
+    key: string,
+  ): Promise<{ filePath: string; contentType: string; contentLength: number }> {
+    try {
+      const response = await this.s3.send(
+        new GetObjectCommand({
+          Bucket: this.options.bucket,
+          Key: key,
+        }),
+      );
+
+      const filePath = path.join(
+        os.tmpdir(),
+        `legal-proof-${randomUUID()}-${path.basename(key)}`,
+      );
+
+      await pipeline(response.Body as Readable, createWriteStream(filePath));
+
+      return {
+        filePath,
+        contentType: response.ContentType ?? 'application/octet-stream',
+        contentLength: response.ContentLength ?? 0,
+      };
+    } catch (error) {
+      this.logger.error('Error al descargar archivo a un archivo temporal:', error);
+      throw new InternalServerErrorException('Error downloading file to temp file');
     }
   }
 
@@ -166,6 +265,10 @@ export class StorageService {
       'application/x-pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+
+      // ZIP (paquete generado del Expediente de Registro)
+      'application/zip',
+      'application/x-zip-compressed',
     ];
   
     if (!allowedMimeTypes.includes(fileType)) {
@@ -199,6 +302,10 @@ export class StorageService {
       'application/msword': 'doc',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
         'docx',
+
+      // ZIP
+      'application/zip': 'zip',
+      'application/x-zip-compressed': 'zip',
     };
   
     return mimeMap[fileType] || fileType.split('/')[1];

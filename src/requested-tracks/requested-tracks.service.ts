@@ -11,10 +11,12 @@ import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
 import { RequestedTrack } from './entities/requested-track.entity';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 
-import { UserRole } from '../users/entities/user-role.enum';
 import { PaginationDto } from '../shared/dto/pagination.dto'
 import { Chat } from 'src/chat/entities/chat.entity';
+import { AuthorizationService } from 'src/authorization/authorization.service';
 import { EventBusService } from 'src/shared/events/event-bus.service';
+import { OtpVerificationService } from 'src/shared/otp-verification/otp-verification.service';
+import { OtpPurpose } from 'src/shared/otp-verification/otp-purpose.enum';
 
 const requestedTracksRelations: string[] = [
   'requester',
@@ -33,6 +35,8 @@ export class RequestedTracksService {
     @InjectRepository(Message) private readonly messageRepository: Repository<Message>,
     private readonly eventBus: EventBusService,
     private readonly dataSource: DataSource,
+    private readonly otpVerificationService: OtpVerificationService,
+    private readonly authorizationService: AuthorizationService,
   ) { }
 
   private async findRequestedTrackWithRelations(id: string): Promise<RequestedTrack> {
@@ -127,7 +131,10 @@ export class RequestedTracksService {
   ) {
     const { limit, offset } = paginationDto;
 
-    const isAdmin = user?.role === UserRole.ADMIN;
+    const capabilityKeys = user
+      ? await this.authorizationService.getEffectiveCapabilityKeys({ userId: user.id })
+      : [];
+    const isAdmin = capabilityKeys.includes('platform.support.requests.manage');
 
     // Si no es Admin, filtramos para que vea:
     // 1. Solicitudes que él mismo hizo (requester)
@@ -172,8 +179,27 @@ export class RequestedTracksService {
     return await this.findRequestedTrackWithRelations(id)
   }
 
-  async updateRequestedTracksService(id: string, updateRequestedTrackInput: UpdateRequestedTrackInput) {
+  async updateRequestedTracksService(id: string, updateRequestedTrackInput: UpdateRequestedTrackInput, actingUserId: string) {
     const existingRequestedTrack = await this.findRequestedTrackWithRelations(id)
+
+    const isApprovingNow =
+      updateRequestedTrackInput.status === RequestsStatus.APROBADA &&
+      existingRequestedTrack.status !== RequestsStatus.APROBADA;
+
+    if (isApprovingNow) {
+      await this.otpVerificationService.assertAndConsumeVerification(
+        actingUserId,
+        OtpPurpose.REQUESTED_TRACK_APPROVAL,
+        id,
+      );
+      this.eventBus.emit('track.request.approved', {
+        requestId: id,
+        chatId: existingRequestedTrack.chat?.id || '',
+        trackTitle: existingRequestedTrack.track.title,
+        requesterId: existingRequestedTrack.requester.id,
+        approvedByUserId: actingUserId,
+      });
+    }
 
     Object.assign(existingRequestedTrack, updateRequestedTrackInput)
 

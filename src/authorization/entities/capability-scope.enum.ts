@@ -1,0 +1,9 @@
+export enum CapabilityScope {
+  PLATFORM = 'PLATFORM',
+  ORGANIZATION = 'ORGANIZATION',
+  ROSTER = 'ROSTER',
+  OWN = 'OWN',
+  ASSIGNED = 'ASSIGNED',
+  RESOURCE = 'RESOURCE',
+  CUSTOM = 'CUSTOM',
+}

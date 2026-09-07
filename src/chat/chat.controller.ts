@@ -4,12 +4,26 @@ import { AddGuestsInput } from './dto/add-guests.input';
 import { CurrentUser } from '../users/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { RemoveGuestsInput } from './dto/remove-guests.input'
+import { CreateDirectChatInput } from './dto/create-direct-chat.input';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 
 @Controller('chats')
 @UseGuards(JWTAuthGuard)
 export class ChatController {
   constructor(private readonly chatService: ChatService) { }
+
+  @Get()
+  async getConversations(@CurrentUser() user: JwtPayload) {
+    return this.chatService.findAllForUser(user.id);
+  }
+
+  @Post('direct')
+  async createDirectChat(
+    @Body() dto: CreateDirectChatInput,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.chatService.createOrGetDirectChat(user.id, dto.targetUserId);
+  }
 
   @Post(':chatId/guests')
   async addGuests(

@@ -11,6 +11,9 @@ import { LanguagesModule } from './shared/language/languages.module';
 
 import { InvitesModule } from './invites/invites.module';
 import { MusicalGenreModule } from './musical-genre/musical-genre.module';
+import { MoodsModule } from './moods/moods.module';
+import { BlogModule } from './blog/blog.module';
+import { ThemesModule } from './themes/themes.module';
 import { NotificationsModule } from './shared/notifications/notifications.module';
 import { PlaylistCollaboratorsModule } from './playlist-collaborators/playlist-collaborators.module';
 import { PlaylistsModule } from './playlists/playlists.module';
@@ -27,6 +30,37 @@ import { AppNotificationsModule } from './notifications/notifications.module';
 import { PaymentsModule } from './payments/payments.module';
 import { PlanLimitsModule } from './shared/plan-limits/plan-limits.module';
 import { PlanLimitsGuard } from './shared/guards/plan-limits.guard';
+import { AffiliatesModule } from './affiliates/affiliates.module';
+import { LegalProofModule } from './shared/legal-proof/legal-proof.module';
+import { PdfModule } from './shared/pdf/pdf.module';
+import { OtpModule } from './shared/otp/otp.module';
+import { SmsModule } from './shared/sms/sms.module';
+import { OtpVerificationModule } from './shared/otp-verification/otp-verification.module';
+import { SplitModule } from './splits/split.module';
+import { LicenseCollectionsModule } from './license-collections/license-collections.module';
+import { LicenseContractsModule } from './license-contracts/license-contracts.module';
+import { CertificatesModule } from './certificates/certificates.module';
+import { WalletModule } from './wallet/wallet.module';
+import { AuthorDashboardModule } from './author-dashboard/author-dashboard.module';
+import { PublisherDashboardModule } from './publisher-dashboard/publisher-dashboard.module';
+import { EditorialCommandCenterModule } from './editorial-command-center/editorial-command-center.module';
+import { EditorialRelationshipsModule } from './editorial-relationships/editorial-relationships.module';
+import { FollowsModule } from './follows/follows.module';
+import { SharingModule } from './sharing/sharing.module';
+import { StaffAuthorizationModule } from './staff-authorization/staff-authorization.module';
+import { StaffAuditModule } from './staff-audit/staff-audit.module';
+import { PublishingContractsModule } from './publishing-contracts/publishing-contracts.module';
+import { RegistrationFileModule } from './registration-file/registration-file.module';
+import { OrganizationsModule } from './organizations/organizations.module';
+import { AuthorizationModule } from './authorization/authorization.module';
+import { EntitlementsModule } from './entitlements/entitlements.module';
+import { CommissionModule } from './commission/commission.module';
+import { PromotionsModule } from './promotions/promotions.module';
+import { PublisherCommissionModule } from './publisher-commission/publisher-commission.module';
+import { PublisherShareModule } from './publisher-share/publisher-share.module';
+import { CollectiveManagementSocietyModule } from './collective-management-society/collective-management-society.module';
+import { SocietyAffiliationModule } from './society-affiliation/society-affiliation.module';
+import { BankInformationModule } from './bank-information/bank-information.module';
 
 @Module({
   imports: [
@@ -35,6 +69,9 @@ import { PlanLimitsGuard } from './shared/guards/plan-limits.guard';
       { name: 'medium', ttl: 10000, limit: 50  },
       { name: 'long',   ttl: 60000, limit: 200 },
     ]),
+    OtpModule,
+    SmsModule,
+    OtpVerificationModule,
     EventBusModule,
     RealtimeModule,
     NotificationsModule,
@@ -48,6 +85,9 @@ import { PlanLimitsGuard } from './shared/guards/plan-limits.guard';
     GuestsModule,
     RequestedTracksModule,
     MusicalGenreModule,
+    MoodsModule,
+    BlogModule,
+    ThemesModule,
     IntellectualPropertyModule,
     InvitesModule,
     PlaylistCollaboratorsModule,
@@ -58,6 +98,34 @@ import { PlanLimitsGuard } from './shared/guards/plan-limits.guard';
     AppNotificationsModule,
     PaymentsModule,
     PlanLimitsModule,
+    AffiliatesModule,
+    LegalProofModule,
+    PdfModule,
+    SplitModule,
+    LicenseCollectionsModule,
+    LicenseContractsModule,
+    CertificatesModule,
+    WalletModule,
+    AuthorDashboardModule,
+    PublisherDashboardModule,
+    EditorialCommandCenterModule,
+    EditorialRelationshipsModule,
+    FollowsModule,
+    SharingModule,
+    StaffAuthorizationModule,
+    StaffAuditModule,
+    PublishingContractsModule,
+    RegistrationFileModule,
+    OrganizationsModule,
+    EntitlementsModule,
+    AuthorizationModule,
+    CommissionModule,
+    PromotionsModule,
+    PublisherCommissionModule,
+    PublisherShareModule,
+    CollectiveManagementSocietyModule,
+    SocietyAffiliationModule,
+    BankInformationModule,
   ],
   controllers: [AppController],
   providers: [

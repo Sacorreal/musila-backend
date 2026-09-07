@@ -1,8 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { In, Repository } from 'typeorm';
 import { AppEventMap } from 'src/shared/events/contracts/app-event-map';
 import { NotificationsService } from '../notifications.service';
 import { NotificationsGateway } from '../notifications.gateway';
 import { EventListener } from 'src/shared/events/decorators/event-listener.decorator';
+import { FollowsService } from 'src/follows/follows.service';
+import { OrganizationMembership } from 'src/organizations/entities/organization-membership.entity';
+import { MembershipStatus } from 'src/organizations/entities/membership-status.enum';
+import { MembershipRole } from 'src/authorization/entities/membership-role.entity';
+import { MembershipType } from 'src/authorization/entities/membership-type.enum';
+
+const ORGANIZATION_ADMIN_ROLE_KEY = 'ORGANIZATION_ADMIN';
 
 @Injectable()
 export class NotificationListener {
@@ -11,6 +20,11 @@ export class NotificationListener {
   constructor(
     private readonly notificationsService: NotificationsService,
     private readonly notificationsGateway: NotificationsGateway,
+    private readonly followsService: FollowsService,
+    @InjectRepository(OrganizationMembership)
+    private readonly organizationMembershipRepo: Repository<OrganizationMembership>,
+    @InjectRepository(MembershipRole)
+    private readonly membershipRoleRepo: Repository<MembershipRole>,
   ) {}
 
   @EventListener({
@@ -102,6 +116,33 @@ export class NotificationListener {
   }
 
   @EventListener({
+    event: 'track.created',
+    channel: 'in-app',
+  })
+  async handleTrackCreatedNotifyFollowers(payload: AppEventMap['track.created']) {
+    try {
+      for (const authorId of payload.authorIds) {
+        const followerIds = await this.followsService.getFollowerIds(authorId);
+
+        for (const followerId of followerIds) {
+          const notification = await this.notificationsService.createNotification({
+            recipient: { id: followerId } as any,
+            type: 'track.published',
+            title: 'Nueva canción publicada',
+            message: `Un artista que sigues publicó "${payload.trackTitle}".`,
+            link: `/music/tracks/${payload.trackId}`,
+            data: payload,
+          });
+
+          this.notificationsGateway.emitToUser(followerId, 'notification.received', notification);
+        }
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de followers para track.created', error);
+    }
+  }
+
+  @EventListener({
     event: 'playlist.user.added',
     channel: 'in-app',
   })
@@ -128,5 +169,342 @@ export class NotificationListener {
   })
   async handlePlaylistUpdated(payload: AppEventMap['playlist.updated']) {
     this.logger.debug(`Playlist updated event received for ${payload.playlistTitle}.`);
+  }
+
+  @EventListener({
+    event: 'otp.code.issued',
+    channel: 'in-app',
+  })
+  async handleOtpCodeIssued(payload: AppEventMap['otp.code.issued']) {
+    try {
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.userId } as any,
+        type: 'otp.code.issued',
+        title: 'Código de verificación',
+        message: `Tu código para ${payload.purposeLabel} es ${payload.code}. Vence a las ${payload.expiresAt.toLocaleTimeString('es-CO')}.`,
+        data: { purposeLabel: payload.purposeLabel, expiresAt: payload.expiresAt },
+      });
+
+      this.notificationsGateway.emitToUser(payload.userId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de otp.code.issued', error);
+    }
+  }
+
+  @EventListener({
+    event: 'split.created',
+    channel: 'in-app',
+  })
+  async handleSplitCreated(payload: AppEventMap['split.created']) {
+    try {
+      for (const author of payload.authors) {
+        if (author.userId === payload.createdByUserId) continue;
+
+        const notification = await this.notificationsService.createNotification({
+          recipient: { id: author.userId } as any,
+          type: 'split.created',
+          title: 'Split de coautoría pendiente de tu aprobación',
+          message: `${payload.createdByName} te incluyó en el split de "${payload.trackTitle}" con un ${author.percentage}% como ${author.role}.`,
+          link: `/music/tracks/${payload.trackId}`,
+          data: payload,
+        });
+
+        this.notificationsGateway.emitToUser(author.userId, 'notification.received', notification);
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de split.created', error);
+    }
+  }
+
+  @EventListener({
+    event: 'split.author.rejected',
+    channel: 'in-app',
+  })
+  async handleSplitAuthorRejected(payload: AppEventMap['split.author.rejected']) {
+    try {
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.createdByUserId } as any,
+        type: 'split.author.rejected',
+        title: 'Un coautor rechazó el split',
+        message: `${payload.authorName} rechazó su participación en el split de "${payload.trackTitle}": ${payload.reason}`,
+        link: `/music/tracks/${payload.trackId}`,
+        data: payload,
+      });
+
+      this.notificationsGateway.emitToUser(payload.createdByUserId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de split.author.rejected', error);
+    }
+  }
+
+  @EventListener({
+    event: 'split.completed',
+    channel: 'in-app',
+  })
+  async handleSplitCompleted(payload: AppEventMap['split.completed']) {
+    try {
+      for (const author of payload.authors) {
+        const notification = await this.notificationsService.createNotification({
+          recipient: { id: author.userId } as any,
+          type: 'split.completed',
+          title: '¡Tu canción ya está publicada!',
+          message: `Todos los coautores firmaron el split de "${payload.trackTitle}" y la canción quedó publicada.`,
+          link: `/music/tracks/${payload.trackId}`,
+          data: payload,
+        });
+
+        this.notificationsGateway.emitToUser(author.userId, 'notification.received', notification);
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de split.completed', error);
+    }
+  }
+
+  @EventListener({
+    event: 'license.contract.preview.generated',
+    channel: 'in-app',
+  })
+  async handleLicenseContractPreviewGenerated(payload: AppEventMap['license.contract.preview.generated']) {
+    try {
+      for (const signatory of payload.signatories) {
+        const notification = await this.notificationsService.createNotification({
+          recipient: { id: signatory.userId } as any,
+          type: 'license.contract.preview.generated',
+          title: 'Contrato de licencia pendiente de tu firma',
+          message: `El contrato de licencia de primer uso de "${payload.trackTitle}" está listo para tu firma como ${signatory.roleLabel}.`,
+          link: `/music/solicitudes/${payload.requestedTrackId}`,
+          data: payload,
+        });
+        this.notificationsGateway.emitToUser(signatory.userId, 'notification.received', notification);
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de license.contract.preview.generated', error);
+    }
+  }
+
+  @EventListener({
+    event: 'license.contract.signatory.signed',
+    channel: 'in-app',
+  })
+  async handleLicenseContractSignatorySigned(payload: AppEventMap['license.contract.signatory.signed']) {
+    this.logger.debug(`${payload.userName} firmó el contrato de "${payload.trackTitle}" (allSigned=${payload.allSigned}).`);
+  }
+
+  @EventListener({
+    event: 'license.contract.signatory.rejected',
+    channel: 'in-app',
+  })
+  async handleLicenseContractSignatoryRejected(payload: AppEventMap['license.contract.signatory.rejected']) {
+    try {
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.ownerId } as any,
+        type: 'license.contract.signatory.rejected',
+        title: 'Rechazaron el contrato de licencia',
+        message: `${payload.userName} rechazó el contrato de "${payload.trackTitle}": ${payload.reason}`,
+        link: `/music/solicitudes`,
+        data: payload,
+      });
+      this.notificationsGateway.emitToUser(payload.ownerId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de license.contract.signatory.rejected', error);
+    }
+  }
+
+  @EventListener({
+    event: 'license.contract.signed',
+    channel: 'in-app',
+  })
+  async handleLicenseContractSigned(payload: AppEventMap['license.contract.signed']) {
+    try {
+      for (const party of payload.parties) {
+        const notification = await this.notificationsService.createNotification({
+          recipient: { id: party.userId } as any,
+          type: 'license.contract.signed',
+          title: 'Contrato de licencia firmado',
+          message: `Todas las partes firmaron el contrato de licencia de primer uso de "${payload.trackTitle}".`,
+          link: `/music/solicitudes/${payload.requestedTrackId}`,
+          data: payload,
+        });
+        this.notificationsGateway.emitToUser(party.userId, 'notification.received', notification);
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de license.contract.signed', error);
+    }
+  }
+
+  @EventListener({
+    event: 'license.contract.expiration.pending_confirmation',
+    channel: 'in-app',
+  })
+  async handleLicenseContractExpirationPending(
+    payload: AppEventMap['license.contract.expiration.pending_confirmation'],
+  ) {
+    try {
+      for (const recipient of [
+        { id: payload.ownerId },
+        { id: payload.requesterId },
+      ]) {
+        const notification = await this.notificationsService.createNotification({
+          recipient: recipient as any,
+          type: 'license.contract.expiration.pending_confirmation',
+          title: 'Venció la vigencia de una licencia',
+          message: `La vigencia de la licencia de "${payload.trackTitle}" venció sin ISRC registrado. Si ya la grabaste, confirma el ISRC; si no, el propietario puede ofrecerla a otro intérprete.`,
+          link: `/music/solicitudes/${payload.requestedTrackId}`,
+          data: payload,
+        });
+        this.notificationsGateway.emitToUser(recipient.id, 'notification.received', notification);
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de license.contract.expiration.pending_confirmation', error);
+    }
+  }
+
+  @EventListener({
+    event: 'license.contract.fulfilled',
+    channel: 'in-app',
+  })
+  async handleLicenseContractFulfilled(payload: AppEventMap['license.contract.fulfilled']) {
+    try {
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.otherPartyId } as any,
+        type: 'license.contract.fulfilled',
+        title: 'ISRC confirmado',
+        message: `Se confirmó el ISRC (${payload.isrc}) de la grabación de "${payload.trackTitle}". La licencia quedó cumplida.`,
+        link: `/music/solicitudes/${payload.requestedTrackId}`,
+        data: payload,
+      });
+      this.notificationsGateway.emitToUser(payload.otherPartyId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de license.contract.fulfilled', error);
+    }
+  }
+
+  @EventListener({
+    event: 'certificate.issued',
+    channel: 'in-app',
+  })
+  async handleCertificateIssued(payload: AppEventMap['certificate.issued']) {
+    try {
+      for (const recipient of payload.recipients) {
+        const notification = await this.notificationsService.createNotification({
+          recipient: { id: recipient.userId } as any,
+          type: 'certificate.issued',
+          title: 'Tu certificado de autoría está listo',
+          message: `El Certificado de Autoría de "${payload.trackTitle}" ya está disponible para descarga.`,
+          link: `/music`,
+          data: payload,
+        });
+        this.notificationsGateway.emitToUser(recipient.userId, 'notification.received', notification);
+      }
+
+      if (payload.incompleteRecipients.length > 0 && payload.requestedByUserId) {
+        const names = payload.incompleteRecipients.map((r) => r.name).join(', ');
+        const notification = await this.notificationsService.createNotification({
+          recipient: { id: payload.requestedByUserId } as any,
+          type: 'certificate.issued',
+          title: 'Completa los datos de tus coautores',
+          message: `No enviamos el certificado de "${payload.trackTitle}" a: ${names}. Completa sus datos de identificación para que lo reciban.`,
+          link: `/music`,
+          data: payload,
+        });
+        this.notificationsGateway.emitToUser(payload.requestedByUserId, 'notification.received', notification);
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de certificate.issued', error);
+    }
+  }
+
+  @EventListener({
+    event: 'certificate.generation.failed',
+    channel: 'in-app',
+  })
+  async handleCertificateGenerationFailed(payload: AppEventMap['certificate.generation.failed']) {
+    if (!payload.requestedByUserId) return;
+
+    try {
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.requestedByUserId } as any,
+        type: 'certificate.generation.failed',
+        title: 'Tu certificado de autoría tomará un poco más',
+        message: `Estamos reintentando generar el Certificado de Autoría de "${payload.trackTitle}". Te avisaremos cuando esté listo.`,
+        link: `/music`,
+        data: payload,
+      });
+      this.notificationsGateway.emitToUser(payload.requestedByUserId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de certificate.generation.failed', error);
+    }
+  }
+
+  @EventListener({
+    event: 'organization.access_request.approved',
+    channel: 'in-app',
+  })
+  async handleAccessRequestApproved(payload: AppEventMap['organization.access_request.approved']) {
+    try {
+      const functionNames = payload.capabilities.map((capability) => capability.name);
+      const preview = functionNames.slice(0, 3).join(', ');
+      const rest = functionNames.length - 3;
+      const abilities = functionNames.length
+        ? ` Ya puedes: ${preview}${rest > 0 ? ` y ${rest} función(es) más` : ''}.`
+        : '';
+
+      const notification = await this.notificationsService.createNotification({
+        recipient: { id: payload.userId } as any,
+        type: 'organization.access_request.approved',
+        title: `Acceso aprobado en ${payload.organizationName}`,
+        message: `Tu acceso fue aprobado con el rol "${payload.roleName}".${abilities}`,
+        link: `/org/${payload.organizationId}`,
+        data: payload,
+      });
+
+      this.notificationsGateway.emitToUser(payload.userId, 'notification.received', notification);
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de organization.access_request.approved', error);
+    }
+  }
+
+  /** Notifica a los admins de la organización cuando llega una nueva solicitud de acceso (Feature 4). */
+  @EventListener({
+    event: 'organization.access_request.created',
+    channel: 'in-app',
+  })
+  async handleAccessRequestCreated(payload: AppEventMap['organization.access_request.created']) {
+    try {
+      const adminUserIds = await this.resolveOrganizationAdminUserIds(payload.organizationId);
+
+      for (const adminUserId of adminUserIds) {
+        const notification = await this.notificationsService.createNotification({
+          recipient: { id: adminUserId } as any,
+          type: 'organization.access_request.created',
+          title: 'Nueva solicitud de acceso',
+          message: 'Alguien solicitó unirse a tu organización con el enlace de invitación.',
+          link: `/org/${payload.organizationId}/settings/members`,
+          data: payload,
+        });
+        this.notificationsGateway.emitToUser(adminUserId, 'notification.received', notification);
+      }
+    } catch (error) {
+      this.logger.error('Error procesando notificacion de organization.access_request.created', error);
+    }
+  }
+
+  /** Miembros ACTIVE de staff de la organización con el rol ORGANIZATION_ADMIN. */
+  private async resolveOrganizationAdminUserIds(organizationId: string): Promise<string[]> {
+    const memberships = await this.organizationMembershipRepo.find({
+      where: { organizationId, status: MembershipStatus.ACTIVE },
+    });
+    if (!memberships.length) return [];
+
+    const membershipIds = memberships.map((m) => m.id);
+    const roles = await this.membershipRoleRepo.find({
+      where: { membershipType: MembershipType.ORGANIZATION, membershipId: In(membershipIds) },
+    });
+
+    const adminMembershipIds = new Set(
+      roles.filter((r) => r.role?.key === ORGANIZATION_ADMIN_ROLE_KEY).map((r) => r.membershipId),
+    );
+
+    return memberships.filter((m) => adminMembershipIds.has(m.id)).map((m) => m.userId);
   }
 }

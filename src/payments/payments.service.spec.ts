@@ -3,7 +3,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { UnauthorizedException } from '@nestjs/common';
 import { UserPlan } from 'src/users/entities/user-plan.enum';
-import { UserRole } from 'src/users/entities/user-role.enum';
+import { UserPlanType } from 'src/users/entities/user-plan-type.enum';
 import { User } from 'src/users/entities/user.entity';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { PaymentSource } from './entities/payment-source.entity';
@@ -14,11 +14,18 @@ import {
 import { PaymentsService } from './payments.service';
 import { PAYMENT_PROVIDER } from './domain/payment-provider.interface';
 import { ProviderTransactionStatus } from './domain/payment-provider.types';
+import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
+import { EventBusService } from 'src/shared/events/event-bus.service';
+import { OtpVerificationService } from 'src/shared/otp-verification/otp-verification.service';
+import { LicenseCollectionsService } from 'src/license-collections/license-collections.service';
+import { CommissionService } from 'src/commission/commission.service';
+import { PublisherCommissionFreezeService } from 'src/wallet/services/publisher-commission-freeze.service';
 
 const makeMockRepo = (overrides: Record<string, jest.Mock> = {}) => ({
   save: jest.fn().mockResolvedValue({}),
   findOne: jest.fn().mockResolvedValue(null),
   update: jest.fn().mockResolvedValue({}),
+  delete: jest.fn().mockResolvedValue({}),
   createQueryBuilder: jest.fn(),
   ...overrides,
 });
@@ -29,6 +36,7 @@ describe('PaymentsService', () => {
   let pendingRepo: ReturnType<typeof makeMockRepo>;
   let paymentSourceRepo: ReturnType<typeof makeMockRepo>;
   let userRepo: ReturnType<typeof makeMockRepo>;
+  let requestedTrackRepo: ReturnType<typeof makeMockRepo>;
   let provider: {
     name: string;
     generateIntegritySignature: jest.Mock;
@@ -45,6 +53,7 @@ describe('PaymentsService', () => {
     pendingRepo = makeMockRepo();
     paymentSourceRepo = makeMockRepo();
     userRepo = makeMockRepo();
+    requestedTrackRepo = makeMockRepo();
     provider = {
       name: 'wompi',
       generateIntegritySignature: jest.fn().mockReturnValue('sig-abc'),
@@ -77,6 +86,36 @@ describe('PaymentsService', () => {
         { provide: getRepositoryToken(PendingRegistration), useValue: pendingRepo },
         { provide: getRepositoryToken(PaymentSource), useValue: paymentSourceRepo },
         { provide: getRepositoryToken(User), useValue: userRepo },
+        { provide: getRepositoryToken(RequestedTrack), useValue: requestedTrackRepo },
+        {
+          provide: EventBusService,
+          useValue: { emit: jest.fn(), on: jest.fn() },
+        },
+        {
+          provide: OtpVerificationService,
+          useValue: { assertAndConsumeVerification: jest.fn().mockResolvedValue(undefined) },
+        },
+        {
+          provide: LicenseCollectionsService,
+          useValue: {
+            findOne: jest.fn(),
+            findByPaymentReference: jest.fn().mockResolvedValue(null),
+            setPaymentReference: jest.fn().mockResolvedValue(undefined),
+            markCollectionPaid: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+        {
+          provide: CommissionService,
+          useValue: {
+            resolveCommission: jest.fn(),
+            calculateCommission: jest.fn(),
+            freezeCommission: jest.fn(),
+          },
+        },
+        {
+          provide: PublisherCommissionFreezeService,
+          useValue: { freeze: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 
@@ -85,7 +124,7 @@ describe('PaymentsService', () => {
 
   describe('createCheckout', () => {
     it('devuelve los parámetros del Widget con firma de integridad y crea el registro pendiente', async () => {
-      const result = await service.createCheckout({ role: UserRole.CANTAUTOR, plan: UserPlan.PRO });
+      const result = await service.createCheckout({ planType: UserPlanType.PLAN_360, plan: UserPlan.PRO });
 
       expect(provider.generateIntegritySignature).toHaveBeenCalledWith(
         expect.objectContaining({ amountInCents: 5990000, currency: 'COP' }),
@@ -100,7 +139,7 @@ describe('PaymentsService', () => {
       );
       expect(pendingRepo.save).toHaveBeenCalledWith(
         expect.objectContaining({
-          role: UserRole.CANTAUTOR,
+          planType: UserPlanType.PLAN_360,
           status: PendingRegistrationStatus.PENDING,
         }),
       );
@@ -108,7 +147,7 @@ describe('PaymentsService', () => {
 
     it('usa el precio anual cuando billingPeriod=annual', async () => {
       await service.createCheckout({
-        role: UserRole.AUTOR,
+        planType: UserPlanType.PLAN_AUTOR,
         plan: UserPlan.PRO,
         billingPeriod: 'annual',
       });
@@ -136,7 +175,7 @@ describe('PaymentsService', () => {
       pendingRepo.findOne.mockResolvedValue({
         id: 'pending-1',
         externalReference: 'ref-abc',
-        role: UserRole.CANTAUTOR,
+        planType: UserPlanType.PLAN_360,
       });
 
       await service.handleWebhook({ event: 'transaction.updated', data: {} } as any);
@@ -170,7 +209,7 @@ describe('PaymentsService', () => {
         reference: 'ref-xyz',
         status: ProviderTransactionStatus.DECLINED,
       });
-      pendingRepo.findOne.mockResolvedValue({ id: 'pending-2', role: UserRole.AUTOR });
+      pendingRepo.findOne.mockResolvedValue({ id: 'pending-2', planType: UserPlanType.PLAN_AUTOR });
 
       await service.handleWebhook({ event: 'transaction.updated', data: {} } as any);
 
@@ -190,7 +229,7 @@ describe('PaymentsService', () => {
     it('retorna approved cuando el pago fue confirmado', async () => {
       pendingRepo.findOne.mockResolvedValue({
         status: PendingRegistrationStatus.PAYMENT_CONFIRMED,
-        role: UserRole.INTERPRETE,
+        planType: UserPlanType.PLAN_DESCUBRIDOR,
         expiresAt: new Date(Date.now() + 60000),
       });
       const result = await service.getPaymentStatus('ref-ok');

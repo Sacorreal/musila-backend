@@ -3,22 +3,23 @@ import { RequestedTracksService } from './requested-tracks.service';
 import { CreateRequestedTrackInput } from './dto/create-requested-track.input';
 import { UpdateRequestedTrackInput } from './dto/update-requested-track.input';
 import { SetLicensePriceDto } from './dto/set-license-price.dto';
-import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards, Query } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards, UseInterceptors, Query } from '@nestjs/common';
 import { ApiBody, ApiConsumes, ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { LicenseType } from './entities/license-type.enum';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/users/guards/roles.guard';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { PaginationDto} from '../shared/dto/pagination.dto'
 import { PaginatedRequestedTracksResponseDto } from './dto/requested-track-pagination.dto';
-import { Roles } from 'src/users/decorators/roles.decorator';
-import { UserRole } from 'src/users/entities/user-role.enum';
-import { PlanLimit } from 'src/shared/plan-limits/plan-limit.decorator';
+import { EmailVerifiedGuard } from 'src/users/guards/email-verified.guard';
+import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
+import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
+import { ConsumeEntitlement } from 'src/entitlements/decorators/consume-entitlement.decorator';
+import { EntitlementConsumeInterceptor } from 'src/entitlements/interceptors/entitlement-consume.interceptor';
 
 @ApiTags('Pistas Solicitadas')
-@UseGuards(JWTAuthGuard, RolesGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard)
 @Controller('requested-tracks')
 export class RequestedTracksController {
   constructor(
@@ -27,8 +28,10 @@ export class RequestedTracksController {
 
 
   @Post()
-  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.INTERPRETE, UserRole.INVITADO)
-  @PlanLimit('requests')
+  @RequireCapability('license.request')
+  @ConsumeEntitlement('license.request')
+  @UseGuards(EmailVerifiedGuard, AuthorizationGuard)
+  @UseInterceptors(EntitlementConsumeInterceptor)
   @ApiConsumes('multipart/form-data')
   @ApiOperation({
     summary: 'Crear solicitud de pista',
@@ -65,7 +68,7 @@ export class RequestedTracksController {
   }
 
   @Get()
-  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.AUTOR, UserRole.INTERPRETE)
+  @RequireCapability('license.view')
   @ApiOperation({
     summary: 'Obtener todas las solicitudes de pistas',
     description: 'Obtiene la lista completa de solicitudes de pistas musicales en el sistema.',
@@ -83,7 +86,7 @@ export class RequestedTracksController {
   }
 
   @Get(':id')
-  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.AUTOR)
+  @RequireCapability('license.view')
   @ApiOperation({
     summary: 'Obtener una solicitud de pista por ID',
     description: 'Obtiene la información detallada de una solicitud de pista específica por su ID.',
@@ -99,7 +102,7 @@ export class RequestedTracksController {
   }
 
   @Put(':id')
-  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.AUTOR)
+  @RequireCapability('license.manage')
   @ApiOperation({
     summary: 'Actualizar solicitud de pista',
     description: 'Actualiza la información de una solicitud de pista existente, como el estado o el tipo de licencia.',
@@ -111,13 +114,17 @@ export class RequestedTracksController {
   })
   @ApiResponse({ status: 404, description: 'Solicitud no encontrada' })
   @ApiResponse({ status: 400, description: 'Datos inválidos' })
-  async updateRequestedTrackController(@Body() updateRequestedTrackInput: UpdateRequestedTrackInput, @Param('id') id: string) {
-    return await this.requestedTracksService.updateRequestedTracksService(id, updateRequestedTrackInput);
+  async updateRequestedTrackController(
+    @Body() updateRequestedTrackInput: UpdateRequestedTrackInput,
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return await this.requestedTracksService.updateRequestedTracksService(id, updateRequestedTrackInput, user.id);
   }
 
 
   @Patch(':id/price')
-  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.AUTOR)
+  @RequireCapability('license.manage')
   @ApiOperation({
     summary: 'Establecer precio de licencia',
     description: 'Permite al propietario de la pista establecer el precio de la licencia en COP.',
@@ -134,7 +141,7 @@ export class RequestedTracksController {
   }
 
   @Delete(':id')
-  @Roles(UserRole.ADMIN, UserRole.CANTAUTOR, UserRole.AUTOR)
+  @RequireCapability('license.manage')
   @ApiOperation({
     summary: 'Eliminar solicitud de pista',
     description: 'Elimina una solicitud de pista del sistema por su ID.',

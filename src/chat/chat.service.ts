@@ -3,16 +3,23 @@ import {
   Logger,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { MessageInput } from './dto/send-message.input';
-import { In, Repository } from 'typeorm';
+import { In, Not, Repository } from 'typeorm';
 import { Chat } from './entities/chat.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Message } from './entities/message.entity';
 import { EventBusService } from 'src/shared/events/event-bus.service';
-import { ChatParticipantRole } from './types/chat.types';
+import {
+  ChatParticipantRole,
+  ChatType,
+  ConversationItem,
+  ConversationParty,
+} from './types/chat.types';
 import { Guest } from 'src/guests/entities/guest.entity';
 import { RemoveGuestsInput } from './dto/remove-guests.input'
+import { User } from 'src/users/entities/user.entity';
 
 @Injectable()
 export class ChatService {
@@ -26,7 +33,167 @@ export class ChatService {
     private readonly eventBus: EventBusService,
     @InjectRepository(Guest)
     private readonly guestRepository: Repository<Guest>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
   ) { }
+
+  /**
+   * Inicia (o recupera) un chat directo entre el usuario actual y otro usuario.
+   * Semántica get-or-create: si ya existe un chat DIRECT con ambos participantes,
+   * se reutiliza en lugar de crear uno nuevo.
+   */
+  async createOrGetDirectChat(currentUserId: string, targetUserId: string) {
+    if (currentUserId === targetUserId) {
+      throw new BadRequestException(
+        'No puedes iniciar una conversación contigo mismo',
+      );
+    }
+
+    const target = await this.userRepository.findOne({
+      where: { id: targetUserId },
+    });
+    if (!target) {
+      throw new NotFoundException('El usuario destino no existe');
+    }
+
+    const existing = await this.chatRepository
+      .createQueryBuilder('chat')
+      .innerJoin('chat.participants', 'p1', 'p1.id = :currentUserId', {
+        currentUserId,
+      })
+      .innerJoin('chat.participants', 'p2', 'p2.id = :targetUserId', {
+        targetUserId,
+      })
+      .where('chat.type = :type', { type: ChatType.DIRECT })
+      .getOne();
+
+    if (existing) {
+      return { chatId: existing.id };
+    }
+
+    const chat = await this.chatRepository.save(
+      this.chatRepository.create({
+        type: ChatType.DIRECT,
+        participants: [
+          { id: currentUserId } as User,
+          { id: targetUserId } as User,
+        ],
+      }),
+    );
+
+    return { chatId: chat.id };
+  }
+
+  /**
+   * Lista unificada de conversaciones del usuario: chats de solicitud (REQUEST)
+   * y chats directos (DIRECT), en un formato normalizado listo para la UI.
+   */
+  async findAllForUser(userId: string) {
+    const idRows = await this.chatRepository
+      .createQueryBuilder('chat')
+      .select('chat.id', 'id')
+      .leftJoin('chat.request', 'request')
+      .leftJoin('request.requester', 'requester')
+      .leftJoin('request.owner', 'owner')
+      .leftJoin('request.track', 'track')
+      .leftJoin('track.authors', 'authors')
+      .leftJoin('chat.guests', 'guests')
+      .leftJoin('chat.participants', 'participants')
+      .where('requester.id = :userId', { userId })
+      .orWhere('owner.id = :userId', { userId })
+      .orWhere('authors.id = :userId', { userId })
+      .orWhere('guests.id = :userId', { userId })
+      .orWhere('participants.id = :userId', { userId })
+      .distinct(true)
+      .getRawMany<{ id: string }>();
+
+    const chatIds = idRows.map((r) => r.id);
+    if (!chatIds.length) {
+      return { data: [], total: 0 };
+    }
+
+    const chats = await this.chatRepository.find({
+      where: { id: In(chatIds) },
+      relations: [
+        'request',
+        'request.requester',
+        'request.track',
+        'request.track.authors',
+        'participants',
+      ],
+    });
+
+    const data = await Promise.all(
+      chats.map((chat) => this.toConversationItem(chat, userId)),
+    );
+
+    data.sort((a, b) => {
+      const ta = a.lastMessageAt ? a.lastMessageAt.getTime() : 0;
+      const tb = b.lastMessageAt ? b.lastMessageAt.getTime() : 0;
+      return tb - ta;
+    });
+
+    return { data, total: data.length };
+  }
+
+  private async toConversationItem(
+    chat: Chat,
+    userId: string,
+  ): Promise<ConversationItem> {
+    const [unreadCount, lastMessage] = await Promise.all([
+      this.messageRepository.count({
+        where: {
+          chat: { id: chat.id },
+          isRead: false,
+          sender: { id: Not(userId) },
+        },
+      }),
+      this.messageRepository.findOne({
+        where: { chat: { id: chat.id } },
+        order: { createdAt: 'DESC' },
+      }),
+    ]);
+
+    const lastMessageAt = lastMessage?.createdAt ?? chat.createdAt ?? null;
+
+    if (chat.type === ChatType.DIRECT) {
+      const other = chat.participants?.find((p) => p.id !== userId) ?? null;
+      return {
+        chatId: chat.id,
+        kind: 'DIRECT',
+        otherParty: other ? this.toParty(other) : null,
+        track: null,
+        status: null,
+        unreadCount,
+        lastMessageAt,
+      };
+    }
+
+    const request = chat.request;
+    const track = request?.track;
+    const authors = track?.authors ?? [];
+    const isAuthor = authors.some((a) => a.id === userId);
+    const other = isAuthor ? request?.requester : authors[0];
+
+    return {
+      chatId: chat.id,
+      kind: 'REQUEST',
+      otherParty: other ? this.toParty(other) : null,
+      track: track ? { title: track.title, coverUrl: track.coverUrl ?? null } : null,
+      status: request?.status ?? null,
+      unreadCount,
+      lastMessageAt,
+    };
+  }
+
+  private toParty(user: User): ConversationParty {
+    return {
+      id: user.id,
+      name: user.name,
+      lastName: user.lastName,
+      avatarUrl: user.avatarUrl ?? null,
+    };
+  }
 
   async saveMessage(userId: string, messageInput: MessageInput) {
     try {
@@ -34,7 +201,7 @@ export class ChatService {
 
       const chat = await this.chatRepository.findOne({
         where: { id: chatId },
-        relations: ['request', 'request.requester', 'request.owner', 'request.track', 'request.track.authors', 'guests'],
+        relations: ['request', 'request.requester', 'request.owner', 'request.track', 'request.track.authors', 'guests', 'participants'],
       });
 
       if (!chat) throw new NotFoundException('No existe el chat');
@@ -87,12 +254,18 @@ export class ChatService {
     if (!chat) {
       throw new NotFoundException('No existe el chat');
     }
+    if (!chat.request) {
+      throw new BadRequestException(
+        'Los invitados solo aplican a chats de solicitud',
+      );
+    }
+    const request = chat.request;
     // =====================================================
     // 🔐 VALIDACIÓN DE PERMISOS
     // =====================================================
 
-    const isOwner = chat.request.owner.id === userId;
-    const isRequester = chat.request.requester.id === userId;
+    const isOwner = request.owner.id === userId;
+    const isRequester = request.requester.id === userId;
 
     if (!isOwner && !isRequester) {
       throw new ForbiddenException('No tienes permisos para agregar invitados');
@@ -130,7 +303,7 @@ export class ChatService {
       chatId,
       guestIds: newGuests.map((g) => g.id),
       addedBy: userId,
-      titleTrack: chat.request.track.title,
+      titleTrack: request.track?.title ?? 'Track',
       emailGuest: guests.map((g) => g.email),
     });
 
@@ -154,6 +327,10 @@ export class ChatService {
     // Es un invitado al chat
     const isInvited = chat.guests?.some((guest) => guest.id === userId);
     if (isInvited) return 'INVITED';
+
+    // Es participante directo del chat (chat sin solicitud asociada)
+    const isParticipant = chat.participants?.some((p) => p.id === userId);
+    if (isParticipant) return 'PARTICIPANT';
 
     return null;
   }
@@ -200,13 +377,19 @@ export class ChatService {
     if (!chat) {
       throw new NotFoundException('No existe el chat');
     }
+    if (!chat.request) {
+      throw new BadRequestException(
+        'Los invitados solo aplican a chats de solicitud',
+      );
+    }
+    const request = chat.request;
 
     // =====================================================
     // 🔐 VALIDACIÓN DE PERMISOS
     // =====================================================
 
-    const isOwner = chat.request.owner.id === userId;
-    const isRequester = chat.request.requester.id === userId;
+    const isOwner = request.owner.id === userId;
+    const isRequester = request.requester.id === userId;
 
     if (!isOwner && !isRequester) {
       throw new ForbiddenException(
@@ -261,7 +444,7 @@ export class ChatService {
   async getChatMessages(userId: string, chatId: string) {
     const chat = await this.chatRepository.findOne({
       where: { id: chatId },
-      relations: ['request', 'request.requester', 'request.owner', 'guests', 'request.track', 'request.track.authors'],
+      relations: ['request', 'request.requester', 'request.owner', 'guests', 'request.track', 'request.track.authors', 'participants'],
     });
 
     if (!chat) {
@@ -280,6 +463,33 @@ export class ChatService {
       order: {
         createdAt: 'ASC',
       },
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Lectura para el panel de administración (solo lectura: los chats son
+  // conversaciones reales entre usuarios, no se editan/crean a mano).
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  async findAllChatsAdmin(pagination: { limit?: number; offset?: number }) {
+    const { limit = 10, offset = 0 } = pagination;
+    const [data, total] = await this.chatRepository.findAndCount({
+      relations: ['request', 'request.requester', 'request.owner', 'request.track', 'guests'],
+      order: { createdAt: 'DESC' },
+      take: limit,
+      skip: offset,
+    });
+    return { data, total, limit, offset };
+  }
+
+  async getChatMessagesAdmin(chatId: string) {
+    const chat = await this.chatRepository.findOne({ where: { id: chatId } });
+    if (!chat) throw new NotFoundException('No existe el chat');
+
+    return this.messageRepository.find({
+      where: { chat: { id: chatId } },
+      relations: ['sender'],
+      order: { createdAt: 'ASC' },
     });
   }
 }
