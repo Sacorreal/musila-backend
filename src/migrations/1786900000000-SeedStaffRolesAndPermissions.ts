@@ -160,7 +160,7 @@ export class SeedStaffRolesAndPermissions1786900000000
       INSERT INTO "staff_user_roles" ("user_id", "staff_role_id", "assigned_at")
       SELECT u."id", r."id", now()
       FROM "users" u, "staff_roles" r
-      WHERE u."plan_type" = 'superadmin' AND r."slug" = 'super-admin'
+      WHERE u."plan_type"::text = 'superadmin' AND r."slug" = 'super-admin'
       ON CONFLICT ("user_id") DO NOTHING
     `);
 
@@ -168,7 +168,7 @@ export class SeedStaffRolesAndPermissions1786900000000
       INSERT INTO "staff_user_roles" ("user_id", "staff_role_id", "assigned_at")
       SELECT u."id", r."id", now()
       FROM "users" u, "staff_roles" r
-      WHERE u."plan_type" = 'admin' AND r."slug" = 'admin'
+      WHERE u."plan_type"::text = 'admin' AND r."slug" = 'admin'
       ON CONFLICT ("user_id") DO NOTHING
     `);
   }
