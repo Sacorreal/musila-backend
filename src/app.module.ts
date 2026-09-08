@@ -57,6 +57,7 @@ import { AuthorizationModule } from './authorization/authorization.module';
 import { EntitlementsModule } from './entitlements/entitlements.module';
 import { CommissionModule } from './commission/commission.module';
 import { PromotionsModule } from './promotions/promotions.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
 import { PublisherCommissionModule } from './publisher-commission/publisher-commission.module';
 import { PublisherShareModule } from './publisher-share/publisher-share.module';
 import { CollectiveManagementSocietyModule } from './collective-management-society/collective-management-society.module';
@@ -124,6 +125,7 @@ import { TrackNotesModule } from './track-notes/track-notes.module';
     AuthorizationModule,
     CommissionModule,
     PromotionsModule,
+    CampaignsModule,
     PublisherCommissionModule,
     PublisherShareModule,
     CollectiveManagementSocietyModule,
