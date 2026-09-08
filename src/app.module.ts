@@ -43,6 +43,7 @@ import { CertificatesModule } from './certificates/certificates.module';
 import { WalletModule } from './wallet/wallet.module';
 import { AuthorDashboardModule } from './author-dashboard/author-dashboard.module';
 import { PublisherDashboardModule } from './publisher-dashboard/publisher-dashboard.module';
+import { BuyerDashboardModule } from './buyer-dashboard/buyer-dashboard.module';
 import { EditorialCommandCenterModule } from './editorial-command-center/editorial-command-center.module';
 import { EditorialRelationshipsModule } from './editorial-relationships/editorial-relationships.module';
 import { FollowsModule } from './follows/follows.module';
@@ -109,6 +110,7 @@ import { TrackNotesModule } from './track-notes/track-notes.module';
     WalletModule,
     AuthorDashboardModule,
     PublisherDashboardModule,
+    BuyerDashboardModule,
     EditorialCommandCenterModule,
     EditorialRelationshipsModule,
     FollowsModule,
