@@ -61,6 +61,7 @@ import { PublisherShareModule } from './publisher-share/publisher-share.module';
 import { CollectiveManagementSocietyModule } from './collective-management-society/collective-management-society.module';
 import { SocietyAffiliationModule } from './society-affiliation/society-affiliation.module';
 import { BankInformationModule } from './bank-information/bank-information.module';
+import { TrackNotesModule } from './track-notes/track-notes.module';
 
 @Module({
   imports: [
@@ -126,6 +127,7 @@ import { BankInformationModule } from './bank-information/bank-information.modul
     CollectiveManagementSocietyModule,
     SocietyAffiliationModule,
     BankInformationModule,
+    TrackNotesModule,
   ],
   controllers: [AppController],
   providers: [

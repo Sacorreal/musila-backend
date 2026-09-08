@@ -422,7 +422,7 @@ export class SplitService {
       authors: split.authors
         .filter((author) => author.user)
         .map((author) => {
-          const authorUser = authorsById.get(author.user!.id) ?? author.user!;
+          const authorUser = authorsById.get(author.user.id) ?? author.user;
           return {
             userId: authorUser.id,
             name: `${authorUser.name} ${authorUser.lastName}`.trim(),
@@ -471,9 +471,9 @@ export class SplitService {
       authors: split.authors
         .filter((author) => author.user)
         .map((author) => ({
-          userId: author.user!.id,
-          name: `${author.user!.name} ${author.user!.lastName}`.trim(),
-          email: author.user!.email,
+          userId: author.user.id,
+          name: `${author.user.name} ${author.user.lastName}`.trim(),
+          email: author.user.email,
         })),
     });
   }
