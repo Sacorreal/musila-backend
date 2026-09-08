@@ -179,7 +179,7 @@ export class LicenseContractsService {
           throw new BadRequestException('La distribución del anticipo debe sumar exactamente 100%');
         }
         const splitUserIds = new Set(
-          split.authors.filter((author) => author.user).map((author) => author.user!.id),
+          split.authors.filter((author) => author.user).map((author) => author.user.id),
         );
         const distributionUserIds = new Set(dto.advanceDistribution.map((entry) => entry.userId));
         const allAreAuthors = dto.advanceDistribution.every((entry) => splitUserIds.has(entry.userId));
@@ -738,8 +738,8 @@ export class LicenseContractsService {
       return split.authors
         .filter((author) => author.user)
         .map((author) => ({
-          user: author.user!,
-          role: author.user!.id === ownerId ? LicenseSignatoryRole.AUTOR_PRINCIPAL : LicenseSignatoryRole.COAUTOR,
+          user: author.user,
+          role: author.user.id === ownerId ? LicenseSignatoryRole.AUTOR_PRINCIPAL : LicenseSignatoryRole.COAUTOR,
           roleLabel: COAUTHOR_ROLE_LABELS[author.role] ?? author.role,
           percentage: Number(author.percentage),
           splitAuthorId: author.id,

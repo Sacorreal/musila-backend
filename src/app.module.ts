@@ -43,6 +43,7 @@ import { CertificatesModule } from './certificates/certificates.module';
 import { WalletModule } from './wallet/wallet.module';
 import { AuthorDashboardModule } from './author-dashboard/author-dashboard.module';
 import { PublisherDashboardModule } from './publisher-dashboard/publisher-dashboard.module';
+import { BuyerDashboardModule } from './buyer-dashboard/buyer-dashboard.module';
 import { EditorialCommandCenterModule } from './editorial-command-center/editorial-command-center.module';
 import { EditorialRelationshipsModule } from './editorial-relationships/editorial-relationships.module';
 import { FollowsModule } from './follows/follows.module';
@@ -56,11 +57,13 @@ import { AuthorizationModule } from './authorization/authorization.module';
 import { EntitlementsModule } from './entitlements/entitlements.module';
 import { CommissionModule } from './commission/commission.module';
 import { PromotionsModule } from './promotions/promotions.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
 import { PublisherCommissionModule } from './publisher-commission/publisher-commission.module';
 import { PublisherShareModule } from './publisher-share/publisher-share.module';
 import { CollectiveManagementSocietyModule } from './collective-management-society/collective-management-society.module';
 import { SocietyAffiliationModule } from './society-affiliation/society-affiliation.module';
 import { BankInformationModule } from './bank-information/bank-information.module';
+import { TrackNotesModule } from './track-notes/track-notes.module';
 
 @Module({
   imports: [
@@ -108,6 +111,7 @@ import { BankInformationModule } from './bank-information/bank-information.modul
     WalletModule,
     AuthorDashboardModule,
     PublisherDashboardModule,
+    BuyerDashboardModule,
     EditorialCommandCenterModule,
     EditorialRelationshipsModule,
     FollowsModule,
@@ -121,11 +125,13 @@ import { BankInformationModule } from './bank-information/bank-information.modul
     AuthorizationModule,
     CommissionModule,
     PromotionsModule,
+    CampaignsModule,
     PublisherCommissionModule,
     PublisherShareModule,
     CollectiveManagementSocietyModule,
     SocietyAffiliationModule,
     BankInformationModule,
+    TrackNotesModule,
   ],
   controllers: [AppController],
   providers: [

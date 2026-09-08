@@ -104,7 +104,7 @@ export class WalletDistributionService {
     if (total <= 0) return null;
 
     const entries = authors.map((author) => ({
-      userId: author.user!.id,
+      userId: author.user.id,
       percentage: Math.round((Number(author.percentage) / total) * 10000) / 100,
     }));
     // Ajusta el último coautor para que la suma sea exactamente 100 (evita fugas por redondeo).

@@ -14,5 +14,6 @@ import { RequestedTrackLegalProofListener } from './listeners/requested-track-le
   imports: [TypeOrmModule.forFeature([RequestedTrack, User, Track, Chat, Message]), UsersModule],
   controllers: [RequestedTracksController],
   providers: [RequestedTracksService, RequestedTrackLegalProofListener],
+  exports: [RequestedTracksService],
 })
 export class RequestedTracksModule { }

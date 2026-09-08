@@ -732,6 +732,17 @@ export interface AppEventMap {
     actorUserId: string | null;
   }
 
+  // 📬 CAMPAÑAS PARA SELLOS
+
+  /** Un compositor postuló un track a una campaña. Notifica al sello. */
+  'campaign.submission.received': CampaignSubmissionEventPayload;
+  /** El sello aprobó una postulación (se creó el `RequestedTrack`). Notifica al compositor. */
+  'campaign.submission.selected': CampaignSubmissionEventPayload;
+  /** El sello descartó una postulación. Notifica al compositor. */
+  'campaign.submission.discarded': CampaignSubmissionEventPayload;
+  /** La campaña se cerró (por fecha límite o por cupo alcanzado). */
+  'campaign.closed': CampaignClosedEventPayload;
+
 }
 
 /** Payload común de los eventos de auditoría de `SocietyAffiliation` (§13 del requerimiento). */
@@ -758,4 +769,24 @@ export interface PromotionEventPayload {
   rejectionReason: string | null;
   startsAt: Date | null;
   expiresAt: Date | null;
+}
+
+/** Payload común de los eventos de postulación a una campaña (de organización o personal). */
+export interface CampaignSubmissionEventPayload {
+  campaignId: string;
+  campaignTitle: string;
+  organizationId: string | null;
+  /** Dueño de la campaña (siempre presente); a quién notificar cuando `organizationId` es nulo. */
+  ownerUserId: string;
+  submissionId: string;
+  composerId: string;
+  trackTitle: string;
+}
+
+/** Payload del cierre (automático) de una campaña. */
+export interface CampaignClosedEventPayload {
+  campaignId: string;
+  campaignTitle: string;
+  organizationId: string | null;
+  reason: string;
 }
