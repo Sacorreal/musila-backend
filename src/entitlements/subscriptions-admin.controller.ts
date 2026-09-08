@@ -14,6 +14,7 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { InjectRepository } from '@nestjs/typeorm';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { WorkspaceSecurityComplianceGuard } from 'src/auth/guards/workspace-security-compliance.guard';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
 import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { EventBusService } from 'src/shared/events/event-bus.service';
@@ -27,7 +28,7 @@ import { Subscription } from './entities/subscription.entity';
 
 @ApiTags('Entitlements · Subscriptions (admin)')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard, WorkspaceSecurityComplianceGuard)
 @UseInterceptors(StaffAuditInterceptor)
 @Controller('admin/subscriptions')
 export class SubscriptionsAdminController {

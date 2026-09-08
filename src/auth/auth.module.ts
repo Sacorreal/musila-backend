@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
@@ -25,6 +25,7 @@ import { RecoveryCodeService } from './services/recovery-code.service';
 import { MfaService } from './services/mfa.service';
 import { StepUpAuthService } from './services/step-up-auth.service';
 import { StepUpGuard } from './guards/step-up.guard';
+import { WorkspaceSecurityComplianceGuard } from './guards/workspace-security-compliance.guard';
 
 import { PasskeyController } from './passkey.controller';
 import { MfaController } from './mfa.controller';
@@ -39,12 +40,12 @@ import { RecoveryCodeController } from './recovery-code.controller';
       WebauthnChallenge,
       StepUpGrant,
     ]),
-    UsersModule,
+    forwardRef(() => UsersModule),
     SharedModule,
     GuestsModule,
-    PaymentsModule,
-    AffiliatesModule,
-    OrganizationsModule,
+    forwardRef(() => PaymentsModule),
+    forwardRef(() => AffiliatesModule),
+    forwardRef(() => OrganizationsModule),
   ],
   controllers: [
     AuthController,
@@ -64,7 +65,14 @@ import { RecoveryCodeController } from './recovery-code.controller';
     MfaService,
     StepUpAuthService,
     StepUpGuard,
+    WorkspaceSecurityComplianceGuard,
   ],
-  exports: [PasskeyService, MfaService, StepUpAuthService, StepUpGuard],
+  exports: [
+    PasskeyService,
+    MfaService,
+    StepUpAuthService,
+    StepUpGuard,
+    WorkspaceSecurityComplianceGuard,
+  ],
 })
 export class AuthModule {}

@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AuthModule } from 'src/auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { Affiliate } from './entities/affiliate.entity';
@@ -18,6 +19,7 @@ import { AffiliateCommissionApprovalCron } from './jobs/affiliate-commission-app
   imports: [
     ScheduleModule.forRoot(),
     TypeOrmModule.forFeature([Affiliate, AffiliateCommission, User]),
+    forwardRef(() => AuthModule),
   ],
   controllers: [AffiliatesController, AffiliatesAdminController],
   providers: [

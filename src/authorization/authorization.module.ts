@@ -5,6 +5,7 @@ import { Subscription } from 'src/entitlements/entities/subscription.entity';
 import { EntitlementsModule } from 'src/entitlements/entitlements.module';
 import { OrganizationsModule } from 'src/organizations/organizations.module';
 import { StaffAuditModule } from 'src/staff-audit/staff-audit.module';
+import { AuthModule } from 'src/auth/auth.module';
 import { AuthorizationAdminController } from './authorization-admin.controller';
 import { AuthorizationService } from './authorization.service';
 import { AuthorizationCacheService } from './cache/authorization-cache.service';
@@ -40,6 +41,7 @@ import { UsersMeCapabilitiesController } from './users-me-capabilities.controlle
     OrganizationsModule,
     EntitlementsModule,
     forwardRef(() => StaffAuditModule),
+    forwardRef(() => AuthModule),
   ],
   controllers: [
     PermissionsCatalogController,

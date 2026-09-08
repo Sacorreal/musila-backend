@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
+import { AuthModule } from 'src/auth/auth.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { Notification } from 'src/notifications/entities/notification.entity';
@@ -50,6 +51,7 @@ import { BANK_TRANSFER_PROVIDER } from './domain/bank-transfer-provider.interfac
     CommissionModule,
     WalletModule,
     OrganizationsModule,
+    forwardRef(() => AuthModule),
   ],
   controllers: [PaymentsController, PaymentsAdminController],
   providers: [

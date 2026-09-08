@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from 'src/auth/auth.module';
 import { BlogArticle } from './entities/blog-article.entity';
 import { BlogAuthor } from './entities/blog-author.entity';
 import { BlogTag } from './entities/blog-tag.entity';
@@ -13,7 +14,10 @@ import { BlogAuthorsController } from './blog-authors.controller';
 import { BlogTagsAdminController } from './blog-tags-admin.controller';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([BlogArticle, BlogAuthor, BlogTag])],
+  imports: [
+    TypeOrmModule.forFeature([BlogArticle, BlogAuthor, BlogTag]),
+    forwardRef(() => AuthModule),
+  ],
   controllers: [
     BlogArticlesAdminController,
     BlogArticlesController,

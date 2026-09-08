@@ -12,6 +12,8 @@ import { ApiBearerAuth, ApiOperation, ApiProperty, ApiTags } from '@nestjs/swagg
 import { IsString, IsUrl } from 'class-validator';
 import { Request } from 'express';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { StepUpGuard } from 'src/auth/guards/step-up.guard';
+import { RequireStepUp } from 'src/auth/decorators/require-step-up.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { ChangeEmailDto } from './dto/change-email.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
@@ -65,6 +67,8 @@ export class MeController {
 
   @Patch('password')
   @HttpCode(204)
+  @UseGuards(StepUpGuard)
+  @RequireStepUp('account.change_password')
   @ApiOperation({ summary: 'Cambiar contraseña' })
   async changePassword(@Req() req: Request, @Body() dto: ChangePasswordDto) {
     const ip = req.ip || req.socket?.remoteAddress;
@@ -108,6 +112,8 @@ export class MeController {
   }
 
   @Patch('bank-account')
+  @UseGuards(StepUpGuard)
+  @RequireStepUp('account.bank_account.update')
   @ApiOperation({ summary: 'Guardar/actualizar datos bancarios' })
   updateBankAccount(@Req() req: Request, @Body() dto: BankAccountInput) {
     return this.meService.updateBankAccount(this.uid(req), dto);

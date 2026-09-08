@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from 'src/auth/auth.module';
 import { Track } from 'src/tracks/entities/track.entity';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { WalletEarning } from 'src/wallet/entities/wallet-earning.entity';
@@ -16,6 +17,7 @@ import { PublisherDashboardService } from './publisher-dashboard.service';
     TypeOrmModule.forFeature([Track, RequestedTrack, WalletEarning, LicenseCollection, Organization, RosterMembership]),
     TracksModule,
     WalletModule,
+    forwardRef(() => AuthModule),
   ],
   controllers: [PublisherDashboardController],
   providers: [PublisherDashboardService],

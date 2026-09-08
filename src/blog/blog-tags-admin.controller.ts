@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { WorkspaceSecurityComplianceGuard } from 'src/auth/guards/workspace-security-compliance.guard';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
 import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
@@ -10,7 +11,7 @@ import { UpdateBlogTagDto } from './dto/update-blog-tag.dto';
 
 @ApiTags('Blog Tags (Admin)')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard, WorkspaceSecurityComplianceGuard)
 @RequireCapability('platform.blog.tags.manage')
 @Controller('blog/admin/tags')
 export class BlogTagsAdminController {

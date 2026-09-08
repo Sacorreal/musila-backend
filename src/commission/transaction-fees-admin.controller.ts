@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { WorkspaceSecurityComplianceGuard } from '../auth/guards/workspace-security-compliance.guard';
 import { CurrentUser } from '../users/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 import { RequireCapability } from '../authorization/decorators/require-capability.decorator';
@@ -30,7 +31,7 @@ import { TransactionFeesAdminService } from './transaction-fees-admin.service';
  */
 @ApiTags('Marketplace · Comisión (admin)')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard, WorkspaceSecurityComplianceGuard)
 @UseInterceptors(StaffAuditInterceptor)
 @Controller('admin/plans')
 export class TransactionFeesAdminController {

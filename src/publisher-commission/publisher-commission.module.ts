@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from 'src/auth/auth.module';
 import { Organization } from 'src/organizations/entities/organization.entity';
 import { RosterMembership } from 'src/organizations/entities/roster-membership.entity';
 import { PublisherCommissionPolicy } from './entities/publisher-commission-policy.entity';
@@ -15,6 +16,7 @@ import { PublisherCommissionService } from './publisher-commission.service';
       RosterMembership,
       Organization,
     ]),
+    forwardRef(() => AuthModule),
   ],
   controllers: [PublisherCommissionController],
   providers: [PublisherCommissionService],

@@ -4,6 +4,7 @@ import { Capability } from 'src/authorization/entities/capability.entity';
 import { TransactionFeeConfig } from 'src/commission/entities/transaction-fee-config.entity';
 import { Organization } from 'src/organizations/entities/organization.entity';
 import { StaffAuditModule } from 'src/staff-audit/staff-audit.module';
+import { AuthModule } from 'src/auth/auth.module';
 import { EntitlementsController } from './entitlements.controller';
 import { EntitlementConsumeInterceptor } from './interceptors/entitlement-consume.interceptor';
 import { PlansAdminController } from './plans-admin.controller';
@@ -43,6 +44,7 @@ import { UserPlanSubscriptionSyncService } from './user-plan-subscription-sync.s
       TransactionFeeConfig,
     ]),
     forwardRef(() => StaffAuditModule),
+    forwardRef(() => AuthModule),
   ],
   controllers: [EntitlementsController, PlansAdminController, SubscriptionsAdminController],
   providers: [

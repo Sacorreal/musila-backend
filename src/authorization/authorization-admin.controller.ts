@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post, Query, UseGuards, UseInterceptors } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { WorkspaceSecurityComplianceGuard } from 'src/auth/guards/workspace-security-compliance.guard';
 import { EntitlementService } from 'src/entitlements/entitlement.service';
 import { MembershipService } from 'src/organizations/membership.service';
 import { AuditAction } from 'src/staff-audit/decorators/audit-action.decorator';
@@ -16,7 +17,7 @@ import { AuthorizationGuard } from './guards/authorization.guard';
  */
 @ApiTags('Authorization · Explorer (admin)')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard, WorkspaceSecurityComplianceGuard)
 @UseInterceptors(StaffAuditInterceptor)
 @Controller('admin/authorization')
 export class AuthorizationAdminController {

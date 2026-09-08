@@ -1,6 +1,7 @@
 import { Controller, Get, Param, ParseUUIDPipe, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { WorkspaceSecurityComplianceGuard } from 'src/auth/guards/workspace-security-compliance.guard';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
 import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { BuyerDashboardService } from './buyer-dashboard.service';
@@ -15,7 +16,7 @@ import { BuyerDashboardLicensesResponseDto, BuyerOverviewDto } from './dto/buyer
  */
 @ApiTags('Buyer Dashboard')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard, WorkspaceSecurityComplianceGuard)
 @Controller('organizations/:organizationId/buyer-dashboard')
 export class BuyerDashboardController {
   constructor(private readonly service: BuyerDashboardService) {}

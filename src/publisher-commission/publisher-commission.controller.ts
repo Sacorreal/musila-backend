@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { WorkspaceSecurityComplianceGuard } from 'src/auth/guards/workspace-security-compliance.guard';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
 import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { PublisherCommissionService } from './publisher-commission.service';
@@ -14,7 +15,7 @@ import { UpsertRosterCommissionsDto } from './dto/upsert-roster-commissions.dto'
  */
 @ApiTags('Comisión de Publisher')
 @ApiBearerAuth()
-@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard, WorkspaceSecurityComplianceGuard)
 @Controller('organizations/:organizationId/commission-policy')
 export class PublisherCommissionController {
   constructor(private readonly service: PublisherCommissionService) {}

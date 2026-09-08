@@ -1,6 +1,7 @@
 import { Controller, Get, Param, ParseUUIDPipe, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { WorkspaceSecurityComplianceGuard } from 'src/auth/guards/workspace-security-compliance.guard';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
 import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { EditorialCommandCenterService } from './editorial-command-center.service';
@@ -15,7 +16,7 @@ import { TrackHealthScoreDto } from './dto/track-health-score-response.dto';
  */
 @ApiTags('Editorial Command Center')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard, WorkspaceSecurityComplianceGuard)
 @Controller('organizations/:organizationId/editorial-command-center')
 export class PublisherEditorialCommandCenterController {
   constructor(private readonly service: EditorialCommandCenterService) {}

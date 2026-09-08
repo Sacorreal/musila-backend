@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from 'src/auth/auth.module';
 import { Track } from 'src/tracks/entities/track.entity';
 import { RegistrationFile } from 'src/registration-file/entities/registration-file.entity';
 import { Certificate } from 'src/certificates/entities/certificate.entity';
@@ -25,6 +26,7 @@ import { PublisherEditorialCommandCenterController } from './publisher-editorial
       RosterMembership,
     ]),
     PublisherShareModule,
+    forwardRef(() => AuthModule),
   ],
   controllers: [AuthorEditorialCommandCenterController, PublisherEditorialCommandCenterController],
   providers: [HealthScoreCalculatorService, EditorialCommandCenterService],

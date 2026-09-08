@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { WorkspaceSecurityComplianceGuard } from 'src/auth/guards/workspace-security-compliance.guard';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { OrganizationsService } from 'src/organizations/organizations.service';
 import { AuditAction } from 'src/staff-audit/decorators/audit-action.decorator';
@@ -32,7 +33,7 @@ import { RoleService } from './role.service';
  */
 @ApiTags('Authorization · Roles de organización')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard, WorkspaceSecurityComplianceGuard)
 @UseInterceptors(StaffAuditInterceptor)
 @Controller('organizations/:organizationId/roles')
 export class OrganizationRolesController {

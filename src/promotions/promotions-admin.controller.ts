@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { WorkspaceSecurityComplianceGuard } from '../auth/guards/workspace-security-compliance.guard';
 import { PlansGuard } from '../users/guards/plans.guard';
 import { AllowedPlans } from '../users/decorators/allowed-plans.decorator';
 import { ADMIN_PLAN_TYPES } from '../users/entities/user-plan-type.enum';
@@ -26,7 +27,7 @@ import { RejectPromotionDto } from './dto/reject-promotion.dto';
  */
 @ApiTags('Pautas · Admin')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JWTAuthGuard, PlansGuard)
+@UseGuards(JWTAuthGuard, PlansGuard, WorkspaceSecurityComplianceGuard)
 @AllowedPlans(...ADMIN_PLAN_TYPES)
 @Controller('admin/promotions')
 export class PromotionsAdminController {

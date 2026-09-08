@@ -1,6 +1,7 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { WorkspaceSecurityComplianceGuard } from 'src/auth/guards/workspace-security-compliance.guard';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
 import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { PaginationDto } from 'src/shared/dto/pagination.dto';
@@ -8,7 +9,7 @@ import { ChatService } from './chat.service';
 
 /** Solo lectura: los chats son conversaciones reales entre usuarios, no se editan/crean desde el panel. */
 @ApiTags('Chats (Admin)')
-@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard, WorkspaceSecurityComplianceGuard)
 @RequireCapability('platform.support.chats.view')
 @Controller('chats/admin')
 export class ChatAdminController {

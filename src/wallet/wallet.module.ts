@@ -1,6 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from 'src/auth/auth.module';
 import { User } from 'src/users/entities/user.entity';
 import { RequestedTrack } from 'src/requested-tracks/entities/requested-track.entity';
 import { LicenseContract } from 'src/license-contracts/entities/license-contract.entity';
@@ -40,6 +41,7 @@ import { WalletAutoPayoutCron } from './jobs/wallet-auto-payout.cron';
     ]),
     AppNotificationsModule,
     PublisherCommissionModule,
+    forwardRef(() => AuthModule),
   ],
   controllers: [WalletController, WalletAdminController, PublisherWalletController],
   providers: [

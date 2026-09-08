@@ -1,5 +1,6 @@
 import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from 'src/auth/auth.module';
 import { PlanCapability } from 'src/entitlements/entities/plan-capability.entity';
 import { Subscription } from 'src/entitlements/entities/subscription.entity';
 import { LegalIdentityModule } from 'src/legal-identity/legal-identity.module';
@@ -60,6 +61,7 @@ import { WorkspaceInvitesPublicController } from './workspace-invites-public.con
     LegalIdentityModule,
     forwardRef(() => StaffAuditModule),
     PublisherShareModule,
+    forwardRef(() => AuthModule),
   ],
   controllers: [
     OrganizationsAdminController,

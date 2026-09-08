@@ -26,6 +26,8 @@ import { AdminService } from './admin.service';
 import { AuditLogService } from './audit-log.service';
 import { AuditLogPaginationDto } from './dto/audit-log-pagination.dto';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { StepUpGuard } from '../auth/guards/step-up.guard';
+import { RequireStepUp } from '../auth/decorators/require-step-up.decorator';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
 import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 
@@ -159,7 +161,8 @@ export class UsersController {
     return await this.usersService.updateUserService(user.id, updateUserInput, user);
   }
 
-  @UseGuards(JWTAuthGuard)
+  @UseGuards(JWTAuthGuard, StepUpGuard)
+  @RequireStepUp('account.delete')
   @Delete('me')
   @ApiOperation({ summary: 'Eliminar cuenta propia' })
   async removeUserController(@CurrentUser() user: JwtPayload) {

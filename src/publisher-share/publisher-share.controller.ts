@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Param, ParseUUIDPipe, Put, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { WorkspaceSecurityComplianceGuard } from 'src/auth/guards/workspace-security-compliance.guard';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
 import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { PublisherShareService } from './publisher-share.service';
@@ -13,7 +14,7 @@ import { UpsertPublisherSharesDto } from './dto/upsert-publisher-shares.dto';
  */
 @ApiTags("Publisher's Share")
 @ApiBearerAuth()
-@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard, WorkspaceSecurityComplianceGuard)
 @Controller('organizations/:organizationId/publisher-shares')
 export class PublisherShareController {
   constructor(private readonly service: PublisherShareService) {}

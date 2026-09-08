@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { WorkspaceSecurityComplianceGuard } from 'src/auth/guards/workspace-security-compliance.guard';
 import { AuditAction } from 'src/staff-audit/decorators/audit-action.decorator';
 import { StaffAuditInterceptor } from 'src/staff-audit/interceptors/staff-audit.interceptor';
 import { CapabilityService } from './capability.service';
@@ -26,7 +27,7 @@ import { AuthorizationGuard } from './guards/authorization.guard';
  */
 @ApiTags('Authorization · Matriz de capacidades (admin)')
 @ApiBearerAuth('JWT-auth')
-@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard, WorkspaceSecurityComplianceGuard)
 @UseInterceptors(StaffAuditInterceptor)
 @Controller('admin/capabilities')
 export class CapabilitiesAdminController {

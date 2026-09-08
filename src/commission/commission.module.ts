@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Entitlement } from '../entitlements/entities/entitlement.entity';
 import { Plan } from '../entitlements/entities/plan.entity';
 import { StaffAuditModule } from '../staff-audit/staff-audit.module';
+import { AuthModule } from '../auth/auth.module';
 import { CommissionService } from './commission.service';
 import { TransactionFeeConfig } from './entities/transaction-fee-config.entity';
 import { TransactionFeeConfigService } from './transaction-fee-config.service';
@@ -20,6 +21,7 @@ import { TransactionFeesAdminService } from './transaction-fees-admin.service';
   imports: [
     TypeOrmModule.forFeature([TransactionFeeConfig, Entitlement, Plan]),
     forwardRef(() => StaffAuditModule),
+    forwardRef(() => AuthModule),
   ],
   controllers: [TransactionFeesAdminController],
   providers: [CommissionService, TransactionFeeConfigService, TransactionFeesAdminService],

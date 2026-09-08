@@ -1,6 +1,7 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Patch, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { WorkspaceSecurityComplianceGuard } from 'src/auth/guards/workspace-security-compliance.guard';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
 import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { AffiliatesAdminService } from './affiliates-admin.service';
@@ -12,7 +13,7 @@ import { RejectCommissionDto } from './dto/reject-commission.dto';
 import { CreateAffiliateAdminDto } from './dto/create-affiliate-admin.dto';
 
 @ApiTags('Afiliados (Admin)')
-@UseGuards(JWTAuthGuard, AuthorizationGuard)
+@UseGuards(JWTAuthGuard, AuthorizationGuard, WorkspaceSecurityComplianceGuard)
 @Controller('affiliates/admin')
 export class AffiliatesAdminController {
   constructor(private readonly adminService: AffiliatesAdminService) {}

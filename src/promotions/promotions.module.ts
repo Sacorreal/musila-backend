@@ -1,6 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from '../auth/auth.module';
 import { Organization } from '../organizations/entities/organization.entity';
 import { RosterMembership } from '../organizations/entities/roster-membership.entity';
 import { OrganizationMembership } from '../organizations/entities/organization-membership.entity';
@@ -42,6 +43,7 @@ import { FeaturedController } from './featured.controller';
     ]),
     PaymentsModule,
     AppNotificationsModule,
+    forwardRef(() => AuthModule),
   ],
   controllers: [
     PromotionsController,

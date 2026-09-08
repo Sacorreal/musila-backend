@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from 'src/auth/auth.module';
 import { User } from './entities/user.entity';
 import { AuditLog } from './entities/audit-log.entity';
 import { UsersController } from './users.controller';
@@ -22,6 +23,7 @@ import { LegalIdentityModule } from 'src/legal-identity/legal-identity.module';
     TypeOrmModule.forFeature([User, AuditLog, MusicalGenre, Track, RequestedTrack, Payment, Follow]),
     UsernameModule,
     LegalIdentityModule,
+    forwardRef(() => AuthModule),
   ],
   controllers: [UsersController, MeController],
   providers: [UsersService, AdminService, MeService, PlanService, AuditLogService],

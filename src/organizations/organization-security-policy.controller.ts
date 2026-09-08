@@ -9,6 +9,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { StepUpGuard } from 'src/auth/guards/step-up.guard';
+import { RequireStepUp } from 'src/auth/decorators/require-step-up.decorator';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
 import { AuthorizationGuard } from 'src/authorization/guards/authorization.guard';
 import { OrganizationSecurityPolicyService } from './organization-security-policy.service';
@@ -36,6 +38,8 @@ export class OrganizationSecurityPolicyController {
 
   @Put()
   @RequireCapability('organization.settings.manage')
+  @UseGuards(StepUpGuard)
+  @RequireStepUp('organization.security_policy.update')
   @ApiOperation({ summary: 'Actualizar la política de seguridad de la organización' })
   update(
     @Param('organizationId', ParseUUIDPipe) organizationId: string,

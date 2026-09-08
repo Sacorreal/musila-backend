@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { AuthModule } from 'src/auth/auth.module';
 import { User } from 'src/users/entities/user.entity';
 import { OrganizationMembership } from 'src/organizations/entities/organization-membership.entity';
 import { MembershipRole } from 'src/authorization/entities/membership-role.entity';
@@ -17,6 +18,7 @@ import { FollowsModule } from 'src/follows/follows.module';
     TypeOrmModule.forFeature([Notification, User, OrganizationMembership, MembershipRole]),
     RealtimeModule,
     FollowsModule,
+    forwardRef(() => AuthModule),
   ],
   controllers: [NotificationsController, NotificationsAdminController],
   providers: [NotificationsService, NotificationsGateway, NotificationListener],
