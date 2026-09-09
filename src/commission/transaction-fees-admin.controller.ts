@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { StepUpGuard } from '../auth/guards/step-up.guard';
+import { RequireStepUp } from '../auth/decorators/require-step-up.decorator';
 import { WorkspaceSecurityComplianceGuard } from '../auth/guards/workspace-security-compliance.guard';
 import { CurrentUser } from '../users/decorators/current-user.decorator';
 import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
@@ -65,7 +67,9 @@ export class TransactionFeesAdminController {
   }
 
   @Put(':planId/transaction-fee')
+  @UseGuards(StepUpGuard)
   @RequireCapability(PLATFORM_PLANS_MANAGE_CAPABILITY)
+  @RequireStepUp('platform.plans.transaction_fee.update')
   @AuditAction('marketplace:transaction-fee:update')
   @ApiParam({ name: 'planId' })
   @ApiOperation({ summary: 'Actualizar la comisión de un plan para un tipo de organización' })

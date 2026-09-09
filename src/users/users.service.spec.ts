@@ -5,6 +5,8 @@ import { MusicalGenre } from 'src/musical-genre/entities/musical-genre.entity';
 import { Follow } from 'src/follows/entities/follow.entity';
 import { StorageService } from '../shared/storage/storage.service';
 import { UsernameService } from '../username/username.service';
+import { AuthorizationService } from 'src/authorization/authorization.service';
+import { AuditLogService } from './audit-log.service';
 import { UsersService } from './users.service';
 
 describe('UsersService', () => {
@@ -19,6 +21,8 @@ describe('UsersService', () => {
         { provide: getRepositoryToken(Follow), useValue: {} },
         { provide: StorageService, useValue: {} },
         { provide: UsernameService, useValue: { normalize: jest.fn((v: string) => v), isAvailable: jest.fn() } },
+        { provide: AuthorizationService, useValue: {} },
+        { provide: AuditLogService, useValue: { log: jest.fn() } },
       ],
     }).compile();
 

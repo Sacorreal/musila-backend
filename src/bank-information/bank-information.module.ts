@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
@@ -6,6 +6,7 @@ import { LicenseContract } from 'src/license-contracts/entities/license-contract
 import { AppNotificationsModule } from 'src/notifications/notifications.module';
 import { EmailModule } from 'src/shared/mail/email.module';
 import { PaymentsModule } from 'src/payments/payments.module';
+import { AuthModule } from 'src/auth/auth.module';
 import { UserBankInformation } from './entities/user-bank-information.entity';
 import { BankInformationRequest } from './entities/bank-information-request.entity';
 import { BankInformationController } from './bank-information.controller';
@@ -27,6 +28,7 @@ import { BankInformationNotificationRetryCron } from './jobs/bank-information-no
     AppNotificationsModule,
     EmailModule.forRootAsync(),
     PaymentsModule,
+    forwardRef(() => AuthModule),
   ],
   controllers: [BankInformationController],
   providers: [

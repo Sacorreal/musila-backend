@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Put, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { StepUpGuard } from '../auth/guards/step-up.guard';
+import { RequireStepUp } from '../auth/decorators/require-step-up.decorator';
 import { WorkspaceSecurityComplianceGuard } from '../auth/guards/workspace-security-compliance.guard';
 import { PlansGuard } from '../users/guards/plans.guard';
 import { AllowedPlans } from '../users/decorators/allowed-plans.decorator';
@@ -38,6 +40,8 @@ export class PromotionPricingAdminController {
   }
 
   @Put()
+  @UseGuards(StepUpGuard)
+  @RequireStepUp('platform.promotions.pricing.update')
   @ApiOperation({ summary: 'Actualizar el precio de un tipo de pauta (versionado)' })
   update(@Body() dto: UpdatePromotionPriceDto, @CurrentUser() user: JwtPayload) {
     return this.pricingService.setPrice({

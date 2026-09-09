@@ -2,6 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/users/entities/user.entity';
 import { UsersModule } from 'src/users/users.module';
+import { AuthModule } from 'src/auth/auth.module';
 import { StaffAuditModule } from 'src/staff-audit/staff-audit.module';
 import { StaffPermission } from './entities/staff-permission.entity';
 import { StaffRole } from './entities/staff-role.entity';
@@ -21,6 +22,7 @@ import { StaffCacheInvalidationListener } from './listeners/staff-cache-invalida
   imports: [
     TypeOrmModule.forFeature([StaffPermission, StaffRole, StaffUserRole, User]),
     UsersModule,
+    forwardRef(() => AuthModule),
     forwardRef(() => StaffAuditModule),
   ],
   controllers: [StaffPermissionsController, StaffRolesController, StaffMembersController],

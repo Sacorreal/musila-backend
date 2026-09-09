@@ -77,8 +77,9 @@ export class MeService {
     return { fiscalName: user.fiscalName, taxId: user.taxId, fiscalAddress: user.fiscalAddress };
   }
 
-  async updateBilling(userId: string, dto: UpdateBillingDto) {
+  async updateBilling(userId: string, dto: UpdateBillingDto, ip?: string) {
     await this.userRepo.update(userId, dto);
+    await this.auditLog.log(userId, 'billing_updated', undefined, ip);
     return this.getBilling(userId);
   }
 

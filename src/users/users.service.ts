@@ -18,6 +18,7 @@ import { StorageService } from '../shared/storage/storage.service';
 import { UsernameService } from '../username/username.service';
 import { AuthorizationService } from 'src/authorization/authorization.service';
 import { Follow } from 'src/follows/entities/follow.entity';
+import { AuditLogService } from './audit-log.service';
 
 import { PaginationDto } from '../shared/dto/pagination.dto';
 import { FilterUserDto } from './dto/filter-user.dto';
@@ -41,6 +42,7 @@ export class UsersService {
     private readonly storageService: StorageService,
     private readonly usernameService: UsernameService,
     private readonly authorizationService: AuthorizationService,
+    private readonly auditLog: AuditLogService,
   ) { }
 
   // =============================
@@ -305,12 +307,21 @@ export class UsersService {
     return { data, total };
   }
 
-  async createAdminUserService(dto: CreateUserInput): Promise<User> {
+  async createAdminUserService(dto: CreateUserInput, actorUserId: string): Promise<User> {
     const exists = await this.usersRepository.findOne({ where: { email: dto.email } });
     if (exists) throw new ConflictException('Ya existe un usuario con ese email');
 
     const hashedPassword = await bcrypt.hash(dto.password, 10);
-    return this.createUserService({ ...dto, password: hashedPassword, planType: UserPlanType.ADMIN });
+    const created = await this.createUserService({
+      ...dto,
+      password: hashedPassword,
+      planType: UserPlanType.ADMIN,
+    });
+    await this.auditLog.log(actorUserId, 'ADMIN_USER_CREATED', {
+      newUserId: created.id,
+      newUserEmail: created.email,
+    });
+    return created;
   }
 
   async deleteUserByIdService(id: string): Promise<{ id: string; message: string }> {

@@ -22,6 +22,8 @@ import {
 import type { Request } from 'express';
 
 import { JWTAuthGuard } from './guards/jwt-auth.guard';
+import { StepUpGuard } from './guards/step-up.guard';
+import { RequireStepUp } from './decorators/require-step-up.decorator';
 import type { JwtPayload } from './interfaces/jwt-payload.interface';
 import { AuthService } from './auth.service';
 import { PasskeyService } from './services/passkey.service';
@@ -121,7 +123,8 @@ export class PasskeyController {
   }
 
   @Delete(':id')
-  @UseGuards(JWTAuthGuard)
+  @UseGuards(JWTAuthGuard, StepUpGuard)
+  @RequireStepUp('account.passkey.revoke')
   @ApiBearerAuth()
   @HttpCode(204)
   @ApiOperation({ summary: 'Revocar una Passkey' })

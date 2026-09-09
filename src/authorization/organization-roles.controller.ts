@@ -13,6 +13,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { StepUpGuard } from 'src/auth/guards/step-up.guard';
+import { RequireStepUp } from 'src/auth/decorators/require-step-up.decorator';
 import { WorkspaceSecurityComplianceGuard } from 'src/auth/guards/workspace-security-compliance.guard';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { OrganizationsService } from 'src/organizations/organizations.service';
@@ -104,7 +106,9 @@ export class OrganizationRolesController {
   }
 
   @Put(':roleId/capabilities')
+  @UseGuards(StepUpGuard)
   @RequireCapability('organization.roles.manage')
+  @RequireStepUp('organization.roles.capabilities.update')
   @AuditAction('authorization:role:capabilities:set')
   @ApiParam({ name: 'roleId' })
   @ApiOperation({ summary: 'Reemplazar el set completo de capabilities del rol' })
@@ -125,7 +129,9 @@ export class OrganizationRolesController {
   }
 
   @Post(':roleId/capabilities/:capabilityId')
+  @UseGuards(StepUpGuard)
   @RequireCapability('organization.roles.manage')
+  @RequireStepUp('organization.roles.capabilities.update')
   @AuditAction('authorization:role:capabilities:add')
   @ApiParam({ name: 'roleId' })
   @ApiParam({ name: 'capabilityId' })
@@ -141,7 +147,9 @@ export class OrganizationRolesController {
   }
 
   @Delete(':roleId/capabilities/:capabilityId')
+  @UseGuards(StepUpGuard)
   @RequireCapability('organization.roles.manage')
+  @RequireStepUp('organization.roles.capabilities.update')
   @AuditAction('authorization:role:capabilities:remove')
   @ApiParam({ name: 'roleId' })
   @ApiParam({ name: 'capabilityId' })

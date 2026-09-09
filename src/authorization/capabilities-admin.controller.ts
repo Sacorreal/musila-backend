@@ -11,6 +11,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { StepUpGuard } from 'src/auth/guards/step-up.guard';
+import { RequireStepUp } from 'src/auth/decorators/require-step-up.decorator';
 import { WorkspaceSecurityComplianceGuard } from 'src/auth/guards/workspace-security-compliance.guard';
 import { AuditAction } from 'src/staff-audit/decorators/audit-action.decorator';
 import { StaffAuditInterceptor } from 'src/staff-audit/interceptors/staff-audit.interceptor';
@@ -41,7 +43,9 @@ export class CapabilitiesAdminController {
   }
 
   @Patch(':id')
+  @UseGuards(StepUpGuard)
   @RequireCapability('platform.settings.manage')
+  @RequireStepUp('platform.capabilities.update')
   @AuditAction('authorization:capability:update')
   @ApiParam({ name: 'id' })
   @ApiOperation({ summary: 'Actualizar la configuración de una capability (no crea keys)' })

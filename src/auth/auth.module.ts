@@ -24,6 +24,7 @@ import { TotpService } from './services/totp.service';
 import { RecoveryCodeService } from './services/recovery-code.service';
 import { MfaService } from './services/mfa.service';
 import { StepUpAuthService } from './services/step-up-auth.service';
+import { StepUpPolicyService } from './step-up/step-up-policy.service';
 import { StepUpGuard } from './guards/step-up.guard';
 import { WorkspaceSecurityComplianceGuard } from './guards/workspace-security-compliance.guard';
 
@@ -63,6 +64,7 @@ import { RecoveryCodeController } from './recovery-code.controller';
     TotpService,
     RecoveryCodeService,
     MfaService,
+    StepUpPolicyService,
     StepUpAuthService,
     StepUpGuard,
     WorkspaceSecurityComplianceGuard,

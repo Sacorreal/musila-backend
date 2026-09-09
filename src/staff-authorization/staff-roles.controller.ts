@@ -13,6 +13,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { StepUpGuard } from 'src/auth/guards/step-up.guard';
+import { RequireStepUp } from 'src/auth/decorators/require-step-up.decorator';
 import { PlansGuard } from 'src/users/guards/plans.guard';
 import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
 import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
@@ -60,7 +62,9 @@ export class StaffRolesController {
   }
 
   @Patch(':id')
+  @UseGuards(StepUpGuard)
   @RequireCapability('platform.roles.manage')
+  @RequireStepUp('platform.staff.roles.update')
   @AuditAction('staff-roles:update')
   @ApiParam({ name: 'id' })
   @ApiOperation({ summary: 'Editar nombre, descripción o permisos de un rol interno' })

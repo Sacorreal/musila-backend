@@ -15,6 +15,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { StepUpGuard } from 'src/auth/guards/step-up.guard';
+import { RequireStepUp } from 'src/auth/decorators/require-step-up.decorator';
 import { WorkspaceSecurityComplianceGuard } from 'src/auth/guards/workspace-security-compliance.guard';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { RequireCapability } from 'src/authorization/decorators/require-capability.decorator';
@@ -66,8 +68,9 @@ export class OrganizationMembersController {
   }
 
   @Post()
-  @UseGuards(OrganizationVerifiedGuard)
+  @UseGuards(OrganizationVerifiedGuard, StepUpGuard)
   @RequireCapability(['organization.members.manage', 'roster.manage'], 'OR')
+  @RequireStepUp('organization.members.invite')
   @AuditAction('organizations:member:invite')
   @ApiOperation({
     summary: 'Invitar a un usuario como staff o roster (queda INVITED hasta que acepte)',
@@ -127,7 +130,9 @@ export class OrganizationMembersController {
   }
 
   @Put(':membershipId/roles')
+  @UseGuards(StepUpGuard)
   @RequireCapability(['organization.members.manage', 'roster.manage'], 'OR')
+  @RequireStepUp('organization.members.roles.update')
   @AuditAction('organizations:member:roles:set')
   @ApiParam({ name: 'membershipId' })
   @ApiOperation({ summary: 'Reemplazar los roles de una membership (multi-rol permitido)' })

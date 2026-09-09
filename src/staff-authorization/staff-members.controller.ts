@@ -12,6 +12,8 @@ import {
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { StepUpGuard } from 'src/auth/guards/step-up.guard';
+import { RequireStepUp } from 'src/auth/decorators/require-step-up.decorator';
 import { PlansGuard } from 'src/users/guards/plans.guard';
 import { AllowedPlans } from 'src/users/decorators/allowed-plans.decorator';
 import { ADMIN_PLAN_TYPES } from 'src/users/entities/user-plan-type.enum';
@@ -60,8 +62,9 @@ export class StaffMembersController {
   }
 
   @Post(':userId/assign-role')
-  @UseGuards(AuthorizationGuard)
+  @UseGuards(AuthorizationGuard, StepUpGuard)
   @RequireCapability('platform.staff.manage')
+  @RequireStepUp('platform.staff.assign_role')
   @AuditAction('staff-members:assign-role')
   @ApiParam({ name: 'userId' })
   @ApiOperation({ summary: 'Asignar o cambiar el rol interno de un usuario ya existente (Flow 1)' })

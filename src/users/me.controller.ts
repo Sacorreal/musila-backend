@@ -59,6 +59,8 @@ export class MeController {
   }
 
   @Patch('email')
+  @UseGuards(StepUpGuard)
+  @RequireStepUp('account.change_email')
   @ApiOperation({ summary: 'Cambiar correo electrónico' })
   changeEmail(@Req() req: Request, @Body() dto: ChangeEmailDto) {
     const ip = req.ip || req.socket?.remoteAddress;
@@ -98,9 +100,12 @@ export class MeController {
   }
 
   @Patch('billing')
+  @UseGuards(StepUpGuard)
+  @RequireStepUp('account.billing.update')
   @ApiOperation({ summary: 'Actualizar datos de facturación' })
   updateBilling(@Req() req: Request, @Body() dto: UpdateBillingDto) {
-    return this.meService.updateBilling(this.uid(req), dto);
+    const ip = req.ip || req.socket?.remoteAddress;
+    return this.meService.updateBilling(this.uid(req), dto, ip);
   }
 
   // ── Datos bancarios (placeholder para retiros de Wallet) ─

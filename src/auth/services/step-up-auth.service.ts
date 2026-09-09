@@ -21,6 +21,7 @@ import { ChallengeStoreService } from './challenge-store.service';
 import { WebauthnService } from './webauthn.service';
 import { TotpService } from './totp.service';
 import type { RequestContext } from './passkey.service';
+import { StepUpPolicyService } from '../step-up/step-up-policy.service';
 
 /** Duración de una autorización de step-up (§15: ventana corta). */
 const STEP_UP_GRANT_TTL_MS = 5 * 60 * 1000;
@@ -42,6 +43,7 @@ export class StepUpAuthService {
     private readonly challengeStore: ChallengeStoreService,
     private readonly totpService: TotpService,
     private readonly auditLog: AuditLogService,
+    private readonly policy: StepUpPolicyService,
   ) {}
 
   /** Genera opciones WebAuthn para un step-up con Passkey del usuario. */
@@ -118,6 +120,17 @@ export class StepUpAuthService {
     token: string,
     ctx: RequestContext,
   ): Promise<{ grantedUntil: Date }> {
+    const { allowedMethods } = this.policy.resolve(scope);
+    if (!allowedMethods.includes(MfaMethod.TOTP)) {
+      await this.auditStepUp(userId, scope, false, ctx, 'method_not_allowed');
+      throw new ForbiddenException({
+        message: 'Esta operación exige Passkey',
+        code: 'STEP_UP_METHOD_NOT_ALLOWED',
+        scope,
+        allowedMethods,
+      });
+    }
+
     const valid = await this.totpService.verify(userId, token);
     if (!valid) {
       await this.auditStepUp(userId, scope, false, ctx, 'totp_invalid');
@@ -128,7 +141,9 @@ export class StepUpAuthService {
 
   /**
    * Exige un grant válido (no vencido, no consumido) para el `scope`. Lo usa el
-   * `StepUpGuard`. Lanza 403 con código STEP_UP_REQUIRED si no existe.
+   * `StepUpGuard`. Lanza 403 con código STEP_UP_REQUIRED si no existe. Para
+   * scopes CRITICAL (§15), consume el grant en un `update` atómico condicional
+   * para que no pueda reutilizarse ni siquiera ante una carrera concurrente.
    */
   async assertValidGrant(userId: string, scope: string): Promise<void> {
     const grant = await this.grantRepo.findOne({
@@ -146,6 +161,21 @@ export class StepUpAuthService {
         code: 'STEP_UP_REQUIRED',
         scope,
       });
+    }
+
+    const { oneTimeUse } = this.policy.resolve(scope);
+    if (oneTimeUse) {
+      const result = await this.grantRepo.update(
+        { id: grant.id, consumedAt: IsNull() },
+        { consumedAt: new Date() },
+      );
+      if (!result.affected) {
+        throw new ForbiddenException({
+          message: 'Se requiere autenticación adicional para esta operación',
+          code: 'STEP_UP_REQUIRED',
+          scope,
+        });
+      }
     }
   }
 

@@ -1,6 +1,8 @@
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { StepUpGuard } from 'src/auth/guards/step-up.guard';
+import { RequireStepUp } from 'src/auth/decorators/require-step-up.decorator';
 import { CurrentUser } from 'src/users/decorators/current-user.decorator';
 import type { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { BankInformationService } from './bank-information.service';
@@ -33,12 +35,16 @@ export class BankInformationController {
   }
 
   @Post('colombia')
+  @UseGuards(StepUpGuard)
+  @RequireStepUp('account.bank_account.update')
   @ApiOperation({ summary: 'Registra o edita la información bancaria de cobro en Colombia (Wompi)' })
   saveColombia(@CurrentUser() user: JwtPayload, @Body() dto: CreateColombiaBankInformationDto) {
     return this.bankInformationService.saveColombia(user.id, dto);
   }
 
   @Post('foreign')
+  @UseGuards(StepUpGuard)
+  @RequireStepUp('account.bank_account.update')
   @ApiOperation({ summary: 'Registra o edita la información bancaria de cobro en el extranjero (Global66)' })
   saveForeign(@CurrentUser() user: JwtPayload, @Body() dto: CreateForeignBankInformationDto) {
     return this.bankInformationService.saveForeign(user.id, dto);

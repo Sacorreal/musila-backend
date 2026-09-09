@@ -18,10 +18,16 @@ import { ChallengeStoreService } from './challenge-store.service';
 import { WebauthnService } from './webauthn.service';
 import { TotpService } from './totp.service';
 import { StepUpAuthService } from './step-up-auth.service';
+import { StepUpPolicyService } from '../step-up/step-up-policy.service';
 
 describe('StepUpAuthService', () => {
   let service: StepUpAuthService;
-  let grantRepo: { save: jest.Mock; create: jest.Mock; findOne: jest.Mock };
+  let grantRepo: {
+    save: jest.Mock;
+    create: jest.Mock;
+    findOne: jest.Mock;
+    update: jest.Mock;
+  };
   let totpService: { verify: jest.Mock };
 
   beforeEach(async () => {
@@ -29,6 +35,7 @@ describe('StepUpAuthService', () => {
       save: jest.fn((v: Partial<StepUpGrant>) => Promise.resolve(v)),
       create: jest.fn((v: Partial<StepUpGrant>) => v),
       findOne: jest.fn(),
+      update: jest.fn().mockResolvedValue({ affected: 1 }),
     };
     totpService = { verify: jest.fn() };
 
@@ -41,6 +48,7 @@ describe('StepUpAuthService', () => {
         { provide: ChallengeStoreService, useValue: {} },
         { provide: TotpService, useValue: totpService },
         { provide: AuditLogService, useValue: { log: jest.fn() } },
+        StepUpPolicyService,
       ],
     }).compile();
 
@@ -78,5 +86,38 @@ describe('StepUpAuthService', () => {
     await expect(
       service.assertValidGrant('user-1', 'account.change_password'),
     ).resolves.toBeUndefined();
+  });
+
+  it('assertValidGrant no consume el grant en un scope STANDARD (reutilizable)', async () => {
+    grantRepo.findOne.mockResolvedValue({ id: 'g-1' });
+    await service.assertValidGrant('user-1', 'account.change_password');
+    expect(grantRepo.update).not.toHaveBeenCalled();
+  });
+
+  it('assertValidGrant consume el grant en un scope CRITICAL', async () => {
+    grantRepo.findOne.mockResolvedValue({ id: 'g-1' });
+    await service.assertValidGrant('user-1', 'platform.admin.create');
+    expect(grantRepo.update).toHaveBeenCalledWith(
+      { id: 'g-1', consumedAt: expect.anything() },
+      { consumedAt: expect.any(Date) },
+    );
+  });
+
+  it('assertValidGrant rechaza un scope CRITICAL cuyo grant ya fue consumido por otra petición', async () => {
+    grantRepo.findOne.mockResolvedValue({ id: 'g-1' });
+    grantRepo.update.mockResolvedValue({ affected: 0 });
+    await expect(
+      service.assertValidGrant('user-1', 'platform.admin.create'),
+    ).rejects.toBeInstanceOf(ForbiddenException);
+  });
+
+  it('verifyTotp rechaza un scope CRITICAL aunque el código sea válido', async () => {
+    totpService.verify.mockResolvedValue(true);
+    await expect(
+      service.verifyTotp('user-1', 'platform.admin.create', '123456', {}),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'STEP_UP_METHOD_NOT_ALLOWED' }),
+    });
+    expect(grantRepo.save).not.toHaveBeenCalled();
   });
 });

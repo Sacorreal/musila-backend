@@ -109,13 +109,14 @@ export class UsersController {
 
   @Post('admin/create')
   @RequireCapability('platform.staff.manage')
-  @UseGuards(JWTAuthGuard, AuthorizationGuard)
+  @UseGuards(JWTAuthGuard, AuthorizationGuard, StepUpGuard)
+  @RequireStepUp('platform.admin.create')
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Crear usuario administrador (Admin)' })
   @ApiResponse({ status: 201, description: 'Administrador creado exitosamente' })
   @ApiResponse({ status: 409, description: 'El email ya está registrado' })
-  async createAdminUserController(@Body() dto: CreateUserInput) {
-    return this.usersService.createAdminUserService(dto);
+  async createAdminUserController(@Body() dto: CreateUserInput, @CurrentUser() user: JwtPayload) {
+    return this.usersService.createAdminUserService(dto, user.id);
   }
 
   @Get('admin/audit-log')

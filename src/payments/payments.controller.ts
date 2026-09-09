@@ -16,6 +16,8 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { Response, Request } from 'express';
 import { JWTAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { StepUpGuard } from 'src/auth/guards/step-up.guard';
+import { RequireStepUp } from 'src/auth/decorators/require-step-up.decorator';
 import { JwtPayload } from 'src/auth/interfaces/jwt-payload.interface';
 import { CreateCheckoutDto } from './dto/create-checkout.dto';
 import { CreateLicenseCheckoutDto } from './dto/create-license-checkout.dto';
@@ -79,7 +81,8 @@ export class PaymentsController {
   }
 
   @Post('license-checkout')
-  @UseGuards(JWTAuthGuard)
+  @UseGuards(JWTAuthGuard, StepUpGuard)
+  @RequireStepUp('marketplace.purchase.confirm')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Iniciar pago de licencia para una solicitud aprobada con precio' })
   @ApiResponse({ status: 201, description: 'Parámetros del Widget de Wompi para el pago de licencia' })
@@ -95,7 +98,8 @@ export class PaymentsController {
   }
 
   @Post('license-installment-checkout')
-  @UseGuards(JWTAuthGuard)
+  @UseGuards(JWTAuthGuard, StepUpGuard)
+  @RequireStepUp('marketplace.purchase.confirm')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Iniciar pago de una cuota de anticipo de un contrato de licencia de primer uso' })
   @ApiResponse({ status: 201, description: 'Parámetros del Widget de Wompi para el pago de la cuota' })
@@ -145,7 +149,8 @@ export class PaymentsController {
   }
 
   @Post('payment-sources')
-  @UseGuards(JWTAuthGuard)
+  @UseGuards(JWTAuthGuard, StepUpGuard)
+  @RequireStepUp('account.payment_method.manage')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Tokenizar tarjeta y crear fuente de pago para cobros recurrentes' })
   @ApiResponse({ status: 201, description: 'Fuente de pago creada (solo marca y últimos 4 dígitos)' })
@@ -167,7 +172,8 @@ export class PaymentsController {
 
   @Delete('payment-sources/:id')
   @HttpCode(204)
-  @UseGuards(JWTAuthGuard)
+  @UseGuards(JWTAuthGuard, StepUpGuard)
+  @RequireStepUp('account.payment_method.manage')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Eliminar fuente de pago del usuario autenticado' })
   @ApiResponse({ status: 204, description: 'Eliminada' })

@@ -22,6 +22,8 @@ import {
 import type { Request } from 'express';
 
 import { JWTAuthGuard } from './guards/jwt-auth.guard';
+import { StepUpGuard } from './guards/step-up.guard';
+import { RequireStepUp } from './decorators/require-step-up.decorator';
 import type { JwtPayload } from './interfaces/jwt-payload.interface';
 import { MfaService } from './services/mfa.service';
 import { TotpService } from './services/totp.service';
@@ -73,6 +75,8 @@ export class MfaController {
 
   @Delete('totp')
   @HttpCode(204)
+  @UseGuards(StepUpGuard)
+  @RequireStepUp('account.mfa.disable')
   @ApiOperation({ summary: 'Desactivar TOTP' })
   async totpDisable(@Req() req: Request, @Ip() ip: string) {
     await this.totpService.disable(this.uid(req), ip);
