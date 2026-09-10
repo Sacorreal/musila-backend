@@ -61,6 +61,21 @@ export class LicenseContractsController {
     return this.licenseContractsService.findInstallments(id, user.id);
   }
 
+  // ─── POST /license-contracts/:id/signatories/:signatoryId/acknowledge-warning ──
+  @Post('license-contracts/:id/signatories/:signatoryId/acknowledge-warning')
+  @ApiOperation({ summary: 'Registrar que el firmante revisó el aviso legal antes de firmar' })
+  @ApiParam({ name: 'id', description: 'UUID del contrato' })
+  @ApiParam({ name: 'signatoryId', description: 'UUID del firmante' })
+  async acknowledgeWarning(
+    @Param('id') id: string,
+    @Param('signatoryId') signatoryId: string,
+    @CurrentUser() user: JwtPayload,
+    @Ip() ip: string,
+    @Headers('user-agent') userAgent: string,
+  ) {
+    return this.licenseContractsService.acknowledgeWarning(id, signatoryId, user.id, ip ?? null, userAgent ?? null);
+  }
+
   // ─── POST /license-contracts/:id/signatories/:signatoryId/sign ──────────────
   @Post('license-contracts/:id/signatories/:signatoryId/sign')
   @UseGuards(LegalIdentityGuard)

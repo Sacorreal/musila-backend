@@ -27,6 +27,7 @@ describe('LicenseContractsService', () => {
   let licenseCollectionsService: { createInstallments: jest.Mock };
   let publisherCommissionFreezeService: { freeze: jest.Mock };
   let legalIdentityService: { buildEncryptedSnapshot: jest.Mock; decryptSnapshot: jest.Mock };
+  let auditLog: { log: jest.Mock };
 
   const owner = { id: 'owner-1', name: 'Owner', lastName: 'Uno', email: 'owner@musila.com', citizenID: null, ipiNumber: null, proSociety: null, publisher: null };
   const requester = { id: 'req-1', name: 'Req', lastName: 'Uno', email: 'req@musila.com', citizenID: null };
@@ -97,6 +98,7 @@ describe('LicenseContractsService', () => {
       buildEncryptedSnapshot: jest.fn().mockResolvedValue('encrypted-snapshot'),
       decryptSnapshot: jest.fn().mockReturnValue({ primerNombre: 'Sofía' }),
     };
+    auditLog = { log: jest.fn().mockResolvedValue(undefined) };
 
     service = new LicenseContractsService(
       contractRepo,
@@ -113,6 +115,7 @@ describe('LicenseContractsService', () => {
       licenseCollectionsService as any,
       publisherCommissionFreezeService as any,
       legalIdentityService as any,
+      auditLog as any,
     );
   });
 
@@ -253,6 +256,55 @@ describe('LicenseContractsService', () => {
     });
   });
 
+  describe('acknowledgeWarning', () => {
+    const contractWithPendingSignatory = () => ({
+      id: 'contract-1',
+      status: LicenseContractStatus.AWAITING_SIGNATURES,
+      requestedTrack,
+      signatories: [
+        { id: 'sig-2', user: requester, role: LicenseSignatoryRole.LICENCIATARIO, status: LicenseSignatoryStatus.PENDING, warningAcknowledgedAt: null as Date | null },
+      ],
+    });
+
+    it('rechaza si el usuario no es el firmante', async () => {
+      contractRepo.findOne.mockResolvedValue(contractWithPendingSignatory());
+
+      await expect(
+        service.acknowledgeWarning('contract-1', 'sig-2', 'intruso', '127.0.0.1', 'jest'),
+      ).rejects.toThrow(ForbiddenException);
+    });
+
+    it('registra el timestamp de reconocimiento y el evento técnico de auditoría', async () => {
+      contractRepo.findOne.mockResolvedValue(contractWithPendingSignatory());
+
+      const result = await service.acknowledgeWarning('contract-1', 'sig-2', requester.id, '127.0.0.1', 'jest');
+
+      expect(result.acknowledgedAt).toBeInstanceOf(Date);
+      expect(signatoryRepo.save).toHaveBeenCalledWith(
+        expect.objectContaining({ warningAcknowledgedAt: expect.any(Date) }),
+      );
+      expect(auditLog.log).toHaveBeenCalledWith(
+        requester.id,
+        'LICENSE_CONTRACT_WARNING_ACKNOWLEDGED',
+        expect.objectContaining({ contractId: 'contract-1', signatoryId: 'sig-2' }),
+        '127.0.0.1',
+      );
+    });
+
+    it('es idempotente: conserva el primer timestamp y no vuelve a auditar', async () => {
+      const firstAck = new Date('2026-01-01T00:00:00Z');
+      const contract = contractWithPendingSignatory();
+      contract.signatories[0].warningAcknowledgedAt = firstAck;
+      contractRepo.findOne.mockResolvedValue(contract);
+
+      const result = await service.acknowledgeWarning('contract-1', 'sig-2', requester.id, '127.0.0.1', 'jest');
+
+      expect(result.acknowledgedAt).toBe(firstAck);
+      expect(signatoryRepo.save).not.toHaveBeenCalled();
+      expect(auditLog.log).not.toHaveBeenCalled();
+    });
+  });
+
   describe('signAsParty / completeContract', () => {
     const awaitingContract = () => ({
       id: 'contract-1',
@@ -272,8 +324,19 @@ describe('LicenseContractsService', () => {
       documentUrl: null,
       signatories: [
         { id: 'sig-1', user: owner, role: LicenseSignatoryRole.AUTOR_PRINCIPAL, status: LicenseSignatoryStatus.SIGNED, signedAt: new Date() },
-        { id: 'sig-2', user: requester, role: LicenseSignatoryRole.LICENCIATARIO, status: LicenseSignatoryStatus.PENDING },
+        { id: 'sig-2', user: requester, role: LicenseSignatoryRole.LICENCIATARIO, status: LicenseSignatoryStatus.PENDING, warningAcknowledgedAt: new Date() as Date | null },
       ],
+    });
+
+    it('rechaza la firma si el firmante no reconoció el aviso legal', async () => {
+      const contract = awaitingContract();
+      contract.signatories[1].warningAcknowledgedAt = null;
+      contractRepo.findOne.mockResolvedValue(contract);
+
+      await expect(
+        service.signAsParty('contract-1', 'sig-2', requester.id, '127.0.0.1', 'jest'),
+      ).rejects.toThrow(BadRequestException);
+      expect(otpVerificationService.assertAndConsumeVerification).not.toHaveBeenCalled();
     });
 
     it('exige verificación OTP antes de firmar', async () => {

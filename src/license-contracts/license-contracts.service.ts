@@ -19,6 +19,7 @@ import { PdfBodyContentType } from 'src/shared/pdf/enums/pdf-body-content-type.e
 import { LegalProofService } from 'src/shared/legal-proof/legal-proof.service';
 import { LegalEntityType } from 'src/shared/legal-proof/entities/legal-entity-type.enum';
 import { LegalIdentityService } from 'src/legal-identity/legal-identity.service';
+import { AuditLogService } from 'src/users/audit-log.service';
 import { StorageService } from 'src/shared/storage/storage.service';
 import { LicenseCollectionsService } from 'src/license-collections/license-collections.service';
 import { PublisherCommissionFreezeService } from 'src/wallet/services/publisher-commission-freeze.service';
@@ -104,6 +105,7 @@ export class LicenseContractsService {
     private readonly licenseCollectionsService: LicenseCollectionsService,
     private readonly publisherCommissionFreezeService: PublisherCommissionFreezeService,
     private readonly legalIdentityService: LegalIdentityService,
+    private readonly auditLog: AuditLogService,
   ) {}
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -333,6 +335,50 @@ export class LicenseContractsService {
     return result;
   }
 
+  /**
+   * Registra que el firmante revisó el aviso legal (Ley 527, §7) antes de firmar —
+   * evidencia técnica de que la pantalla de advertencia se mostró y fue reconocida.
+   * Idempotente: conserva el primer timestamp de reconocimiento si se llama más de una vez.
+   */
+  async acknowledgeWarning(
+    contractId: string,
+    signatoryId: string,
+    userId: string,
+    ipAddress: string | null,
+    userAgent: string | null,
+  ): Promise<{ acknowledgedAt: Date }> {
+    const contract = await this.findContractWithRelationsOrFail(contractId);
+    const signatory = contract.signatories.find((item) => item.id === signatoryId);
+    if (!signatory) throw new NotFoundException('El firmante no existe en este contrato');
+    if (signatory.user.id !== userId) throw new ForbiddenException('No puedes reconocer el aviso en nombre de otro usuario');
+    if (signatory.status !== LicenseSignatoryStatus.PENDING) {
+      throw new BadRequestException('Tu firma ya fue procesada');
+    }
+    if (contract.status !== LicenseContractStatus.AWAITING_SIGNATURES) {
+      throw new BadRequestException('Este contrato no está esperando firmas');
+    }
+
+    if (!signatory.warningAcknowledgedAt) {
+      signatory.warningAcknowledgedAt = new Date();
+      await this.signatoryRepo.save(signatory);
+
+      await this.auditLog.log(
+        userId,
+        'LICENSE_CONTRACT_WARNING_ACKNOWLEDGED',
+        {
+          contractId,
+          signatoryId,
+          requestedTrackId: contract.requestedTrack.id,
+          trackTitle: contract.requestedTrack.track.title,
+          userAgent,
+        },
+        ipAddress ?? undefined,
+      );
+    }
+
+    return { acknowledgedAt: signatory.warningAcknowledgedAt };
+  }
+
   /** Firma electrónica de una parte individual (requiere OTP ya verificado). */
   async signAsParty(
     contractId: string,
@@ -350,6 +396,9 @@ export class LicenseContractsService {
     }
     if (contract.status !== LicenseContractStatus.AWAITING_SIGNATURES) {
       throw new BadRequestException('Este contrato no está esperando firmas');
+    }
+    if (!signatory.warningAcknowledgedAt) {
+      throw new BadRequestException('Debes revisar el aviso legal antes de firmar');
     }
 
     await this.otpVerificationService.assertAndConsumeVerification(

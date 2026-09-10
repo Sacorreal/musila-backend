@@ -10,6 +10,7 @@ import { AppNotificationsModule } from 'src/notifications/notifications.module';
 import { LicenseCollectionsModule } from 'src/license-collections/license-collections.module';
 import { WalletModule } from 'src/wallet/wallet.module';
 import { LegalIdentityModule } from 'src/legal-identity/legal-identity.module';
+import { UsersModule } from 'src/users/users.module';
 
 import { LicenseContract } from './entities/license-contract.entity';
 import { LicenseContractSignatory } from './entities/license-contract-signatory.entity';
@@ -35,6 +36,7 @@ import { LicenseContractPaymentListener } from './listeners/license-contract-pay
     LicenseCollectionsModule,
     WalletModule,
     LegalIdentityModule,
+    UsersModule,
   ],
   controllers: [LicenseContractsController],
   providers: [

@@ -50,6 +50,10 @@ export class LicenseContractSignatory {
   @Column({ type: 'timestamptz', name: 'signed_at', nullable: true })
   signedAt: Date | null;
 
+  /** Timestamp del servidor cuando el firmante reconoció haber visto el aviso legal (Ley 527, §7), antes de firmar. */
+  @Column({ type: 'timestamptz', name: 'warning_acknowledged_at', nullable: true })
+  warningAcknowledgedAt: Date | null;
+
   @Column({ type: 'varchar', name: 'ip_address', nullable: true })
   ipAddress: string | null;
 
