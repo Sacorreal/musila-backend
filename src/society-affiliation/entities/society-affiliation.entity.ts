@@ -12,6 +12,7 @@ import {
 } from 'typeorm';
 import { CollectiveManagementSociety } from '../../collective-management-society/entities/collective-management-society.entity';
 import { SocietyAffiliationRightsType } from './society-affiliation-rights-type.enum';
+import { SocietyAffiliationTerritoryMode } from './society-affiliation-territory-mode.enum';
 import { SocietyAffiliationStatus } from './society-affiliation-status.enum';
 import { SocietyAffiliationVerificationStatus } from './society-affiliation-verification-status.enum';
 import { SocietyAffiliationSource } from './society-affiliation-source.enum';
@@ -22,14 +23,17 @@ import { SocietyAffiliationSource } from './society-affiliation-source.enum';
  * territorios) — nunca se asume una única CMO por autor. No se hace
  * hard-delete: una afiliación se "finaliza" (`status = ENDED`), preservando
  * el histórico. La unicidad de la combinación activa (autor + sociedad +
- * derecho + territorio) se aplica vía índice único parcial en la migración,
- * no aquí — TypeORM no soporta `WHERE` en `@Unique`.
+ * derecho + territorio) se aplica vía índice único parcial en la migración
+ * SOLO para el duplicado exacto (mismo `territoryMode` + `territoryCountries`)
+ * — TypeORM no soporta `WHERE` en `@Unique`. El solapamiento semántico entre
+ * territorios (ej. `WORLDWIDE` vs `WORLDWIDE_EXCEPT`) no es expresable como
+ * índice de igualdad y se valida en `SocietyAffiliationService.assertNoActiveOverlap`.
  */
 @Entity({ name: 'society_affiliations' })
 @Index(['authorId'])
 @Index(['collectiveManagementSocietyId'])
 @Index(['rightsType'])
-@Index(['territory'])
+@Index(['territoryMode'])
 @Index(['ipiNameNumber'])
 @Index(['status'])
 export class SocietyAffiliation {
@@ -60,9 +64,23 @@ export class SocietyAffiliation {
   })
   rightsType: SocietyAffiliationRightsType;
 
-  @ApiProperty({ example: 'CO', description: 'ISO 3166-1 alpha-2' })
-  @Column('varchar', { length: 2 })
-  territory: string;
+  @ApiProperty({ enum: SocietyAffiliationTerritoryMode })
+  @Column({
+    type: 'enum',
+    enum: SocietyAffiliationTerritoryMode,
+    enumName: 'society_affiliation_territory_mode_enum',
+    name: 'territory_mode',
+  })
+  territoryMode: SocietyAffiliationTerritoryMode;
+
+  @ApiProperty({
+    type: [String],
+    example: ['CO'],
+    description:
+      'Según territoryMode: países incluidos (SPECIFIC_COUNTRIES), países excluidos (WORLDWIDE_EXCEPT), o vacío (WORLDWIDE). ISO 3166-1 alpha-2.',
+  })
+  @Column({ type: 'jsonb', name: 'territory_countries', default: () => "'[]'" })
+  territoryCountries: string[];
 
   @ApiProperty({ example: '12345', nullable: true })
   @Column('varchar', { name: 'membership_number', nullable: true })

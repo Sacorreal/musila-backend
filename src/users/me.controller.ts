@@ -19,7 +19,7 @@ import { ChangeEmailDto } from './dto/change-email.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateBillingDto } from './dto/update-billing.dto';
 import { UpdateMeDto } from './dto/update-me.dto';
-import { BankAccountInput } from './dto/bank-account.input';
+import { UpdatePersonalBankAccountInput } from './dto/update-personal-bank-account.input';
 import { UpsertLegalIdentityDto } from 'src/legal-identity/dto/upsert-legal-identity.dto';
 import { MeService } from './me.service';
 import { PlanService } from './plan.service';
@@ -119,8 +119,8 @@ export class MeController {
   @Patch('bank-account')
   @UseGuards(StepUpGuard)
   @RequireStepUp('account.bank_account.update')
-  @ApiOperation({ summary: 'Guardar/actualizar datos bancarios' })
-  updateBankAccount(@Req() req: Request, @Body() dto: BankAccountInput) {
+  @ApiOperation({ summary: 'Guardar/actualizar datos bancarios (el titular se deriva de la identidad legal)' })
+  updateBankAccount(@Req() req: Request, @Body() dto: UpdatePersonalBankAccountInput) {
     return this.meService.updateBankAccount(this.uid(req), dto);
   }
 

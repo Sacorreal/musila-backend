@@ -1,8 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsNotEmpty, IsOptional, IsUUID, Matches, MaxLength } from 'class-validator';
 
-const ACCOUNT_TYPES = ['AHORROS', 'CORRIENTE'] as const;
-const DOCUMENT_TYPES = ['CC', 'CE', 'NIT'] as const;
+export const ACCOUNT_TYPES = ['AHORROS', 'CORRIENTE'] as const;
+export const DOCUMENT_TYPES = ['CC', 'CE', 'NIT'] as const;
 
 export class CreateColombiaBankInformationDto {
   @ApiProperty({ required: false, description: 'Id del BankInformationRequest a marcar como completado, si aplica.' })

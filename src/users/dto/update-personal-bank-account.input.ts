@@ -1,8 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn, IsNotEmpty, IsString } from 'class-validator';
-import { ACCOUNT_TYPES, DOCUMENT_TYPES } from 'src/bank-information/dto/create-colombia-bank-information.dto';
+import { ACCOUNT_TYPES } from 'src/bank-information/dto/create-colombia-bank-information.dto';
 
-export class BankAccountInput {
+/**
+ * A diferencia de `BankAccountInput` (usado por el wallet de organización,
+ * donde el titular es la razón social/NIT), aquí NO se piden titular/tipo de
+ * documento/número de documento: para una cuenta personal esos datos ya
+ * viven en la identidad legal del usuario (`LegalIdentityService`) y
+ * `MeService.updateBankAccount` los deriva de ahí — pedirlos de nuevo sería
+ * duplicar un dato que además podría quedar desincronizado del original.
+ */
+export class UpdatePersonalBankAccountInput {
   @ApiProperty({ description: 'Id/código del banco obtenido de GET /bank-information/transfer-options' })
   @IsString()
   @IsNotEmpty({ message: 'El banco es obligatorio' })
@@ -21,18 +29,4 @@ export class BankAccountInput {
   @IsString()
   @IsNotEmpty({ message: 'El número de cuenta es obligatorio' })
   accountNumber: string;
-
-  @ApiProperty({ example: 'Sofía Pérez' })
-  @IsString()
-  @IsNotEmpty({ message: 'El titular de la cuenta es obligatorio' })
-  accountHolderName: string;
-
-  @ApiProperty({ enum: DOCUMENT_TYPES })
-  @IsIn(DOCUMENT_TYPES, { message: 'El tipo de documento del titular es obligatorio' })
-  accountHolderIdType: (typeof DOCUMENT_TYPES)[number];
-
-  @ApiProperty({ example: '1234567890' })
-  @IsString()
-  @IsNotEmpty({ message: 'El número de documento del titular es obligatorio' })
-  accountHolderIdNumber: string;
 }

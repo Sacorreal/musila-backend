@@ -1,0 +1,5 @@
+export enum SocietyAffiliationTerritoryMode {
+  SPECIFIC_COUNTRIES = 'SPECIFIC_COUNTRIES',
+  WORLDWIDE = 'WORLDWIDE',
+  WORLDWIDE_EXCEPT = 'WORLDWIDE_EXCEPT',
+}

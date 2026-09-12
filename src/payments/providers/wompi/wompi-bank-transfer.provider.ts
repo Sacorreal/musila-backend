@@ -12,7 +12,10 @@ import {
  * Implementación concreta del puerto `BankTransferProvider` contra la API de
  * "pagos a terceros" de Wompi (https://docs.wompi.co/docs/colombia/introduccion-pagos-a-terceros/).
  * Es un producto Wompi distinto del checkout (`WompiProvider`): usa su propia
- * base URL y API key (`WOMPI_PAYOUTS_API_URL` / `WOMPI_PAYOUTS_API_KEY`).
+ * base URL, API key e ID de usuario principal (`WOMPI_PAYOUTS_API_URL` /
+ * `WOMPI_PAYOUTS_API_KEY` / `WOMPI_PAYOUTS_USER_PRINCIPAL_ID`). Autentica con
+ * los headers `x-api-key` + `user-principal-id` — NO con `Authorization: Bearer`
+ * (ver "Ambientes y llaves" en la doc de pagos a terceros).
  *
  * Alcance actual: solo `GET /banks` para poblar el selector de cuenta de
  * cobro. No implementa `POST /payouts` (envío real de dinero) — fuera del
@@ -35,6 +38,12 @@ export class WompiBankTransferProvider implements BankTransferProvider {
     const key = this.configService.get<string>('WOMPI_PAYOUTS_API_KEY', '');
     if (!key) throw new Error('WOMPI_PAYOUTS_API_KEY no está configurado');
     return key;
+  }
+
+  private get userPrincipalId(): string {
+    const id = this.configService.get<string>('WOMPI_PAYOUTS_USER_PRINCIPAL_ID', '');
+    if (!id) throw new Error('WOMPI_PAYOUTS_USER_PRINCIPAL_ID no está configurado');
+    return id;
   }
 
   async listBanks(): Promise<BankOption[]> {
@@ -66,7 +75,8 @@ export class WompiBankTransferProvider implements BankTransferProvider {
     const url = `${this.apiUrl}${path}`;
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${this.apiKey}`,
+      'x-api-key': this.apiKey,
+      'user-principal-id': this.userPrincipalId,
     };
 
     let res: Response;

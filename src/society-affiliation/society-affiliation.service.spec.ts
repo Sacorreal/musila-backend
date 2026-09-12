@@ -1,7 +1,8 @@
-import { ConflictException, ForbiddenException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException } from '@nestjs/common';
 import { SocietyAffiliationService } from './society-affiliation.service';
 import { SocietyAffiliationStatus } from './entities/society-affiliation-status.enum';
 import { SocietyAffiliationRightsType } from './entities/society-affiliation-rights-type.enum';
+import { SocietyAffiliationTerritoryMode } from './entities/society-affiliation-territory-mode.enum';
 
 describe('SocietyAffiliationService', () => {
   let service: SocietyAffiliationService;
@@ -32,7 +33,8 @@ describe('SocietyAffiliationService', () => {
     const dto = {
       collectiveManagementSocietyId: 'cms-sayco',
       rightsType: SocietyAffiliationRightsType.PR,
-      territory: 'CO',
+      territoryMode: SocietyAffiliationTerritoryMode.SPECIFIC_COUNTRIES,
+      territoryCountries: ['CO'],
     } as any;
 
     it('crea Author X + SAYCO + PR + CO cuando no hay duplicado', async () => {
@@ -44,20 +46,74 @@ describe('SocietyAffiliationService', () => {
     });
 
     it('rechaza un duplicado activo de la misma combinación sociedad+derecho+territorio', async () => {
-      repo.findOne.mockResolvedValue({ id: 'existing-aff' });
+      repo.find.mockResolvedValue([
+        { territoryMode: SocietyAffiliationTerritoryMode.SPECIFIC_COUNTRIES, territoryCountries: ['CO'] },
+      ]);
 
       await expect(service.create('author-1', dto, user)).rejects.toThrow(ConflictException);
       expect(repo.save).not.toHaveBeenCalled();
     });
 
     it('permite la misma sociedad con distinto rightsType', async () => {
-      repo.findOne.mockResolvedValue(null);
       await expect(service.create('author-1', { ...dto, rightsType: SocietyAffiliationRightsType.MR }, user)).resolves.toBeDefined();
     });
 
-    it('permite la misma sociedad y derecho en distinto territorio', async () => {
-      repo.findOne.mockResolvedValue(null);
-      await expect(service.create('author-1', { ...dto, territory: 'MX' }, user)).resolves.toBeDefined();
+    it('permite la misma sociedad y derecho en distinto país específico', async () => {
+      repo.find.mockResolvedValue([
+        { territoryMode: SocietyAffiliationTerritoryMode.SPECIFIC_COUNTRIES, territoryCountries: ['MX'] },
+      ]);
+      await expect(service.create('author-1', { ...dto, territoryCountries: ['CO'] }, user)).resolves.toBeDefined();
+    });
+
+    it('rechaza WORLDWIDE cuando ya existe una afiliación en un país específico', async () => {
+      repo.find.mockResolvedValue([
+        { territoryMode: SocietyAffiliationTerritoryMode.SPECIFIC_COUNTRIES, territoryCountries: ['CO'] },
+      ]);
+      await expect(
+        service.create('author-1', { ...dto, territoryMode: SocietyAffiliationTerritoryMode.WORLDWIDE, territoryCountries: undefined }, user),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('permite "mundial excepto EE.UU." junto con otra afiliación exclusiva de EE.UU. (caso de uso real)', async () => {
+      // Ya existe SAYCO = mundial excepto US
+      repo.find.mockResolvedValue([
+        { territoryMode: SocietyAffiliationTerritoryMode.WORLDWIDE_EXCEPT, territoryCountries: ['US'] },
+      ]);
+
+      await expect(
+        service.create(
+          'author-1',
+          { ...dto, territoryMode: SocietyAffiliationTerritoryMode.SPECIFIC_COUNTRIES, territoryCountries: ['US'] },
+          user,
+        ),
+      ).resolves.toBeDefined();
+    });
+
+    it('rechaza "mundial excepto EE.UU." si ya existe una afiliación en un país no excluido (ej. CO)', async () => {
+      repo.find.mockResolvedValue([
+        { territoryMode: SocietyAffiliationTerritoryMode.SPECIFIC_COUNTRIES, territoryCountries: ['CO'] },
+      ]);
+
+      await expect(
+        service.create(
+          'author-1',
+          { ...dto, territoryMode: SocietyAffiliationTerritoryMode.WORLDWIDE_EXCEPT, territoryCountries: ['US'] },
+          user,
+        ),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('exige al menos un país cuando el modo es SPECIFIC_COUNTRIES o WORLDWIDE_EXCEPT', async () => {
+      await expect(
+        service.create('author-1', { ...dto, territoryCountries: [] }, user),
+      ).rejects.toThrow(BadRequestException);
+      await expect(
+        service.create(
+          'author-1',
+          { ...dto, territoryMode: SocietyAffiliationTerritoryMode.WORLDWIDE_EXCEPT, territoryCountries: [] },
+          user,
+        ),
+      ).rejects.toThrow(BadRequestException);
     });
 
     it('rechaza crear afiliaciones para un autor ajeno (ownership)', async () => {

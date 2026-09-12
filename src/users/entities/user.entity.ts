@@ -22,6 +22,7 @@ import { ProSociety } from './pro-society.enum';
 import { SocialNetworksData } from './social-networks.type';
 
 export interface UserBankAccount {
+  bankCode: string;
   bankName: string;
   accountType: string;
   accountNumber: string;

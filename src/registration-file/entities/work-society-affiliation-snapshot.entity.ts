@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { SocietyAffiliationRightsType } from 'src/society-affiliation/entities/society-affiliation-rights-type.enum';
+import { SocietyAffiliationTerritoryMode } from 'src/society-affiliation/entities/society-affiliation-territory-mode.enum';
 import {
   Column,
   CreateDateColumn,
@@ -67,8 +68,17 @@ export class WorkSocietyAffiliationSnapshot {
   })
   rightsType: SocietyAffiliationRightsType;
 
-  @Column('varchar', { length: 2 })
-  territory: string;
+  @ApiProperty({ enum: SocietyAffiliationTerritoryMode })
+  @Column({
+    type: 'enum',
+    enum: SocietyAffiliationTerritoryMode,
+    enumName: 'society_affiliation_territory_mode_enum',
+    name: 'territory_mode',
+  })
+  territoryMode: SocietyAffiliationTerritoryMode;
+
+  @Column({ type: 'jsonb', name: 'territory_countries', default: () => "'[]'" })
+  territoryCountries: string[];
 
   @Column('varchar', { name: 'ipi_name_number', nullable: true })
   ipiNameNumber: string | null;

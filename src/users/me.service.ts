@@ -14,7 +14,8 @@ import { UpdateMeDto } from './dto/update-me.dto';
 import { ChangeEmailDto } from './dto/change-email.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateBillingDto } from './dto/update-billing.dto';
-import { BankAccountInput } from './dto/bank-account.input';
+import { UpdatePersonalBankAccountInput } from './dto/update-personal-bank-account.input';
+import { UserBankAccount } from './entities/user.entity';
 import { LegalIdentityService } from 'src/legal-identity/legal-identity.service';
 import { UpsertLegalIdentityDto } from 'src/legal-identity/dto/upsert-legal-identity.dto';
 
@@ -92,8 +93,41 @@ export class MeService {
     return user.bankAccount ?? null;
   }
 
-  async updateBankAccount(userId: string, dto: BankAccountInput) {
-    await this.userRepo.update(userId, { bankAccount: dto });
+  /**
+   * El titular/tipo de documento/número de documento NO vienen del cliente:
+   * se derivan de la identidad legal ya verificada del usuario (misma
+   * persona, mismo documento — no tiene sentido volver a pedirlo aquí y
+   * arriesgar que quede desincronizado). Por eso exige identidad legal
+   * completa antes de permitir guardar la cuenta bancaria personal.
+   */
+  async updateBankAccount(userId: string, dto: UpdatePersonalBankAccountInput) {
+    const legalIdentity = await this.legalIdentityService.getDecryptedByUserId(userId);
+    if (!legalIdentity) {
+      throw new BadRequestException(
+        'Debes completar tu identidad legal antes de configurar tus datos bancarios',
+      );
+    }
+
+    const accountHolderName = [
+      legalIdentity.primerNombre,
+      legalIdentity.segundoNombre,
+      legalIdentity.primerApellido,
+      legalIdentity.segundoApellido,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    const bankAccount: UserBankAccount = {
+      bankCode: dto.bankCode,
+      bankName: dto.bankName,
+      accountType: dto.accountType,
+      accountNumber: dto.accountNumber,
+      accountHolderName,
+      accountHolderIdType: legalIdentity.tipoIdentificacion,
+      accountHolderIdNumber: legalIdentity.numeroIdentificacion,
+    };
+
+    await this.userRepo.update(userId, { bankAccount });
     return this.getBankAccount(userId);
   }
 
