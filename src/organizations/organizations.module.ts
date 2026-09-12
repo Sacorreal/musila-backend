@@ -19,7 +19,7 @@ import { Tenant } from './entities/tenant.entity';
 import { Trackspace } from './entities/trackspace.entity';
 import { WorkspaceInviteLink } from './entities/workspace-invite-link.entity';
 import { AccessRequestService } from './access-request.service';
-import { MembershipService } from './membership.service';
+import { MembershipModule } from './membership.module';
 import { OrganizationInviteService } from './organization-invite.service';
 import { OrganizationSecurityPolicyService } from './organization-security-policy.service';
 import { WorkspaceInviteService } from './workspace-invite.service';
@@ -59,6 +59,7 @@ import { WorkspaceInvitesPublicController } from './workspace-invites-public.con
     EmailModule,
     AppNotificationsModule,
     LegalIdentityModule,
+    MembershipModule,
     forwardRef(() => StaffAuditModule),
     PublisherShareModule,
     forwardRef(() => AuthModule),
@@ -77,7 +78,6 @@ import { WorkspaceInvitesPublicController } from './workspace-invites-public.con
   ],
   providers: [
     OrganizationsService,
-    MembershipService,
     OrganizationInviteService,
     OrganizationSecurityPolicyService,
     WorkspaceInviteService,
@@ -90,7 +90,7 @@ import { WorkspaceInvitesPublicController } from './workspace-invites-public.con
   ],
   exports: [
     OrganizationsService,
-    MembershipService,
+    MembershipModule,
     OrganizationInviteService,
     OrganizationSecurityPolicyService,
     WorkspaceInviteService,

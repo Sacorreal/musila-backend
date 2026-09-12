@@ -8,6 +8,7 @@ import { GuestsModule } from 'src/guests/guests.module';
 import { PaymentsModule } from 'src/payments/payments.module';
 import { AffiliatesModule } from 'src/affiliates/affiliates.module';
 import { OrganizationsModule } from 'src/organizations/organizations.module';
+import { MembershipModule } from 'src/organizations/membership.module';
 
 import { UserPasskey } from './entities/user-passkey.entity';
 import { RecoveryCode } from './entities/recovery-code.entity';
@@ -47,6 +48,7 @@ import { RecoveryCodeController } from './recovery-code.controller';
     forwardRef(() => PaymentsModule),
     forwardRef(() => AffiliatesModule),
     forwardRef(() => OrganizationsModule),
+    MembershipModule,
   ],
   controllers: [
     AuthController,
